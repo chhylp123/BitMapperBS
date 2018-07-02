@@ -46,8 +46,11 @@ paired-end reads
 
 
 General Options:
+
  -v|--version		Current Version.
+
  -h			Show the help file.
+
 
 
 Indexing Options:

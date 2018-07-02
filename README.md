@@ -46,17 +46,22 @@ paired-end reads
 
 
 General Options:
+
  -v|--version		Current Version.
+
  -h			Show the help file.
 
 
+
 Indexing Options:
+
  --index [file]		Generate an index from the specified fasta file. 
 
 
 Searching Options:
- --search [file]	Search in the specified genome. Provide the path to the fasta file. 
-			Index file should be in the same directory.
+
+ --search [file]	Search in the specified genome. Provide the path to the fasta file. Index file should be in the same directory.
+
  --pe 			Search will be done in paired-end mode.
  --seq [file]		Input sequences in fastq format [file]. This option is used  
 			for single-end reads.
