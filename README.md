@@ -45,7 +45,7 @@ paired-end reads
 
 
 
-General Options:
+####General Options####
 
  -v|--version		Current Version.
 
@@ -53,7 +53,7 @@ General Options:
 
 
 
-Indexing Options:
+####Indexing Options:####
 
  --index [file]		Generate an index from the specified fasta file. 
 
