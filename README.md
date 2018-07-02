@@ -19,13 +19,12 @@ from directional protocol.
 ### Installation ###
 (1) Download the source code from Github
 
-    git clone git@github.com:smithlabcode/walt.git
+    git clone https://github.com/chhylp123/BitMapperBS.git
 
 (2) Build and Install
     
-    cd walt
-    make all
-    make install
+    cd BitMapperBS
+    make
 
 
 ### Indexing Genome ###
