@@ -12,9 +12,9 @@ BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequenc
 Introduction
 -------  
 
-Here are the implementations of "FMtree: A fast locating algorithm of FM-indexes for genomic data".
-This project consists of three locating algorithms: FMtree, Original_s and Original_v. 
-We also provide a program named "preprocess" to help users to preprocess the input text (genome).
+Here are the implementations of "BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequencing". 
+BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads
+from directional protocol. 
 
 
 
