@@ -44,9 +44,39 @@ paired-end reads
 ### Mapping Options ###
 
 
+
+General Options:
+ -v|--version		Current Version.
+ -h			Show the help file.
+
+
+Indexing Options:
+ --index [file]		Generate an index from the specified fasta file. 
+
+
+Searching Options:
+ --search [file]	Search in the specified genome. Provide the path to the fasta file. 
+			Index file should be in the same directory.
+ --pe 			Search will be done in paired-end mode.
+ --seq [file]		Input sequences in fastq format [file]. This option is used  
+			for single-end reads.
+ --seq1 [file]		Input sequences in fastq format [file] (First file). 
+			Use this option to indicate the first file of 
+			paired-end reads. 
+ --seq2 [file]		Input sequences in fastq format [file] (Second file). 
+			Use this option to indicate the second file of 
+			paired-end reads.  
+ -o [file]		Output of the mapped sequences. The default is "output".
+ -e [float]		Maximum allowed edit distance (default 8% of the read length).
+ --min [int]		Min distance allowed between a pair of end sequences (default: 0).
+ --max [int]		Max distance allowed between a pair of end sequences (default: 500).
+ --threads, -t [int]	Set the number of CPU threads (default: 1).
+ --pbat 		Mapping the BS-seq from pbat protocol.
+
+
 | Option | Long Tag | Type | Default | Brief Description |
 | :-------------: |:-------------:|:-----:|:-----:| :-----|
-| -i      | -index | String | NULL | index file created by ***makedb*** command ( .dbindex) |
+| -v      | --version | String | NULL | index file created by ***makedb*** command ( .dbindex) |
 | -r      | -reads | String | NULL | list of single-end read files (.fastq or .fq) |
 | -1      | -reads1 | String | NULL | list of paired-end read _1 files (.fastq or .fq) |
 | -2      | -reads2 | String | NULL | list of paired-end read _2 files (.fastq or .fq) |
