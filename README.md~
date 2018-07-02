@@ -27,7 +27,6 @@ from directional protocol.
     make
 
 
-
 ### Indexing Genome ###
     
     makedb -c <genome folder or file> -o <index file>

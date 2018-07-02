@@ -29,7 +29,7 @@ from directional protocol.
 
 ### Indexing Genome ###
     
-    makedb -c <genome folder or file> -o <index file>
+    ./bitmapperBS --index <index file>
 
 ### Bisulfite Mapping ###
 
