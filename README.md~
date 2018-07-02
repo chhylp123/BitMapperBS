@@ -29,18 +29,17 @@ from directional protocol.
 
 ### Indexing Genome ###
     
-    makedb -c <genome folder or file> -o <index file>
+    ./bitmapperBS --index <genome file name>
 
 ### Bisulfite Mapping ###
 
 single-end reads
 
-    walt -i <index file> -r <read files> -o <output file> [options]
+    ./bitmapperBS --search <genome file name> --seq <read file name> [options]
 
 paired-end reads
 
-    walt -i <index file> -1 <mate_1 read files> -2 <mate_2 read files> -o <output file> [options]
-
+    ./bitmapperBS --search <genome file name> --seq1 <read1 file name> --seq2 <read2 file name> --pe [options]
 
 ### Mapping Options ###
 
