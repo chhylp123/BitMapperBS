@@ -53,7 +53,7 @@ paired-end reads
 
 
 
-Indexing Options:
+####Indexing Options:####
 
  --index [file]		Generate an index from the specified fasta file. 
 

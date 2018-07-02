@@ -45,7 +45,7 @@ paired-end reads
 
 
 
-####General Options####
+#### General Options ####
 
  -v|--version		Current Version.
 
