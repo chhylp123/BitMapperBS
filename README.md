@@ -98,11 +98,11 @@ To see the list of options, use "-?" or "-help".
 
 Note
 -------
-* We adopt the SACA-K algorithm [1] to build the suffix array, and build BWT from suffix array. As such when building the index, the memory requirement of FMtree, Original_s and Original_v is about 5 times larger than that of the input text.
+* We adopt the pSAscan algorithm [1] to build the suffix array, and build BWT from suffix array.
 
 
 References
 -------
 
 
-[1] Nong G. Practical linear-time O (1)-workspace suffix sorting for constant alphabets[J]. ACM Transactions on Information Systems (TOIS), 2013, 31(3): 15.
+[1] Kärkkäinen J, Kempa D, Puglisi S J. Parallel external memory suffix sorting[C]//Annual Symposium on Combinatorial Pattern Matching. Springer, Cham, 2015: 329-342.
