@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <zlib.h>
+///#include <zlib.h>
 #include "Auxiliary.h"
 #include "Process_Reads.h"
 #include "Index.h"
