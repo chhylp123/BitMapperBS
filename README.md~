@@ -52,6 +52,8 @@ paired-end reads
 
 ### Index Options ###
 
+| Option | Short Option | Type | Default | Brief Description |
+| :------: | :---------------: | :-----:|:-----:| :-----|
 | --index | -i | String | NULL | Generate an index from the specified fasta file. |
 
 
