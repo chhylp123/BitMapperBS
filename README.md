@@ -50,7 +50,7 @@ paired-end reads
 | -h | String | NULL | Show the help information. |
 | -v/--version | String | NULL | Show current version of BitMapperBS. |
 | -i/--index | String | NULL | Generate an index from the specified fasta file. |
-
+| --search | String | NULL | Search in the specified genome. Provide the path to the fasta file. Index file should be in the same directory. |
 
 
 
