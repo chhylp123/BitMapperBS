@@ -41,15 +41,26 @@ paired-end reads
 
     ./bitmapperBS --search <genome file name> --seq1 <read1 file name> --seq2 <read2 file name> --pe [options]
 
-### Mapping Options ###
 
+### General Options ###
 
 
 | long Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
 | --help | -h | String | NULL | Show the help information. |
 | --version | -v | String | NULL | Show current version of BitMapperBS. |
+
+### Index Options ###
+
 | --index | -i | String | NULL | Generate an index from the specified fasta file. |
+
+
+### Mapping Options ###
+
+
+
+| long Option | Short Option | Type | Default | Brief Description |
+| :------: | :---------------: | :-----:|:-----:| :-----|
 | --search | NULL| String | NULL | Provide the path to the fasta file when aligning. Index file should be in the same directory. |
 
 
