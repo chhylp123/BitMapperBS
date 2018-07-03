@@ -36,6 +36,10 @@ from directional protocol.
    
     we recommd users to use Trim_Galore to perform the quality and adapter trimming. Please see https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/. 
 
+### Quality and Adapter Trimming ###
+
+we recommd users to use Trim_Galore to perform the quality and adapter trimming. Please see https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/. 
+
 ### Bisulfite Mapping ###
 
 single-end reads
