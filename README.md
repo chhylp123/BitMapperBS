@@ -26,7 +26,7 @@ from directional protocol.
     cd BitMapperBS
     make
 
-(3) If the CPU does not support AVX2 instructions
+(3) If the CPU does not support AVX2 instructions (in this case, BitMapperBS may be slower without AVX2 instructions)
 
     cd BitMapperBS/for_old_machine_sse4.2
     make
