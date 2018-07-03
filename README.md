@@ -70,7 +70,9 @@ paired-end reads
 | --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file. |
 | -o | -o | String | output | Provide the name of output file. |
 | -e | -e | Double | 8% of read length | Maximum allowed edit distance. |
-| --min | NULL | Int | 0 | Min distance allowed between a pair of end sequences. |
+| --min | NULL | Int | 0 | Minimum allowed distance between a pair of end sequences. |
+| --max | NULL | Int | 0 | Max allowed distance between a pair of end sequences. |
+| --threads | -t | Int | 1 | Set the number of CPU threads. |
 
 
 #### General Options ####
