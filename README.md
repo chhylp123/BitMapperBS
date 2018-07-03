@@ -47,6 +47,7 @@ paired-end reads
 
 | Option | Long Tag | Type | Default | Brief Description |
 | :-------------: |:-------------:|:-----:|:-----:| :-----|
+| -v      | --version | String | NULL | Show current version of BitMapperBS. |
 | -i      | --index | String | NULL | Generate an index from the specified fasta file. |
 | -r      | -reads | String | NULL | list of single-end read files (.fastq or .fq) |
 | -1      | -reads1 | String | NULL | list of paired-end read _1 files (.fastq or .fq) |
