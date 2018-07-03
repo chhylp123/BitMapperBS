@@ -86,7 +86,7 @@ paired-end reads
 
 For example, to make an index for UCSC hg19
 
-	makedb -c hg19/ -o hg19.dbindex
+	./bitmapperBS --index Homo_sapiens.GRCh38.dna.primary_assembly.fa
    
 or to make an index for chromosome 2
 

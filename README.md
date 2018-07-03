@@ -86,13 +86,9 @@ paired-end reads
 
 For example, to make an index for UCSC hg19
 
-	makedb -c hg19/ -o hg19.dbindex
+	./bitmapperBS --index Homo_sapiens.GRCh38.dna.primary_assembly.fa
    
-or to make an index for chromosome 2
-
-	makedb -c chr2.fa -o chr2.dbindex
-
-The suffix of the index file should be '.dbindex'.
+The suffix of the index file should be '.dbindex.*'.
     
 (2) **Bisulfite Mapping**
 
