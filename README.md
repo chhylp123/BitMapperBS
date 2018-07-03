@@ -69,8 +69,8 @@ paired-end reads
 | --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file. |
 | --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file. |
 | -o | -o | String | output | Provide the name of output file. |
-| -e | -e | double | 8% of read length | Maximum allowed edit distance. |
-
+| -e | -e | Double | 8% of read length | Maximum allowed edit distance. |
+| --min | NULL | Int | 0 | Min distance allowed between a pair of end sequences. |
 
 
 #### General Options ####
