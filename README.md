@@ -94,8 +94,14 @@ For example, to make an index for human genome (GRCH38):
 	./bitmapperBS --index human_genome.fa
    
 The suffix of the index file should be '.index.*'.
+
+(2) **Quality and Adapter Trimming**
+
+For example, to trim paired-end reads:
+
+	trim_galore --paired read_1.fq read_2.fq
     
-(2) **Bisulfite Mapping**
+(3) **Bisulfite Mapping**
 
 For example, to map reads to human genome (GRCH38) in single-end mode using 6 CPU threads:
 
