@@ -66,8 +66,9 @@ paired-end reads
 | --search | NULL| String | NULL | Provide the path to the fasta file when aligning.|
 | --pe | NULL| String | NULL | Searching will be done in paired-end mode. |
 | --seq | NULL| String | NULL | Provide the single-end read file. |
-| --seq1 | NULL| String | NULL | Provide the paired-end read_1 file. |
-| --seq2 | NULL| String | NULL | Provide the paired-end read_2 file. |
+| --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file. |
+| --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file. |
+| -o | -o | String | output | Provide the name of output file. |
 
 #### General Options ####
 
