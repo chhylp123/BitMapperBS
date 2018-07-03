@@ -45,7 +45,7 @@ paired-end reads
 ### General Options ###
 
 
-| long Option | Short Option | Type | Default | Brief Description |
+| Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
 | --help | -h | String | NULL | Show the help information. |
 | --version | -v | String | NULL | Show current version of BitMapperBS. |
@@ -59,11 +59,8 @@ paired-end reads
 
 
 
-| long Option | Short Option | Type | Default | Brief Description |
+| Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
-| --help | -h | String | NULL | Show the help information. |
-| --version | -v | String | NULL | Show current version of BitMapperBS. |
-| --index | -i | String | NULL | Generate an index from the specified fasta file. |
 | --search | NULL| String | NULL | Provide the path to the fasta file when aligning. Index file should be in the same directory. |
 
 
