@@ -73,7 +73,7 @@ paired-end reads
 | --min | NULL | Int | 0 | Minimum distance between a pair of end sequences. |
 | --max | NULL | Int | 0 | Maximum distance between a pair of end sequences. |
 | --threads | -t | Int | 1 | Set the number of CPU threads. |
-| --pbat | NULL | NULL | NULL | Map the BS-seq from pbat protocol. |
+| --pbat | NULL | NULL | NULL | Map the bs-seq from pbat protocol. |
 
 
 #### General Options ####
