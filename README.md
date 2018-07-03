@@ -63,7 +63,7 @@ paired-end reads
 
 | Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
-| --search | NULL| String | NULL | Provide the path to the fasta file when aligning. Index file should be in the same directory. |
+| --search | NULL| String | NULL | Provide the path to the fasta file when aligning.|
 | --pe | NULL| String | NULL | Search will be done in paired-end mode. |
 
 
