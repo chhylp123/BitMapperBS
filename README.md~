@@ -84,49 +84,30 @@ paired-end reads
 
 (1) **Indexing Genome**
 
-For example, to make an index for UCSC hg19
+For example, to make an index for human genome (GRCH38):
 
 	./bitmapperBS --index Homo_sapiens.GRCh38.dna.primary_assembly.fa
    
-or to make an index for chromosome 2
-
-	makedb -c chr2.fa -o chr2.dbindex
-
-The suffix of the index file should be '.dbindex'.
+The suffix of the index file should be '.index.*'.
     
 (2) **Bisulfite Mapping**
 
-For example, to mapping reads to human genome hg19
+For example, to mapping reads to human genome (GRCH38) in single-end mode using 6 CPU threads:
 
-	walt -i hg19.dbindex -r read_1.fq -o reads_1_mapping.sam
+	./bitmapperBS --search ../../ssd/Homo_sapiens.GRCh38.dna.primary_assembly.fa --seq ../../ssd/read.fq -t 6
     
-If mapping the reads from the *_2 reads file, the -A option should be set. This means that all Gs in the reads and genome are converted to As. If -A option is not set, all Cs in the reads and genome are converted to Ts.
+If mapping the reads from the *_2 reads file or the pbat protocol, the --pbat option should be set:
 
-    walt -i hg19.dbindex -r read_2.fq -A -o reads_2_mapping.sam
+    	./bitmapperBS --search ../../ssd/Homo_sapiens.GRCh38.dna.primary_assembly.fa --seq ../../ssd/read_2.fq --pbat -t 6
 
-    
-If mapping post-bisulfite adaptor tagging reads (PBAT), the -P option should be set. 
+to mapping reads to human genome (GRCH38) in paired-end mode using 6 CPU threads:
 
-    walt -i hg19.dbindex -r read_2.fq -P -o reads_2_mapping.sam
-    walt -i hg19.dbindex -1 read_1.fq -2 read_2.fq -P -o paired_mapping_PBAT.sam
-    
-Additionally, WALT supports comma-separated list of read files. WALT produces one mapping output file for each read file. For single-end mapping, the output file names will be appended "_s1", "_s2", and so on. Notice: except the first file path, all other file paths cannot use '~'. For example, "-r ~/read_file1.fq,~/read_file2.fq" is not allowed. It should be "-r ~/read_file1.fq,/home/read_file2.fq", since linux system doesn't know it is a path except the first one.
-	 
-	 walt -i hg19.dbindex -r read_file1.fq,read_file2.fq,read_file3.fq -o reads_1_mapping.sam
-	 
-For paired-end reads, -1 and -2 options are used for the mate read files.
-    
-    walt -i hg19.dbindex -1 read_1.fq -2 read_2.fq -o paired_mapping.sam
-    
-Similarly, WALT supports comma-separated list of read files for paired-end mapping. WALT produces one mapping output file for each pair of read files. The output file names will be appended "_p1", "_p2", and so on. One other thing to note is the mate 1 and mate 2 paired files should be in the same order.
+	./bitmapperBS --search ../../ssd/Homo_sapiens.GRCh38.dna.primary_assembly.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq --pe -t 6
 
-	 walt -i hg19.dbindex -1 read_file1_1.fq,read_file2_1.fq,read_file3_1.fq \ 
-	                      -2 read_file1_2.fq,read_file2_2.fq,read_file3_2.fq \
-	                      -o paired_mapping.sam
 
-The default number of maximum allowed mismatches is 6. The maximum allowed mismatches can be set using -m option.
+The default maximum allowed edit distance is 8% of read length (0.08). This option can be changed using -e option:
 
-    walt -i hg19.dbindex -r read_1.fq -m 4 -o reads_1_mapping.sam
+    ./bitmapperBS --search ../../ssd/Homo_sapiens.GRCh38.dna.primary_assembly.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq --pe -t 6 -e 0.04
 
 
 
