@@ -21,11 +21,15 @@ from directional protocol.
 
     git clone https://github.com/chhylp123/BitMapperBS.git
 
-(2) Build and Install
+(2) Build (CPU must support AVX2 instructions)
     
     cd BitMapperBS
     make
 
+(3) If the CPU does not support AVX2 instructions
+
+    cd BitMapperBS/for_old_machine_sse4.2	
+    make
 
 ### Indexing Genome ###
     
@@ -98,6 +102,7 @@ The suffix of the index file should be '.index.*'.
 (2) **Quality and Adapter Trimming**
 
 For example, to trim paired-end reads:
+
 	trim_galore --paired read_1.fq read_2.fq
     
 (3) **Bisulfite Mapping**

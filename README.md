@@ -21,11 +21,15 @@ from directional protocol.
 
     git clone https://github.com/chhylp123/BitMapperBS.git
 
-(2) Build and Install
+(2) Build (CPU must support AVX2 instructions)
     
     cd BitMapperBS
     make
 
+(3) If the CPU does not support AVX2 instructions
+
+    cd BitMapperBS/for_old_machine_sse4.2
+    make
 
 ### Indexing Genome ###
     
