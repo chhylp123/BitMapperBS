@@ -45,12 +45,12 @@ paired-end reads
 
 
 
-| Option | Type | Default | Brief Description |
-| :-------------: |:-----:|:-----:| :-----|
-| -h | String | NULL | Show the help information. |
-| -v(--version) | String | NULL | Show current version of BitMapperBS. |
-| -i(--index) | String | NULL | Generate an index from the specified fasta file. |
-| --search | String | NULL | Search in the specified genome. Provide the path to the fasta file. Index file should be in the same directory. |
+| Option | Default | Brief Description |
+| :-----------------:|:-----:| :-----|
+| -h | NULL | Show the help information. |
+| -v(--version) | NULL | Show current version of BitMapperBS. |
+| -i/--index | NULL | Generate an index from the specified fasta file. |
+| --search | NULL | Search in the specified genome. Provide the path to the fasta file. Index file should be in the same directory. |
 
 
 
