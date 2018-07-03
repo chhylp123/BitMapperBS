@@ -46,7 +46,7 @@ paired-end reads
 
 
 | Option | Type | Default | Brief Description |
-| :-------------: |:-----:|:-----:| :-----|
+| :-----------------: |:-----:|:-----:| :-----|
 | -h | String | NULL | Show the help information. |
 | -v(--version) | String | NULL | Show current version of BitMapperBS. |
 | -i(--index) | String | NULL | Generate an index from the specified fasta file. |
