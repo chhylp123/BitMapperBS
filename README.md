@@ -64,15 +64,16 @@ paired-end reads
 | Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
 | --search | NULL| String | NULL | Provide the path to the fasta file when aligning.|
-| --pe | NULL| String | NULL | Searching will be done in paired-end mode. |
+| --pe | NULL| NULL | NULL | Searching will be done in paired-end mode. |
 | --seq | NULL| String | NULL | Provide the name of single-end read file. |
 | --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file. |
 | --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file. |
 | -o | -o | String | output | Provide the name of output file. |
 | -e | -e | Double | 8% of read length | Maximum allowed edit distance. |
 | --min | NULL | Int | 0 | Minimum distance between a pair of end sequences. |
-| --max | NULL | Int | 0 | maximum distance between a pair of end sequences. |
+| --max | NULL | Int | 0 | Maximum distance between a pair of end sequences. |
 | --threads | -t | Int | 1 | Set the number of CPU threads. |
+| --pbat | NULL | NULL | NULL | Map the BS-seq from pbat protocol. |
 
 
 #### General Options ####
