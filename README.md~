@@ -98,7 +98,7 @@ To see the list of options, use "-?" or "-help".
 
 Note
 -------
-* We adopt the pSAscan algorithm [1] to build the suffix array, and build BWT from suffix array. As such when building the index, the memory requirement is about 5 times larger than that of the input text.
+* We adopt the pSAscan algorithm [1] to build the suffix array, and build BWT from suffix array.
 
 
 References

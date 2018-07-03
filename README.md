@@ -45,6 +45,28 @@ paired-end reads
 
 
 
+| Option | Long Tag | Type | Default | Brief Description |
+| :-------------: |:-------------:|:-----:|:-----:| :-----|
+| -i      | -index | String | NULL | index file created by ***makedb*** command ( .dbindex) |
+| -r      | -reads | String | NULL | list of single-end read files (.fastq or .fq) |
+| -1      | -reads1 | String | NULL | list of paired-end read _1 files (.fastq or .fq) |
+| -2      | -reads2 | String | NULL | list of paired-end read _2 files (.fastq or .fq) |
+| -o      | -output | String | NULL | output file name (.sam or .mr) |
+| -m      | -mismatch | Integer | 6 | maximum allowed mismatches |
+| -N      | -number | Integer | 1000000 | number of reads to map in one loop |
+| -a      | -ambiguous | Boolean | false | randomly output one mapped position for ambiguous reads |
+| -u      | -unmapped | Boolean | false | output unmapped reads |
+| -C      | -clip | String | empty | clip the specified adaptor |
+| -A      | -ag-wild | Boolean | false | map using A/G bisulfite wildcards |
+| -P      | -pbat | Boolean | false | map post-bisulfite adaptor tagging reads |
+| -b      | -bucket | Integer | 5000 | maximum candidates for a seed |
+| -k      | -topk | Integer | 50 | maximum allowed mappings for a read in paired-end mapping |
+| -L      | -fraglen | Integer | 1000 | max fragment length in paired-end mapping |
+| -t      | -thread | Integer | 1 | number of threads for mapping |
+
+
+
+
 #### General Options ####
 
  -v|--version		Current Version.
