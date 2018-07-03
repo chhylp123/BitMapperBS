@@ -263,7 +263,7 @@ void Print_H()
   ///fprintf(stdout," -u [file]\t\tSave unmapped sequences in fasta/fastq format.\n");
   ///fprintf(stdout," --seqcomp \t\tIndicates that the input sequences are compressed (gz).\n");
   ///fprintf(stdout," --outcomp \t\tIndicates that output file should be compressed (gz).\n");
-  fprintf(stdout," -e [float]\t\tMaximum allowed %s (default %d%% of the read length).\n", errorType,8);
+  fprintf(stdout," -e [float]\t\tSet the edit distance rate of read length. This value is between 0 and 1 (default: 0.08 = 8%% of read length).\n");
   //fprintf(stdout, " -s [double]\t\tbs_score_threshold (default 0.3 of the read length).\n");
   //fprintf(stdout, " -d [double]\t\tbs_edit_distance_threshold (default 0.1 of the read length).\n");
   fprintf(stdout," --min [int]\t\tMin distance allowed between a pair of end sequences (default: 0).\n");
