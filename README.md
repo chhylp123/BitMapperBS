@@ -86,28 +86,28 @@ paired-end reads
 
 For example, to make an index for human genome (GRCH38):
 
-	./bitmapperBS --index Homo_sapiens.GRCh38.dna.primary_assembly.fa
+	./bitmapperBS --index human_genome.fa
    
 The suffix of the index file should be '.index.*'.
     
 (2) **Bisulfite Mapping**
 
-For example, to mapping reads to human genome (GRCH38) in single-end mode using 6 CPU threads:
+For example, to map reads to human genome (GRCH38) in single-end mode using 6 CPU threads:
 
-	./bitmapperBS --search ../../ssd/Homo_sapiens.GRCh38.dna.primary_assembly.fa --seq ../../ssd/read.fq -t 6
+	./bitmapperBS --search ../../ssd/human_genome.fa --seq ../../ssd/read.fq -t 6
     
-If mapping the reads from the *_2 reads file or the pbat protocol, the --pbat option should be set:
+If map the reads from the *_2 reads file or the pbat protocol, the --pbat option should be set:
 
-    	./bitmapperBS --search ../../ssd/Homo_sapiens.GRCh38.dna.primary_assembly.fa --seq ../../ssd/read_2.fq --pbat -t 6
+    	./bitmapperBS --search ../../ssd/human_genome.fa --seq ../../ssd/read_2.fq --pbat -t 6
 
-to mapping reads to human genome (GRCH38) in paired-end mode using 6 CPU threads:
+to map reads to human genome (GRCH38) in paired-end mode using 6 CPU threads:
 
-	./bitmapperBS --search ../../ssd/Homo_sapiens.GRCh38.dna.primary_assembly.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq --pe -t 6
+	./bitmapperBS --search ../../ssd/human_genome.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq --pe -t 6
 
 
 The default maximum allowed edit distance is 8% of read length (0.08). This option can be changed using -e option:
 
-    ./bitmapperBS --search ../../ssd/Homo_sapiens.GRCh38.dna.primary_assembly.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq --pe -t 6 -e 0.04
+    ./bitmapperBS --search ../../ssd/human_genome.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq --pe -t 6 -e 0.04
 
 
 
