@@ -76,56 +76,62 @@ paired-end reads
 | --pbat | NULL | NULL | NULL | Map the bs-seq from pbat protocol. |
 
 
-#### General Options ####
-
- -v|--version		Current Version.
-
- -h			Show the help file.
 
 
 
-#### Indexing Options ####
 
- --index [file]		Generate an index from the specified fasta file. 
+### Examples ###
+
+(1) **Indexing Genome**
+
+For example, to make an index for UCSC hg19
+
+	makedb -c hg19/ -o hg19.dbindex
+   
+or to make an index for chromosome 2
+
+	makedb -c chr2.fa -o chr2.dbindex
+
+The suffix of the index file should be '.dbindex'.
+    
+(2) **Bisulfite Mapping**
+
+For example, to mapping reads to human genome hg19
+
+	walt -i hg19.dbindex -r read_1.fq -o reads_1_mapping.sam
+    
+If mapping the reads from the *_2 reads file, the -A option should be set. This means that all Gs in the reads and genome are converted to As. If -A option is not set, all Cs in the reads and genome are converted to Ts.
+
+    walt -i hg19.dbindex -r read_2.fq -A -o reads_2_mapping.sam
+
+    
+If mapping post-bisulfite adaptor tagging reads (PBAT), the -P option should be set. 
+
+    walt -i hg19.dbindex -r read_2.fq -P -o reads_2_mapping.sam
+    walt -i hg19.dbindex -1 read_1.fq -2 read_2.fq -P -o paired_mapping_PBAT.sam
+    
+Additionally, WALT supports comma-separated list of read files. WALT produces one mapping output file for each read file. For single-end mapping, the output file names will be appended "_s1", "_s2", and so on. Notice: except the first file path, all other file paths cannot use '~'. For example, "-r ~/read_file1.fq,~/read_file2.fq" is not allowed. It should be "-r ~/read_file1.fq,/home/read_file2.fq", since linux system doesn't know it is a path except the first one.
+	 
+	 walt -i hg19.dbindex -r read_file1.fq,read_file2.fq,read_file3.fq -o reads_1_mapping.sam
+	 
+For paired-end reads, -1 and -2 options are used for the mate read files.
+    
+    walt -i hg19.dbindex -1 read_1.fq -2 read_2.fq -o paired_mapping.sam
+    
+Similarly, WALT supports comma-separated list of read files for paired-end mapping. WALT produces one mapping output file for each pair of read files. The output file names will be appended "_p1", "_p2", and so on. One other thing to note is the mate 1 and mate 2 paired files should be in the same order.
+
+	 walt -i hg19.dbindex -1 read_file1_1.fq,read_file2_1.fq,read_file3_1.fq \ 
+	                      -2 read_file1_2.fq,read_file2_2.fq,read_file3_2.fq \
+	                      -o paired_mapping.sam
+
+The default number of maximum allowed mismatches is 6. The maximum allowed mismatches can be set using -m option.
+
+    walt -i hg19.dbindex -r read_1.fq -m 4 -o reads_1_mapping.sam
 
 
-#### Searching Options ####
-
- --search [file]	Search in the specified genome. Provide the path to the fasta file. Index file should be in the same directory.
-
-
- --pe 			Search will be done in paired-end mode.
-
-
- --seq [file]		Input sequences in fastq format [file]. This option is used for single-end reads.
-
-
- --seq1 [file]		Input sequences in fastq format [file] (First file). Use this option to indicate the first file of paired-end reads. 
-
-
- --seq2 [file]		Input sequences in fastq format [file] (Second file). Use this option to indicate the second file of paired-end reads.  
-
- -o [file]		Output of the mapped sequences. The default is "output".
-
-
- -e [float]		Maximum allowed edit distance (default 8% of the read length).
-
-
- --min [int]		Min distance allowed between a pair of end sequences (default: 0).
-
-
- --max [int]		Max distance allowed between a pair of end sequences (default: 500).
 
 
 
- --threads, -t [int]	Set the number of CPU threads (default: 1).
-
-
- --pbat 		Mapping the BS-seq from pbat protocol.
-
-
-
-To see the list of options, use "-?" or "-help".
 
 Note
 -------
