@@ -47,10 +47,10 @@ paired-end reads
 
 | Option | Short Option | Type | Default | Brief Description |
 | :---------------: | :---------------: | :-----:|:-----:| :-----|
-| --help | -h | String | NULL | Show the help information. |
-| --version | -v | String | NULL | Show current version of BitMapperBS. |
-| --index | -i | String | NULL | Generate an index from the specified fasta file. |
-| --search | NULL| String | NULL | Search in the specified genome. Provide the path to the fasta file. Index file should be in the same directory. |
+| --help                 | -h | String | NULL | Show the help information. |
+| --version           | -v | String | NULL | Show current version of BitMapperBS. |
+| --index          | -i | String | NULL | Generate an index from the specified fasta file. |
+| --search              | NULL| String | NULL | Search in the specified genome. Provide the path to the fasta file. Index file should be in the same directory. |
 
 
 
