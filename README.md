@@ -45,7 +45,7 @@ paired-end reads
 
 
 
-| Option | Short Option | Type | Default | Brief Description |
+| long Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
 | --help | -h | String | NULL | Show the help information. |
 | --version | -v | String | NULL | Show current version of BitMapperBS. |
