@@ -74,6 +74,7 @@ paired-end reads
 | :------: | :---------------: | :-----:|:-----:| :-----|
 | --search | NULL| String | NULL | Provide the path to the fasta file when aligning.|
 | --fast | NULL| String | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
+| --sensitive | NULL| String | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
 | --pe | NULL| NULL | NULL | Searching will be done in paired-end mode. |
 | --seq | NULL| String | NULL | Provide the name of single-end read file. |
 | --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file. |
