@@ -57,6 +57,7 @@ int CommandLine_process (int argc, char *argv[])
       {"pe",		no_argument,  	    &is_pairedEnd,		1},
 	  ///{ "local",    no_argument,        &is_local,    1},
 	  { "sensitive", no_argument,      &is_local,  0},
+	  { "fast", no_argument, &is_local, 1},
 	  { "pbat", no_argument, &pbat, 1},
       {"index",		required_argument,  0, 			'i'},
       {"search",	required_argument,  0,			'g'},
@@ -255,6 +256,8 @@ void Print_H()
 
   fprintf(stdout,"Searching Options:\n");
   fprintf(stdout," --search [file]\tSearch in the specified genome. Provide the path to the fasta file. \n\t\t\tIndex file should be in the same directory.\n");
+  fprintf(stdout," --fast \t\tSet bitmapperBS in fast mode (default). This option is only available in paired-end mode.\n");
+  fprintf(stdout," --sensitive \t\tSet bitmapperBS in sensitive mode. This option is only available in paired-end mode.\n");
   fprintf(stdout," --pe \t\t\tSearch will be done in paired-end mode.\n");
   fprintf(stdout," --seq [file]\t\tInput sequences in fastq format [file]. This option is used  \n\t\t\tfor single-end reads.\n");
   fprintf(stdout," --seq1 [file]\t\tInput sequences in fastq format [file] (First file). \n\t\t\tUse this option to indicate the first file of \n\t\t\tpaired-end reads. \n");
