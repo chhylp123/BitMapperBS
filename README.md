@@ -31,16 +31,7 @@ from directional protocol.
     cd BitMapperBS/for_old_machine_sse4.2
     make
 
-(4) If BitMapperBS cannot build index due to the errors of psascan, please improve the permission of psascan 
-    
-    sudo chmod 777 psascan
-
-or compile psascan from source code 
-    
-    wget https://www.cs.helsinki.fi/group/pads/software/pSAscan/pSAscan-0.1.0.tar.bz2
-    tar -jxvf pSAscan-0.1.0.tar.bz2
-    cd pSAscan-0.1.0/src
-    make
+(4) Note that users need to type password while building using "make" command. 
     
 
 ### Indexing Genome ###

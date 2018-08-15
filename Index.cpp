@@ -609,7 +609,8 @@ void createIndex(char *fileName, char *indexName)
 
   fprintf(stdout, "command_string: %s\n", command_string);
 
-  ///int error = system(command_string);
+  int error = system(command_string);
+  error = system("rm *.sa5");
 
 
 

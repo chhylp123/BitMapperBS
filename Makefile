@@ -6,10 +6,16 @@ SOURCES = saca-k.cpp bwt.cpp uint40.h Bitmapper_main.cpp Process_CommandLines.cp
 OBJECTS = $(SOURCES:.c=.o)
 EXECUTABLE = bitmapperBS
 
-
+.ONESHELL:
 all: $(SOURCES) $(EXECUTABLE)
 	rm -rf *.o
-	chmod 777 psascan
+	cd libdivsufsort-2.0.1/
+	cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX="/usr/local" .
+	make
+	sudo make install
+	cd ../pSAscan-0.1.0/src 
+	make
+	cp psascan ../../
 
 $(EXECUTABLE): $(OBJECTS) 
 	$(CC) $(OBJECTS) -o $@ $(LDFLAGS) -lpthread -O3 -mpopcnt -mavx2
