@@ -6,13 +6,21 @@ BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequenc
 
 
 
-Introduction
+### Introduction ###
 -------  
 
 Here are the implementations of "BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequencing". 
 BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads
 from directional protocol. 
 
+
+### Build Requirements ###
+
+(1) An ANSI C Compiler (e.g. GNU GCC).
+
+(2) CMake.
+
+(3) CMake-supported build tool.
 
 
 
@@ -30,6 +38,8 @@ from directional protocol.
 
     cd BitMapperBS/for_old_machine_sse4.2
     make
+
+If you have problem with the "make" part of the compile procedure described below, please contact us (chhy@mail.ustc.edu.cn).
 
     
 
