@@ -35,6 +35,12 @@ from directional protocol.
     
     sudo chmod 777 psascan
 
+or compile psascan from source code 
+    
+    wget https://www.cs.helsinki.fi/group/pads/software/pSAscan/pSAscan-0.1.0.tar.bz2
+    tar -jxvf pSAscan-0.1.0.tar.bz2
+    cd pSAscan-0.1.0/src
+    make
     
 
 ### Indexing Genome ###
