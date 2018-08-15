@@ -31,9 +31,11 @@ from directional protocol.
     cd BitMapperBS/for_old_machine_sse4.2
     make
 
-(4) If BitMapperBS cannot build index, try:
+(4) If BitMapperBS cannot build index due to the errors of psascan, please improve the permission of psascan 
     
     sudo chmod 777 psascan
+
+    
 
 ### Indexing Genome ###
     
