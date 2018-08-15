@@ -39,7 +39,7 @@ from directional protocol.
     cd BitMapperBS/for_old_machine_sse4.2
     make
 
-If you have problem with the "make" part of the compile procedure described below, please contact us (chhy@mail.ustc.edu.cn).
+If you have problem with the "make" part described above, please contact us (chhy@mail.ustc.edu.cn).
 
     
 
