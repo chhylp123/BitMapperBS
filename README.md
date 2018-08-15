@@ -23,6 +23,10 @@ from directional protocol.
 (3) CMake-supported build tool.
 
 
+### Supported platforms ###
+
+BitMapperBS has been successfully tested using six CPU threads on a computer with a six-core Intel Core i7-8770k processor and 64GB RAM, running Ubuntu 16.04. The indexes, reference genomes and reads were stored in a Solid State Drive (SSD) to minimize the loading time.
+
 
 ### Installation ###
 (1) Download the source code from Github
