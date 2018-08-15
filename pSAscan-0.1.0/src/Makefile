@@ -4,7 +4,7 @@ CFLAGS = -Wall -Wextra -pedantic -Wshadow -funroll-loops -pthread -std=c++0x -DN
 
 all: psascan
 psascan: main.cpp
-	$(CC) $(CFLAGS) -o psascan ./psascan_src/utils.cpp main.cpp -ldivsufsort -ldivsufsort64 -fopenmp
+	$(CC) $(CFLAGS) -o psascan ./psascan_src/utils.cpp main.cpp -I ../../libdivsufsort-2.0.1/include -L ../../libdivsufsort-2.0.1/lib -ldivsufsort -ldivsufsort64 -fopenmp
 clean:
 	/bin/rm -f *.o
 nuclear:

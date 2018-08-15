@@ -9,7 +9,8 @@ EXECUTABLE = bitmapperBS
 
 .ONESHELL:
 all: $(SOURCES) $(EXECUTABLE)
-	rm -rf *.o; cd libdivsufsort-2.0.1/; cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX="/usr/local" .; make; sudo make install; cd ../pSAscan-0.1.0/src; make; cp psascan ../../; chmod 777 psascan
+	rm -rf *.o; cd libdivsufsort-2.0.1/; cmake -DCMAKE_BUILD_TYPE="Release" .; make; cd ../pSAscan-0.1.0/src; make; cp psascan ../../; chmod 777 psascan
+	#rm -rf *.o; cd libdivsufsort-2.0.1/; cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX="/usr/local" .; make; sudo make install; cd ../pSAscan-0.1.0/src; make; cp psascan ../../; chmod 777 psascan
 	#rm -rf *.o
 	#cd libdivsufsort-2.0.1/
 	#cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX="/usr/local" .
@@ -28,5 +29,3 @@ clean:
 	rm -f *.o *~ \#* bitmapper_BS
 #relase:
 	#chmod 777 psascan
-
-

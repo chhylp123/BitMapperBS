@@ -31,7 +31,6 @@ from directional protocol.
     cd BitMapperBS/for_old_machine_sse4.2
     make
 
-(4) Note that users need to type password while building using "make" command. 
     
 
 ### Indexing Genome ###
