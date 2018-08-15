@@ -16,7 +16,7 @@ from directional protocol.
 
 ### Build Requirements ###
 
-(1) An ANSI C Compiler (e.g. GNU GCC).
+(1) G++.
 
 (2) CMake.
 
