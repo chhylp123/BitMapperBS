@@ -28,7 +28,7 @@ from directional protocol.
 
 (2) When building the index for the human genome, BitMapperBS requires about 10GB RAM and 60GB disk space.
 
-(3) When aligning the bs-seqs to the human genome, BitMapperBS requires about 7GB RAM. 
+(3) When aligning the bs-seq to the human genome, BitMapperBS requires about 7GB RAM. 
 
 ### Supported platforms ###
 
