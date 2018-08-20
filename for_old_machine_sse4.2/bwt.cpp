@@ -1017,8 +1017,20 @@ void new_version_pSAscan_build_sa(bitmapper_bs_iter text_length, char *refer)
 
 	fclose(tmp_SA);
 
+	free(refer);
+
+
 
 	int error = system("./psascan tmp_ref.tmp -m 8192");
+
+
+	tmp_SA = fopen("tmp_ref.tmp", "r");
+	refer = (char*)malloc(sizeof(char)*(text_length + 1));
+	fread(refer, sizeof(char), text_length, tmp_SA);
+	fclose(tmp_SA);
+
+
+
 
 	error = system("rm tmp_ref.tmp");
 
@@ -1118,46 +1130,22 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 	///bwt_warp_number = sizeof(bwt_string_type)* 8 / 2;
 	///this is the number of bwt_string_type representing bwt string (does not include occ)
 	bitmapper_bs_iter bwt_length = (text_length + 1) / bitmapper_index_params.bwt_warp_number + 1;
-	///this is the number of bwt_string_type representing occ line
-	///这里要改
-	/**
-	unsigned int occ_byte_length = (occ_line_number * 4 * sizeof(unsigned int))
-		/ (sizeof(bwt_string_type)) + 1;
-	**/
-	/**
-	bitmapper_bs_iter occ_byte_length = (occ_line_number * 4 * sizeof(unsigned short))
-		/ (sizeof(bwt_string_type)) + 1;
-    **/
-	/**
-    bitmapper_bs_iter occ_byte_length
-        = (occ_line_number * 2 * sizeof(unsigned char) + high_occ_line_number * 2 * sizeof(unsigned int))
-                                         / (sizeof(bwt_string_type)) + 1;
-	**/
-
-	/**
-	bitmapper_bs_iter occ_byte_length
-		= (occ_line_number * 2 * sizeof(unsigned char)+high_occ_line_number * 2 * sizeof(unsigned int))
-		/ (sizeof(bwt_string_type)) + 1;
-	**/
 
 	bitmapper_bs_iter occ_byte_length
 		= (occ_line_number * 2 * sizeof(unsigned short))/ (sizeof(bwt_string_type)) + 1;
 
 
 
-	bwt = (bwt_string_type *)malloc(sizeof(bwt_string_type)*(bwt_length + occ_byte_length + 1));
-
-
-
-
+	
 	bitmapper_bs_iter SA_flag_length = text_length + 1;
 	bitmapper_bs_iter SA_flag_occ_length = (text_length + 1) / bitmapper_index_params.compress_SA_flag + 1;
 
 	bitmapper_bs_iter SA_flag_byte_length = (SA_flag_length + SA_flag_occ_length * SA_counter_length + 1)
 		/ bitmapper_index_params.SA_flag_warp_number + 1;
 
-	SA_flag_string_type* SA_flag = (SA_flag_string_type *)malloc
-		(sizeof(SA_flag_string_type)*SA_flag_byte_length);
+
+
+	
 
 
 
@@ -1169,30 +1157,11 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 	///这里要改
 	high_occ_table_type* high_occ_table;
 	bitmapper_bs_iter high_occ_table_length = ((text_length + 1) / bitmapper_index_params.idependent_high_compress_occ + 1) * 2 + 1;
-	high_occ_table = (high_occ_table_type*)malloc(sizeof(high_occ_table_type)*high_occ_table_length);
 	
 
 
-
-	///这里SA要改
-	///for (i = 0; i < SA_flag_length + SA_occ_byte_length + 1; i++)
-	for (i = 0; i < SA_flag_byte_length; i++)
-	{
-		SA_flag[i] = (SA_flag_string_type)0;
-	}
-
-
-
-
-
-	for (i = 0; i < bwt_length + occ_byte_length + 1; i++)
-	{
-		bwt[i] = (bwt_string_type)0;
-	}
-
-
-	fprintf(stdout, "bwt_length=%llu,occ_byte_length=%llu, bwt_length+occ_byte_length=%llu\n",
-		bwt_length, occ_byte_length, bwt_length + occ_byte_length);
+	
+	
 
 
 
@@ -1255,6 +1224,62 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 
 	printf("SA has been generated!\n");
+
+
+
+
+
+
+
+
+
+
+
+
+
+	bwt = (bwt_string_type *)malloc(sizeof(bwt_string_type)*(bwt_length + occ_byte_length + 1));
+	SA_flag_string_type* SA_flag = (SA_flag_string_type *)malloc(sizeof(SA_flag_string_type)*SA_flag_byte_length);
+	high_occ_table = (high_occ_table_type*)malloc(sizeof(high_occ_table_type)*high_occ_table_length);
+
+
+	///这里SA要改
+	///for (i = 0; i < SA_flag_length + SA_occ_byte_length + 1; i++)
+	for (i = 0; i < SA_flag_byte_length; i++)
+	{
+		SA_flag[i] = (SA_flag_string_type)0;
+	}
+
+	for (i = 0; i < bwt_length + occ_byte_length + 1; i++)
+	{
+		bwt[i] = (bwt_string_type)0;
+	}
+
+
+	fprintf(stdout, "bwt_length=%llu,occ_byte_length=%llu, bwt_length+occ_byte_length=%llu\n",
+		bwt_length, occ_byte_length, bwt_length + occ_byte_length);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     for (j = 0; j <= 4; j++)
 		nacgt[j] = 0;//nacgt[0][j] = 0;
 
