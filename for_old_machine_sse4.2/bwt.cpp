@@ -1019,9 +1019,10 @@ void new_version_pSAscan_build_sa(bitmapper_bs_iter text_length, char *refer)
 
 	free(refer);
 
-
-
-	int error = system("./psascan tmp_ref.tmp -m 8192");
+	int error;
+	
+	error = system("rm tmp_ref.tmp.sa5");
+	error = system("./psascan tmp_ref.tmp -m 8192");
 
 
 	tmp_SA = fopen("tmp_ref.tmp", "r");
@@ -2059,7 +2060,7 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 	/*************************************debug*******************************************/
 
 
-
+	/**
 	for (hash_table_i = 0; hash_table_i < bitmapper_index_params.hash_table_16_mer_size - 1; hash_table_i++)
 	{
 
@@ -2111,18 +2112,11 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 
 	}
+	**/
 
 
 
-	fwrite(&bitmapper_index_params.hash_table_16_mer_size, sizeof(bitmapper_bs_iter), 1, fb);
-	fwrite(bitmapper_index_params.hash_table_16_mer_high_32, 
-			sizeof(unsigned int), bitmapper_index_params.hash_table_16_mer_size, fb);
-	fwrite(bitmapper_index_params.hash_table_16_mer_low_8,
-		sizeof(unsigned char), bitmapper_index_params.hash_table_16_mer_size, fb);
 
-
-
-	printf("hash table has been writed!\n");
 
 
 
@@ -2130,6 +2124,17 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 	/*************************************debug*******************************************/
 
+
+
+	fwrite(&bitmapper_index_params.hash_table_16_mer_size, sizeof(bitmapper_bs_iter), 1, fb);
+	fwrite(bitmapper_index_params.hash_table_16_mer_high_32,
+		sizeof(unsigned int), bitmapper_index_params.hash_table_16_mer_size, fb);
+	fwrite(bitmapper_index_params.hash_table_16_mer_low_8,
+		sizeof(unsigned char), bitmapper_index_params.hash_table_16_mer_size, fb);
+
+
+
+	printf("hash table has been writed!\n");
 
 
 
@@ -2154,6 +2159,7 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 	/*******************************debug block*******************************************/
 
+	/**
 
 	bitmapper_index_params.bwt = bwt;
 	bitmapper_index_params.high_occ_table = high_occ_table;
@@ -2266,7 +2272,7 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 	fprintf(stdout, "nacgt[4] = %llu \n", nacgt[4]);
 
 
-
+	**/
 
 
 
