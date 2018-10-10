@@ -22,7 +22,7 @@ In some cases, BitMapperBS cannot build index successfully, for example, report:
 
 (2) Copy pscan (binary file) to the folder of BitMapperBS.
 
-If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
+<font color=red>If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).</font>
 
 ### Build Requirements ###
 
