@@ -16,7 +16,7 @@ from directional protocol.
 
 ### - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Please Note!!! (update on October 10, 2018)` ###
 
-In some rare cases, BitMapperBS cannot build index successfully, for example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and pscan (binary file) cannot be compiled from source code automatically. In this case, please compile pscan manually, and copy it to the folder of BitMapperBS. The detailed steps are listed as follows: 
+In most cases, BitMapperBS can be built from source code automatically, and be implemented successfully. However, in some rare cases, BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and pscan (binary file) cannot be compiled from source code automatically. In this case, please compile pscan manually, and copy it to the folder of BitMapperBS. The detailed steps are listed as follows: 
 
 (1) Download pscan from https://www.cs.helsinki.fi/group/pads/pSAscan.html, and complie it from source code.
 
