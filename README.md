@@ -13,10 +13,16 @@ Here are the implementations of "BitMapperBS: a fast and accurate read aligner f
 BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads
 from directional protocol. 
 
-### <font color=red> Please note!!! (commits on October 10, 2018)</font>###
 
+### Please Note!!! (update on October 10, 2018)###
 
+For some users, BitMapperBS cannot build index, for example, report, "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and pscan (binary file) cannot be compile from source code automatically. In this case, please compile pscan manually, and copy it to the folder of BitMapperBS. The detailed steps are listed as follows: 
 
+(1) Download pscan from https://www.cs.helsinki.fi/group/pads/pSAscan.html, and complie it from source code.
+
+(2) Copy pscan (binary file) to the folder of BitMapperBS.
+
+If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
 
 ### Build Requirements ###
 
