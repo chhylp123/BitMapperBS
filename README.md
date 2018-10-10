@@ -14,9 +14,9 @@ BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for W
 from directional protocol. 
 
 
-### Please Note!!! (update on October 10, 2018)###
+### Please Note!!! (update on October 10, 2018) ###
 
-For some users, BitMapperBS cannot build index, for example, report, "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and pscan (binary file) cannot be compile from source code automatically. In this case, please compile pscan manually, and copy it to the folder of BitMapperBS. The detailed steps are listed as follows: 
+In some cases, BitMapperBS cannot build index successfully, for example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and pscan (binary file) cannot be compile from source code automatically. In this case, please compile pscan manually, and copy it to the folder of BitMapperBS. The detailed steps are listed as follows: 
 
 (1) Download pscan from https://www.cs.helsinki.fi/group/pads/pSAscan.html, and complie it from source code.
 
@@ -59,6 +59,10 @@ BitMapperBS has been successfully tested using six CPU threads on a computer wit
 
     cd BitMapperBS/for_old_machine_sse4.2
     make
+
+(4) (update on October 10, 2018) In some cases, BitMapperBS cannot build index successfully, for example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and pscan (binary file) cannot be compile from source code automatically. In this case, please compile pscan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it to the folder of BitMapperBS. 
+
+
 
 If you have problem with the "make" part described above, please contact us (chhy@mail.ustc.edu.cn).
 
