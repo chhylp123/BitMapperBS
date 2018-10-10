@@ -13,6 +13,10 @@ Here are the implementations of "BitMapperBS: a fast and accurate read aligner f
 BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads
 from directional protocol. 
 
+### <font color=red> Please note!!! (commits on October 10, 2018)</font>###
+
+
+
 
 ### Build Requirements ###
 
