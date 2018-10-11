@@ -78,6 +78,8 @@ If you have problem with the "make" part described above, please contact us (chh
     
     ./bitmapperBS --index <genome file name>
 
+The suffix of the index file should be '.index.*'.
+
 - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If BitMapperBS reports: "sh: 1: ./psascan: not found" when building index, this means that psascan did not compiled and installed successfully. BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS.`
 
 
@@ -145,6 +147,8 @@ For example, to make an index for human genome (GRCH38):
 	./bitmapperBS --index human_genome.fa
    
 The suffix of the index file should be '.index.*'.
+
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If BitMapperBS reports: "sh: 1: ./psascan: not found" when building index, this means that psascan did not compiled and installed successfully. BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS.`
 
 (2) **Quality and Adapter Trimming**
 
