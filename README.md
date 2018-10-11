@@ -16,7 +16,7 @@ from directional protocol.
 
 ### - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Please Note!!! (update on October 10, 2018)` ###
 
-In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually, and copy it to the folder of BitMapperBS. The detailed steps are listed as follows: 
+In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually, and copy it (binary file of psascan) to the folder of BitMapperBS. The detailed steps are listed as follows: 
 
 (1) Download psascan from https://www.cs.helsinki.fi/group/pads/pSAscan.html, and complie it from source code.
 
@@ -66,7 +66,7 @@ BitMapperBS has been successfully tested using six CPU threads on a computer wit
 
 - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If system reports: "cmake: not found" or "psascan_src/inmem_psascan_src/divsufsort_template.h:42:24: fatal error: divsufsort.h: not found", please install CMake in your system.`
 
-(4) (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it to the folder of BitMapperBS. 
+(4) (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS. 
 
 
 
@@ -78,7 +78,7 @@ If you have problem with the "make" part described above, please contact us (chh
     
     ./bitmapperBS --index <genome file name>
 
-- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If BitMapperBS reports: "sh: 1: ./psascan: not found" when building index, this means that psascan did not compiled and installed successfully. BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it to the folder of BitMapperBS.`
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If BitMapperBS reports: "sh: 1: ./psascan: not found" when building index, this means that psascan did not compiled and installed successfully. BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS.`
 
 
 ### Quality and Adapter Trimming ###
