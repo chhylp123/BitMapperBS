@@ -134,10 +134,10 @@ paired-end reads
 | --fast | NULL| String | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
 | --sensitive | NULL| String | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
 | --pe | NULL| NULL | NULL | Searching will be done in paired-end mode. |
-| --seq | NULL| String | NULL | Provide the name of single-end read file (.fastq format). |
-| --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file. |
-| --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file. |
-| -o | -o | String | output | Provide the name of output file. |
+| --seq | NULL| String | NULL | Provide the name of single-end read file (fastq format). |
+| --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file (fastq format). |
+| --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file (fastq format). |
+| -o | -o | String | output | Provide the name of output file (sam format). |
 | -e | -e | Double | 0.08 | Set the edit distance rate of read length, which is between 0 and 1. |
 | --min | NULL | Int | 0 | Minimum distance between a pair of end sequences. |
 | --max | NULL | Int | 0 | Maximum distance between a pair of end sequences. |
