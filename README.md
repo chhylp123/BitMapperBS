@@ -25,6 +25,17 @@ In most cases, BitMapperBS can be compiled from source code automatically, and i
 
 If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
 
+### - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Please Note!!! (update on November 6, 2018)` ###
+
+If BitMapperBS reports “Illegal instruction”, please check whether your CPU supports AVX2 instructions or not. If your CPU does not support AVX2 instructions, please use the SSE4.2 version of BitMapperBS. The detailed steps are listed as follows: 
+
+(1) cd BitMapperBS/for_old_machine_sse4.2
+
+(2) make
+
+If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
+
+
 
 ### Build Requirements ###
 
