@@ -11,6 +11,8 @@
 
 #include <math.h>
 #include<stdint.h>
+#include <zlib.h>
+
 
 /**
 typedef struct
@@ -25,6 +27,10 @@ typedef struct
 **/
 #define READ_NAME_INIT_LENGTH 20
 #define READ_SEQ_INIT_LENGTH 155
+#define E_FORMAT 0
+#define FASTQ 1
+#define FASTQGZ 2
+
 
 
 typedef struct
@@ -108,7 +114,7 @@ void init_single_read(Read* read);
 
 inline int inputReads_single_pure(Read *seqList1);
 
-int initiReadAllReads(char *fileName1, char *fileName2, unsigned char pairedEnd);
+int initiReadAllReads(char *fileName1, char *fileName2, unsigned char pairedEnd, int* format);
 void Unmapped_process(char *fileName);
 int inputReads_single( Read *seqList1);
 int inputReads_paired( Read *seqList1, Read *seqList2);

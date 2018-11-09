@@ -31,6 +31,9 @@ int sub_block_init_length = 10000;
 Output_buffer buffer_out;
 Output_buffer_sub_block tmp_buffer_sub_block;
 
+Output_methy_buffer buffer_methy_out;
+Methylation tmp_methy_sub_block;
+
 ///void finalizeTXOutput()
 void finalizeOutput()
 {
@@ -69,6 +72,32 @@ void init_output_buffer(int thread_number)
 	buffer_out.all_buffer_end = 0;
 }
 
+
+void init_output_methy_buffer(int thread_number)
+{
+
+
+	///ouput_buffer_size
+	///size是空间大小
+	buffer_methy_out.sub_block_size = methylation_buffer_times * thread_number;
+	
+	buffer_methy_out.sub_block_number = 0;
+
+	buffer_methy_out.sub_buffer =
+		(Methylation*)malloc(sizeof(Methylation)*buffer_methy_out.sub_block_size);
+
+
+	
+	for (int i = 0; i < buffer_methy_out.sub_block_size; i++)
+	{
+		init_methylation(&(buffer_methy_out.sub_buffer[i]), methylation_size);
+	}
+
+	buffer_methy_out.all_buffer_end = 0;
+	
+}
+
+
 inline int if_empty_buffer()
 {
 
@@ -82,10 +111,40 @@ inline int if_empty_buffer()
 	}
 }
 
+
+inline int if_empty_methy_buffer()
+{
+
+	if (buffer_methy_out.sub_block_number == 0)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+
+
 inline int if_full_buffer()
 {
 
 	if (buffer_out.sub_block_number >= buffer_out.sub_block_size)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+
+inline int if_full_methy_buffer()
+{
+
+	if (buffer_methy_out.sub_block_number >= buffer_methy_out.sub_block_size)
 	{
 		return 1;
 	}
@@ -122,6 +181,69 @@ inline void pop_single_buffer(Output_buffer_sub_block* curr_sub_block)
 
 }
 
+
+
+
+
+
+
+
+///buffer_methy_out
+
+
+inline void pop_single_methy_buffer(Methylation* curr_sub_block)
+{
+	buffer_methy_out.sub_block_number--;
+
+	
+
+
+	
+
+	///这个空间应该是genome_cut+1
+	bitmapper_bs_iter* cut_index;   ///这个要交换
+	///这四个数组构成一个完整的元素
+	bitmapper_bs_iter* sites;  ///这个要交换
+	uint16_t* r_length;  ///这个要交换
+	uint16_t* r_size;  ///这个要交换
+	char** reads;  ///这个要交换
+
+
+	cut_index = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].cut_index;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].cut_index = curr_sub_block->cut_index;
+	curr_sub_block->cut_index = cut_index;
+
+	sites = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].sites;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].sites = curr_sub_block->sites;
+	curr_sub_block->sites = sites;
+
+	r_length = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_length;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_length = curr_sub_block->r_length;
+	curr_sub_block->r_length = r_length;
+
+	r_size = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size = curr_sub_block->r_size;
+	curr_sub_block->r_size = r_size;
+
+
+	reads = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads = curr_sub_block->reads;
+	curr_sub_block->reads = reads;
+
+	
+	curr_sub_block->current_size = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].current_size;
+	///这个clear应该是可以不要的
+	clear_methylation(&(buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number]));
+
+
+
+
+}
+
+
+
+
+
 ///这个是要把curr_sub_block的结果放到队列中
 inline void push_single_buffer(Output_buffer_sub_block* curr_sub_block)
 {
@@ -152,16 +274,87 @@ inline void push_single_buffer(Output_buffer_sub_block* curr_sub_block)
 }
 
 
+
+
+///这个是要把curr_sub_block的结果放到队列中
+inline void push_single_methy_buffer(Methylation* curr_sub_block)
+{
+
+
+
+	///这个空间应该是genome_cut+1
+	bitmapper_bs_iter* cut_index;   ///这个要交换
+	///这四个数组构成一个完整的元素
+	bitmapper_bs_iter* sites;  ///这个要交换
+	uint16_t* r_length;  ///这个要交换
+	uint16_t* r_size;  ///这个要交换
+	char** reads;  ///这个要交换
+
+
+	cut_index = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].cut_index;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].cut_index = curr_sub_block->cut_index;
+	curr_sub_block->cut_index = cut_index;
+
+	sites = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].sites;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].sites = curr_sub_block->sites;
+	curr_sub_block->sites = sites;
+
+	r_length = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_length;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_length = curr_sub_block->r_length;
+	curr_sub_block->r_length = r_length;
+
+	r_size = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size = curr_sub_block->r_size;
+	curr_sub_block->r_size = r_size;
+
+
+	reads = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads = curr_sub_block->reads;
+	curr_sub_block->reads = reads;
+
+
+
+
+
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].current_size = curr_sub_block->current_size;
+	///这个应该放在临界区之外做
+	///clear_methylation(curr_sub_block);
+
+
+
+	buffer_methy_out.sub_block_number++;
+}
+
+
 void finish_output_buffer()
 {
-	///这个也要加互斥锁
-	pthread_mutex_lock(&o_doneMutex);
-	buffer_out.all_buffer_end++;
+	if (output_methy == 0)
+	{
+		///这个也要加互斥锁
+		pthread_mutex_lock(&o_doneMutex);
+		buffer_out.all_buffer_end++;
 
 
-	if (buffer_out.all_buffer_end == THREAD_COUNT)
-		pthread_cond_signal(&o_flushCond);
-	pthread_mutex_unlock(&o_doneMutex);
+		if (buffer_out.all_buffer_end == THREAD_COUNT)
+			pthread_cond_signal(&o_flushCond);
+		pthread_mutex_unlock(&o_doneMutex);
+	}
+	else
+	{
+
+
+
+		///这个也要加互斥锁
+		pthread_mutex_lock(&o_doneMutex);
+		buffer_methy_out.all_buffer_end++;
+
+
+		if (buffer_methy_out.all_buffer_end == THREAD_COUNT)
+			pthread_cond_signal(&o_flushCond);
+		pthread_mutex_unlock(&o_doneMutex);
+	}
+
+	
 }
 
 
@@ -190,6 +383,36 @@ void push_results_to_buffer(Output_buffer_sub_block* sub_block)
 	pthread_mutex_unlock(&o_queueMutex);
 	
 }
+
+
+void push_methy_to_buffer(Methylation* methy)
+{
+
+	pthread_mutex_lock(&o_queueMutex);
+
+	///if_full_buffer
+	while (if_full_methy_buffer())
+	{
+		///按道理这个信号量似乎不用发
+		///因为队列不可能一边满一边空
+		pthread_cond_signal(&o_flushCond);
+
+
+		pthread_cond_wait(&o_stallCond, &o_queueMutex);
+	}
+
+
+	push_single_methy_buffer(methy);
+
+
+
+	pthread_cond_signal(&o_flushCond);
+	pthread_mutex_unlock(&o_queueMutex);
+
+	clear_methylation(methy);
+
+}
+
 
 void* pop_buffer(void*)
 {
@@ -237,6 +460,71 @@ void* pop_buffer(void*)
 	{
 		buffer_out.sub_block_number--;
 		fprintf(output_file, "%s", buffer_out.sub_buffer[buffer_out.sub_block_number].buffer);
+
+	}
+
+}
+
+
+
+void* pop_methy_buffer(void*)
+{
+	///要求这个大小和每个线程内部的block大小一样
+	int my_methylation_size = methylation_size;
+
+	init_methylation(&tmp_methy_sub_block, my_methylation_size);
+
+
+	while (buffer_methy_out.all_buffer_end<THREAD_COUNT)
+	{
+
+		pthread_mutex_lock(&o_queueMutex);
+
+
+		while (if_empty_methy_buffer() && (buffer_methy_out.all_buffer_end<THREAD_COUNT))
+		{
+			///按道理这个信号量似乎不用发
+			///因为队列不可能一边满一边空
+			pthread_cond_signal(&o_stallCond);
+
+
+			pthread_cond_wait(&o_flushCond, &o_queueMutex);
+		}
+
+
+		if (!if_empty_methy_buffer())
+		{
+			pop_single_methy_buffer(&tmp_methy_sub_block);
+		}
+
+		pthread_cond_signal(&o_stallCond);
+		pthread_mutex_unlock(&o_queueMutex);
+
+		if (tmp_methy_sub_block.current_size != 0)
+		{
+			///这个纯输出，不用划分，划分在计算线程里做
+			///assign_cuts(&tmp_methy_sub_block);
+
+			output_methylation(&tmp_methy_sub_block);
+
+			///按道理也是不用清理的
+			///clear_methylation(&tmp_methy_sub_block);
+		}
+
+	}
+
+
+	while (buffer_methy_out.sub_block_number>0)
+	{
+		buffer_methy_out.sub_block_number--;
+		
+		///这个纯输出，不用划分，划分在计算线程里做
+		///assign_cuts(&tmp_methy_sub_block);
+
+		output_methylation(&(buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number]));
+
+		///按道理也是不用清理的
+		///clear_methylation(&tmp_methy_sub_block);
 
 	}
 

@@ -14,17 +14,32 @@ BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for W
 from directional protocol. 
 
 
-### - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Please Note!!! (update on October 10, 2018)` ###
+### - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Please Note!!!` ###
 
-In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and pscan (binary file) cannot be compiled from source code automatically. In this case, please compile pscan manually, and copy it to the folder of BitMapperBS. The detailed steps are listed as follows: 
+>1. (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually, and copy it (binary file of psascan) to the folder of BitMapperBS. The detailed steps are listed as follows: 
 
-(1) Download pscan from https://www.cs.helsinki.fi/group/pads/pSAscan.html, and complie it from source code.
+ >> (1) Download psascan from https://www.cs.helsinki.fi/group/pads/pSAscan.html, and complie it from source code.
 
-(2) Copy pscan (binary file) to the folder of BitMapperBS.
+ >> (2) Copy psascan (binary file) to the folder of BitMapperBS.
+
+>2. (update on November 6, 2018) If BitMapperBS reports “Illegal instruction”, please check whether your CPU supports AVX2 instructions or not. If your CPU does not support AVX2 instructions, please use the SSE4.2 version of BitMapperBS. The detailed steps are listed as follows: 
+  >> (1) cd BitMapperBS/for_old_machine_sse4.2
+
+  >> (2) make
+
+
+>3. (update on November 9, 2018) If you get the error message "fatal error: zlib.h: no such file or directory" when compiling BitMapperBS, please install zlib. In Ubuntu, please try:
+   >> sudo apt-get install libz-dev zlib1g-dev
+
+check whether your CPU supports AVX2 instructions or not. If your CPU does not support AVX2 instructions, please use the SSE4.2 version of BitMapperBS. The detailed steps are listed as follows: 
+
+>4. (update on November 9, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
+   >> (1) To reduce the amount of disk I/O, you can use the compressed fastq files (.fastq.gz or .fq.gz format) rather than the uncompressed raw files (.fastq or .fq format).
+   
+   >> (2) The input files and output files of BitMapperBS (e.g., the read files and the output SAM files) can be saved in fast solid-state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
 
 
 If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
-
 
 ### Build Requirements ###
 
@@ -33,6 +48,8 @@ If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.ed
 (2) CMake.
 
 (3) CMake-supported build tool.
+
+(4) zlib library. 
 
 ### Hardware&software requirements ###
 
@@ -56,13 +73,17 @@ BitMapperBS has been successfully tested using six CPU threads on a computer wit
     
     cd BitMapperBS
     make
+    
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If system reports: "cmake: not found" or "psascan_src/inmem_psascan_src/divsufsort_template.h:42:24: fatal error: divsufsort.h: not found", please install CMake in your system.`
 
 (3) If the CPU does not support AVX2 instructions (in this case, BitMapperBS may be slower without AVX2 instructions)
 
     cd BitMapperBS/for_old_machine_sse4.2
     make
 
-(4) (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and pscan (binary file) cannot be compiled from source code automatically. In this case, please compile pscan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it to the folder of BitMapperBS. 
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If system reports: "cmake: not found" or "psascan_src/inmem_psascan_src/divsufsort_template.h:42:24: fatal error: divsufsort.h: not found", please install CMake in your system.`
+
+(4) (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS. 
 
 
 
@@ -73,6 +94,10 @@ If you have problem with the "make" part described above, please contact us (chh
 ### Indexing Genome ###
     
     ./bitmapperBS --index <genome file name>
+
+The suffix of the index file should be '.index.*'.
+
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If BitMapperBS reports: "sh: 1: ./psascan: not found" when building index, this means that psascan did not compiled and installed successfully. BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS.`
 
 
 ### Quality and Adapter Trimming ###
@@ -115,10 +140,10 @@ paired-end reads
 | --fast | NULL| String | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
 | --sensitive | NULL| String | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
 | --pe | NULL| NULL | NULL | Searching will be done in paired-end mode. |
-| --seq | NULL| String | NULL | Provide the name of single-end read file. |
-| --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file. |
-| --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file. |
-| -o | -o | String | output | Provide the name of output file. |
+| --seq | NULL| String | NULL | Provide the name of single-end read file (fastq format). |
+| --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file (fastq format). |
+| --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file (fastq format). |
+| -o | -o | String | output | Provide the name of output file (sam format). |
 | -e | -e | Double | 0.08 | Set the edit distance rate of read length, which is between 0 and 1. |
 | --min | NULL | Int | 0 | Minimum distance between a pair of end sequences. |
 | --max | NULL | Int | 0 | Maximum distance between a pair of end sequences. |
@@ -139,6 +164,8 @@ For example, to make an index for human genome (GRCH38):
 	./bitmapperBS --index human_genome.fa
    
 The suffix of the index file should be '.index.*'.
+
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If BitMapperBS reports: "sh: 1: ./psascan: not found" when building index, this means that psascan did not compiled and installed successfully. BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS.`
 
 (2) **Quality and Adapter Trimming**
 
@@ -165,7 +192,12 @@ The default maximum allowed edit distance is 8% of read length (0.08). This opti
 
     ./bitmapperBS --search ../../ssd/human_genome.fa --seq ../../ssd/read.fq -t 6 -e 0.04
 
+### Changelog ###
 
+(1) November 9, 2018: version 1.0.0.1 released. 
+     
+     >>Added support of BitMapperBS to accept read files compressed by gzip (.fq.gz or .fastq.gz).
+     >>BitMapperBS fixed the bug of the SAM flag when aligning the single-end reads from pbat protocol.
 
 ### Contacts ###
 
@@ -183,3 +215,4 @@ Haoyu Cheng: chhy@mail.ustc.edu.cn
 
 
 [1] Kärkkäinen J, Kempa D, Puglisi S J. Parallel external memory suffix sorting[C]//Annual Symposium on Combinatorial Pattern Matching. Springer, Cham, 2015: 329-342.
+

@@ -35,7 +35,7 @@
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.0.0";
+char *versionN = "1.0.0.1";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
@@ -54,9 +54,11 @@ long long ambiguous_mapped_read[MAX_Thread];
 
 int batch_read_size = 50000;
 
+
 OPT_FIELDS **_chhy_optionalFields;
 
 FILE *schema_out_fp;
+FILE *schema_input_fp;
 
 pthread_mutex_t readinputMutex;
 pthread_mutex_t queueMutex;
@@ -102,10 +104,10 @@ int sub_block_inner_size = 500;
 int sub_block_number = 100;
 int ouput_buffer_size = 100;
 
+int read_format = 1;
 
 
-
-
+Methylation_Output methy_out;
 
 
 
@@ -216,11 +218,45 @@ unsigned int get_total_reads_number()
     return enq_i;
 }
 
-
-
-void Prepare_alignment(char *genFileName,_rg_name_l *chhy_ih_refGenName,int chhy_refChromeCont)
+void open_methy_output(Methylation_Output* methy_out, char* file_name, bitmapper_bs_iter cut_length)
 {
+	(*methy_out).genome_cut = genome_cuts;
+	(*methy_out).files = (FILE**)malloc(sizeof(FILE*)*(*methy_out).genome_cut);
+	(*methy_out).cut_index = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*((*methy_out).genome_cut + 1));
+	int i = 0;
+	char tmp_file_name[SEQ_MAX_LENGTH];
 
+	for (i = 0; i < (*methy_out).genome_cut; i++)
+	{
+		sprintf(tmp_file_name, "%s%d", file_name, i);
+		(*methy_out).files[i] = fopen(tmp_file_name, "w");
+		(*methy_out).cut_index[i] = 0;
+
+		fprintf((*methy_out).files[i], "%llu\t", cut_length*i);
+
+		if (cut_length*(i + 1) - 1 > _msf_refGenLength - 1)
+		{
+			fprintf((*methy_out).files[i], "%llu\n", _msf_refGenLength - 1);
+
+			if (i != (*methy_out).genome_cut - 1)
+			{
+				fprintf(stderr, "ERROR!\n");
+				exit(0);
+
+			}
+		}
+		else
+		{
+			fprintf((*methy_out).files[i], "%llu\n", cut_length*(i + 1) - 1);
+		}
+	}
+	(*methy_out).cut_index[(*methy_out).genome_cut] = 0;
+
+}
+
+void Prepare_alignment(char* outputFileName, char *genFileName, _rg_name_l *chhy_ih_refGenName, int chhy_refChromeCont, int i_read_format)
+{
+	read_format = i_read_format;
 
 	int ijkijk = 0;
 
@@ -342,8 +378,10 @@ void Prepare_alignment(char *genFileName,_rg_name_l *chhy_ih_refGenName,int chhy
 	}
 	**/
 
-	schema_out_fp = get_Ouput_Dec();
-
+	if (output_methy == 0)
+	{
+		schema_out_fp = get_Ouput_Dec();
+	}
 
 	map_cigar[0] = 'M';
 	map_cigar[1] = 'M';
@@ -355,12 +393,228 @@ void Prepare_alignment(char *genFileName,_rg_name_l *chhy_ih_refGenName,int chhy
 	map_cigar[7] = 'D';
 	map_cigar[8] = 'I';
 
+	if (output_methy == 1)
+	{
+
+		///cut_length = (_msf_refGenLength * 2) / genome_cuts;
+		cut_length = _msf_refGenLength / genome_cuts;
+		////if ((_msf_refGenLength * 2) % genome_cuts != 0)
+		if (_msf_refGenLength % genome_cuts != 0)
+		{
+			cut_length = cut_length + 1;
+		}
+
+		open_methy_output(&methy_out, outputFileName, cut_length);
+	}
+
+	///exit(0);
 
 }
 
 
 
+void Prepare_methy(char *genFileName, _rg_name_l *chhy_ih_refGenName, int chhy_refChromeCont)
+{
+	_ih_refGenName = chhy_ih_refGenName;
+	refChromeCont = chhy_refChromeCont;
+	_msf_refGenLength = getRefGenomeLength();
 
+	schema_input_fp = get_index_file();
+
+}
+
+int get_single_result(int* flag, bitmapper_bs_iter pos, char* buffer)
+{
+	
+
+}
+
+int init_genome_cut(uint16_t* C_methy, uint16_t* total, uint16_t* G_methy, char* ref_genome, bitmapper_bs_iter length,
+	bitmapper_bs_iter index, bitmapper_bs_iter extra_length)
+{
+	if (index == 0)
+	{
+		length = length + extra_length;
+		memset(C_methy, 0, sizeof(uint16_t)*length);
+		memset(total, 0, sizeof(uint16_t)*length);
+		memset(G_methy, 0, sizeof(uint16_t)*length);
+	}
+	else if (index == genome_cuts - 1)
+	{
+		memset(C_methy, 0, sizeof(uint16_t)*length);
+		memset(total, 0, sizeof(uint16_t)*length);
+		memset(G_methy, 0, sizeof(uint16_t)*length);
+
+
+		memcpy(C_methy, C_methy + length, extra_length*sizeof(uint16_t));
+		memcpy(total, total + length, extra_length*sizeof(uint16_t));
+		memcpy(G_methy, G_methy + length, extra_length*sizeof(uint16_t));
+
+		memset(C_methy + length, 0, sizeof(uint16_t)*extra_length);
+		memset(total + length, 0, sizeof(uint16_t)*extra_length);
+		memset(G_methy + length, 0, sizeof(uint16_t)*extra_length);
+
+		///注意对最后一个元素,这东西不能要
+		///length = length + extra_length;
+
+		fseek(schema_input_fp, extra_length*-1, SEEK_CUR);
+	}
+	else
+	{
+		
+		memset(C_methy, 0, sizeof(uint16_t)*length);
+		memset(total, 0, sizeof(uint16_t)*length);
+		memset(G_methy, 0, sizeof(uint16_t)*length);
+		
+
+		memcpy(C_methy, C_methy + length, extra_length*sizeof(uint16_t));
+		memcpy(total, total + length, extra_length*sizeof(uint16_t));
+		memcpy(G_methy, G_methy + length, extra_length*sizeof(uint16_t));
+
+		memset(C_methy + length, 0, sizeof(uint16_t)*extra_length);
+		memset(total + length, 0, sizeof(uint16_t)*extra_length);
+		memset(G_methy + length, 0, sizeof(uint16_t)*extra_length);
+
+		length = length + extra_length;
+
+		fseek(schema_input_fp, extra_length*-1, SEEK_CUR);
+	}
+
+	
+	if (fread(ref_genome, 1, length, schema_input_fp) != length)
+	{
+		fprintf(stderr, "index: %llu\n",index);
+
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+		
+}
+
+inline int get_direction(uint16_t flag)
+{
+	if (flag&IS_PAIRED) ///双端
+	{
+		if ((flag & 0x50) == 0x50) return 2; //Read1, reverse comp. == OB, flag是83
+		else if (flag & 0x40) return 1; //Read1, forward == OT, flag是99
+		else if ((flag & 0x90) == 0x90) return 1; //Read2, reverse comp. == OT, flag是147
+		else if (flag & 0x80) return 2; //Read2, forward == OB, flag是163
+		return 0; //One of the above should be set!
+	}
+	else   ///单端
+	{
+		if (flag & 0x10) return 2; //Reverse comp. == OB
+		return 1; //OT
+	}
+
+}
+
+void methy_extract(int thread_id, char* file_name)
+{
+
+	cut_length = _msf_refGenLength / genome_cuts;
+	////if ((_msf_refGenLength * 2) % genome_cuts != 0)
+	if (_msf_refGenLength % genome_cuts != 0)
+	{
+		cut_length = cut_length + 1;
+	}
+
+
+	FILE* read_file;
+	int i = 0;
+	char tmp_file_name[SEQ_MAX_LENGTH];
+	char buffer[SEQ_MAX_LENGTH];
+	bitmapper_bs_iter start_pos, end_pos;
+	bitmapper_bs_iter length;
+	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH; ///这个是为了处理边界情况
+	uint16_t* C_methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	uint16_t* total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	uint16_t* G_methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	char* ref_genome = (char*)malloc(sizeof(char)*(cut_length + extra_length));
+	bitmapper_bs_iter flag;
+	bitmapper_bs_iter pos;
+	int direction;
+	bitmapper_bs_iter inner_i;
+	
+
+	for (i = 0; i < genome_cuts; i++)
+	{
+		sprintf(tmp_file_name, "%s%d", file_name, i);
+		read_file = fopen(tmp_file_name, "r");
+
+		fscanf(read_file, "%llu\t%llu\n", &start_pos, &end_pos);
+
+		length = end_pos - start_pos + 1;
+
+		if (!init_genome_cut(C_methy, total, G_methy, ref_genome, length, i, extra_length))
+		{
+			fprintf(stderr, "ERROR when reading genome!\n");
+			exit(0);
+		}
+
+		
+		///while (fscanf(read_file, "%u\t%llu\t%s\n", &flag, &pos, buffer) != EOF) ///如果flag是uin16_t,再这样读，就会出错，我擦
+		while (fscanf(read_file, "%llu\t%llu\t%s\n", &flag, &pos, buffer) != EOF)
+		{
+
+
+
+
+			direction = get_direction(flag);
+
+			if (direction == 1)
+			{
+				inner_i = 0;
+				while (buffer[inner_i]!='\0')
+				{
+					
+					if (buffer[inner_i] == 'C')
+					{
+						C_methy[inner_i + pos - start_pos]++;
+						total[inner_i + pos - start_pos]++;
+					}
+					
+
+					inner_i++;
+				}
+			}
+			else if (direction == 2)
+			{
+				inner_i = 0;
+				while (buffer[inner_i] != '\0')
+				{
+
+					if (buffer[inner_i] == 'G')
+					{
+						G_methy[inner_i + pos - start_pos]++;
+						total[inner_i + pos - start_pos]++;
+					}
+
+
+					inner_i++;
+				}
+			}
+			else
+			{
+				fprintf(stderr, "ERROR flag!\n");
+				exit(0);
+			}
+
+			
+			
+		}
+
+
+		fclose(read_file);
+
+	}
+
+
+
+}
 
 
 
@@ -3353,6 +3607,235 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 
 
 
+inline void output_paired_methy_buffer_1(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
+	Methylation* methy)
+{
+	if ((*methy).current_size < (*methy).total_size)
+	{
+
+		///注意r_length一定要+1, 这个是为了放/0的
+		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+
+		(*methy).r_length[(*methy).current_size] = r_length;
+
+
+		result->site = result->site + _ih_refGenName[result->chrome_id].start_location - 1;
+
+
+
+		if (result->flag == 16)   ///read1比到反向互补链上了
+		{
+			///result->site = _msf_refGenLength * 2 - result->site - 1;
+
+			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
+
+			correct_read_using_cigar(result->cigar, r_read, (*methy).reads[(*methy).current_size]);
+		}
+		else  ///正向链
+		{
+			
+			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ1;
+
+			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
+		}
+
+		(*methy).r_length[(*methy).current_size] = result->flag;
+
+		(*methy).sites[(*methy).current_size] = result->site;
+
+		(*methy).cut_index[get_cut_id(methy, result->site)]++;
+
+		(*methy).current_size++;
+	}
+
+
+	if ((*methy).current_size == (*methy).total_size)
+	{
+		assign_cuts(methy);
+
+		output_methylation(methy);
+
+		clear_methylation(methy);
+	}
+
+}
+
+
+
+
+inline void output_paired_methy_buffer_2(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
+	Methylation* methy)
+{
+	if ((*methy).current_size < (*methy).total_size)
+	{
+
+		///注意r_length一定要+1, 这个是为了放/0的
+		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+
+		(*methy).r_length[(*methy).current_size] = r_length;
+
+
+		result->site = result->site + _ih_refGenName[result->chrome_id].start_location - 1;
+
+		if (result->flag == 16)   ///代表read2的反向互补链比对到了参考组的正向上, read2本身实际上比到了参考组反向互补链上
+		{
+			///result->site = _msf_refGenLength * 2 - result->site - 1;
+
+			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
+
+			correct_read_using_cigar(result->cigar, r_read, (*methy).reads[(*methy).current_size]);
+		}
+		else
+		{
+			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ2;
+
+
+			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
+		}
+
+		(*methy).r_length[(*methy).current_size] = result->flag;
+
+		(*methy).sites[(*methy).current_size] = result->site;
+
+		(*methy).cut_index[get_cut_id(methy, result->site)]++;
+
+		(*methy).current_size++;
+	}
+
+
+	if ((*methy).current_size == (*methy).total_size)
+	{
+		assign_cuts(methy);
+
+		output_methylation(methy);
+
+		clear_methylation(methy);
+	}
+
+}
+
+
+
+
+
+inline void output_paired_methy_buffer_mutiple_threads_1(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
+	Methylation* methy)
+{
+	if ((*methy).current_size < (*methy).total_size)
+	{
+
+		///注意r_length一定要+1, 这个是为了放/0的
+		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+
+		(*methy).r_length[(*methy).current_size] = r_length;
+
+
+		result->site = result->site + _ih_refGenName[result->chrome_id].start_location - 1;
+
+		if (result->flag == 16)   ///read1比到反向互补链上了
+		{
+			///result->site = _msf_refGenLength * 2 - result->site - 1;
+
+			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
+
+			correct_read_using_cigar(result->cigar, r_read, (*methy).reads[(*methy).current_size]);
+		}
+		else  ///正向链
+		{
+
+			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ1;
+
+			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
+		}
+
+		(*methy).r_length[(*methy).current_size] = result->flag;
+
+		(*methy).sites[(*methy).current_size] = result->site;
+
+		(*methy).cut_index[get_cut_id(methy, result->site)]++;
+
+		(*methy).current_size++;
+	}
+
+
+
+	if ((*methy).current_size == (*methy).total_size)
+	{
+		assign_cuts(methy);
+
+		push_methy_to_buffer(methy);
+
+		///这个不用清理，因为再push 的时候清理过了
+		///clear_methylation(methy);
+
+	}
+
+
+}
+
+
+
+
+inline void output_paired_methy_buffer_mutiple_threads_2(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
+	Methylation* methy)
+{
+	if ((*methy).current_size < (*methy).total_size)
+	{
+
+		///注意r_length一定要+1, 这个是为了放/0的
+		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+
+		(*methy).r_length[(*methy).current_size] = r_length;
+
+
+		result->site = result->site + _ih_refGenName[result->chrome_id].start_location - 1;
+
+		if (result->flag == 16)   ///代表read2的反向互补链比对到了参考组的正向上, read2本身实际上比到了参考组反向互补链上
+		{
+			///result->site = _msf_refGenLength * 2 - result->site - 1;
+
+			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
+
+			correct_read_using_cigar(result->cigar, r_read, (*methy).reads[(*methy).current_size]);
+		}
+		else
+		{
+			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ2;
+
+
+			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
+		}
+
+		(*methy).r_length[(*methy).current_size] = result->flag;
+
+		(*methy).sites[(*methy).current_size] = result->site;
+
+		(*methy).cut_index[get_cut_id(methy, result->site)]++;
+
+		(*methy).current_size++;
+	}
+
+
+
+	if ((*methy).current_size == (*methy).total_size)
+	{
+		assign_cuts(methy);
+
+		push_methy_to_buffer(methy);
+
+		///这个不用清理，因为再push 的时候清理过了
+		///clear_methylation(methy);
+
+	}
+
+
+}
+
+
+
+
+
+
 inline void directly_output_read1(char* name, char* read, char* r_read, char* qulity,
 	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length)
 {
@@ -3993,6 +4476,149 @@ inline void output_sam_end_to_end(char* name, char* read, char* r_read, char* qu
 
 
 
+inline void output_methy_end_to_end(char* name, char* read, char* r_read, char* qulity,
+	bitmapper_bs_iter site,
+	bitmapper_bs_iter end_site,
+	bitmapper_bs_iter start_site,
+	int err, char* best_cigar, int read_length,
+	Methylation* methy)
+{
+	int flag;
+
+	if ((*methy).current_size < (*methy).total_size)
+	{
+
+		///只要site >= _msf_refGenLength，就能判断出是正向还是反向
+
+		///矫正之后的read长度就是这个
+		bitmapper_bs_iter r_length = end_site - start_site + 1;
+
+		///注意r_length一定要+1, 这个是为了放/0的
+		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length+1);
+
+		(*methy).r_length[(*methy).current_size] = r_length;
+
+		if (site >= _msf_refGenLength)
+		{
+
+			site = site + end_site;
+
+			site = _msf_refGenLength * 2 - site - 1;
+
+			correct_read_using_cigar(best_cigar, r_read, (*methy).reads[(*methy).current_size]);
+
+			flag = 16;
+
+		}
+		else
+		{
+			site = site + start_site;
+
+			correct_read_using_cigar(best_cigar, read, (*methy).reads[(*methy).current_size]);
+
+			flag = 0;
+		}
+
+
+
+		(*methy).r_length[(*methy).current_size] = flag;
+
+		(*methy).sites[(*methy).current_size] = site;
+
+		(*methy).cut_index[get_cut_id(methy, site)]++;
+
+		(*methy).current_size++;
+
+	}
+
+	if ((*methy).current_size == (*methy).total_size)
+	{
+		assign_cuts(methy);
+
+		output_methylation(methy);
+
+		clear_methylation(methy);
+	}
+
+
+
+
+}
+
+
+
+
+
+inline void output_methy_end_to_end_output_buffer(char* name, char* read, char* r_read, char* qulity,
+	bitmapper_bs_iter site,
+	bitmapper_bs_iter end_site,
+	bitmapper_bs_iter start_site,
+	int err, char* best_cigar, int read_length, Methylation* methy)
+{
+
+	int flag;
+
+	if ((*methy).current_size < (*methy).total_size)
+	{
+
+		///只要site >= _msf_refGenLength，就能判断出是正向还是反向
+
+		///矫正之后的read长度就是这个
+		bitmapper_bs_iter r_length = end_site - start_site + 1;
+
+		///注意r_length一定要+1, 这个是为了放/0的
+		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+
+		(*methy).r_length[(*methy).current_size] = r_length;
+
+		if (site >= _msf_refGenLength)
+		{
+
+			site = site + end_site;
+
+			site = _msf_refGenLength * 2 - site - 1;
+
+			correct_read_using_cigar(best_cigar, r_read, (*methy).reads[(*methy).current_size]);
+
+			flag = 16;
+
+		}
+		else
+		{
+			site = site + start_site;
+
+			correct_read_using_cigar(best_cigar, read, (*methy).reads[(*methy).current_size]);
+
+			flag = 0;
+		}
+
+		(*methy).r_length[(*methy).current_size] = flag;
+
+		(*methy).sites[(*methy).current_size] = site;
+
+		(*methy).cut_index[get_cut_id(methy, site)]++;
+
+		(*methy).current_size++;
+
+	}
+
+	if ((*methy).current_size == (*methy).total_size)
+	{
+		assign_cuts(methy);
+
+		push_methy_to_buffer(methy);
+
+		///这个不用清理，因为再push 的时候清理过了
+		///clear_methylation(methy);
+
+	}
+
+
+
+
+}
+
+
 
 inline void output_sam_end_to_end_output_buffer(char* name, char* read, char* r_read, char* qulity,
 	bitmapper_bs_iter site,
@@ -4245,14 +4871,16 @@ inline void output_sam_end_to_end_pbat_output_buffer(char* name, char* read, cha
 
 		map_location = _msf_refGenLength * 2 - map_location - 1;
 
-		flag = 0;
+		///flag = 0;
+		flag = 16;
 
 	}
 	else
 	{
 		map_location = map_location + start_site;
 
-		flag = 16;
+		///flag = 16;
+		flag = 0;
 	}
 
 
@@ -4356,7 +4984,8 @@ inline void output_sam_end_to_end_pbat_output_buffer(char* name, char* read, cha
 
 
 
-	if (flag == 16)
+	///if (flag == 16)
+	if (flag == 0)
 	{
 
 		char tmp_c;
@@ -4464,16 +5093,16 @@ inline void output_sam_end_to_end_pbat(char* name, char* read, char* r_read, cha
 
 		map_location = _msf_refGenLength * 2 - map_location - 1;
 
-		///flag = 16;
-		flag = 0;
+		flag = 16;
+		///flag = 0;
 
 	}
 	else
 	{
 		map_location = map_location + start_site;
 
-		///flag = 0;
-		flag = 16;
+		flag = 0;
+		///flag = 16;
 	}
 
 
@@ -4515,7 +5144,8 @@ inline void output_sam_end_to_end_pbat(char* name, char* read, char* r_read, cha
 
 
 
-	if (flag == 16)
+	///if (flag == 16)
+	if (flag == 0)
 	{
 		fprintf(schema_out_fp, "%s\t", read);
 
@@ -4553,6 +5183,75 @@ inline void output_sam_end_to_end_pbat(char* name, char* read, char* r_read, cha
 
 	fprintf(schema_out_fp, "NM:i:%d\n", err);
 
+
+
+
+}
+
+
+
+inline void output_methy_end_to_end_pbat(char* name, char* read, char* r_read, char* qulity,
+	bitmapper_bs_iter site,
+	bitmapper_bs_iter end_site,
+	bitmapper_bs_iter start_site,
+	int err, char* best_cigar, int read_length,
+	Methylation* methy)
+{
+
+	int flag;
+
+	if ((*methy).current_size < (*methy).total_size)
+	{
+
+		///只要site >= _msf_refGenLength，就能判断出是正向还是反向
+
+		///矫正之后的read长度就是这个
+		bitmapper_bs_iter r_length = end_site - start_site + 1;
+
+		///注意r_length一定要+1, 这个是为了放/0的
+		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+
+		(*methy).r_length[(*methy).current_size] = r_length;
+
+		if (site >= _msf_refGenLength)
+		{
+
+			site = site + end_site;
+
+			site = _msf_refGenLength * 2 - site - 1;
+
+			correct_read_using_cigar(best_cigar, r_read, (*methy).reads[(*methy).current_size]);
+
+			flag = 16;
+
+		}
+		else
+		{
+			site = site + start_site;
+
+			correct_read_using_cigar(best_cigar, read, (*methy).reads[(*methy).current_size]);
+
+			flag = 0;
+		}
+
+		(*methy).r_length[(*methy).current_size] = flag;
+
+		(*methy).sites[(*methy).current_size] = site;
+
+		(*methy).cut_index[get_cut_id(methy, site)]++;
+
+		(*methy).current_size++;
+
+	}
+
+	if ((*methy).current_size == (*methy).total_size)
+	{
+		assign_cuts(methy);
+
+		output_methylation(methy);
+
+		clear_methylation(methy);
+	}
 
 
 
@@ -4754,7 +5453,7 @@ inline int calculate_best_map_cigar_end_to_end_return(bitmapper_bs_iter* candida
 inline int calculate_best_map_cigar_end_to_end_output_buffer(seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold, char* tmp_ref,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
-	char* best_cigar, Output_buffer_sub_block* sub_block)
+	char* best_cigar, Output_buffer_sub_block* sub_block, Methylation* methy)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -4809,21 +5508,29 @@ inline int calculate_best_map_cigar_end_to_end_output_buffer(seed_votes* candida
 
 	}
 
-	output_sam_end_to_end_output_buffer
-		(name, read, r_read, qulity,
-		candidate_votes[0].site,
-		candidate_votes[0].end_site,
-		start_site,
-		candidate_votes[0].err, best_cigar,
-		read_length, sub_block);
-	/**
-	output_sam_end_to_end_result_string(name, read, r_read, qulity,
-		candidate_votes[0].site,
-		candidate_votes[0].end_site,
-		start_site,
-		candidate_votes[0].err, best_cigar,
-		read_length, result_string);
-	**/
+	if (output_methy == 1)
+	{
+		output_methy_end_to_end_output_buffer
+			(name, read, r_read, qulity,
+			candidate_votes[0].site,
+			candidate_votes[0].end_site,
+			start_site,
+			candidate_votes[0].err, best_cigar,
+			read_length, methy);
+	}
+	else
+	{
+		output_sam_end_to_end_output_buffer
+			(name, read, r_read, qulity,
+			candidate_votes[0].site,
+			candidate_votes[0].end_site,
+			start_site,
+			candidate_votes[0].err, best_cigar,
+			read_length, sub_block);
+	}
+
+	
+
 
 
 
@@ -4843,7 +5550,7 @@ inline int calculate_best_map_cigar_end_to_end_output_buffer(seed_votes* candida
 inline int calculate_best_map_cigar_end_to_end_pbat_output_buffer(seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold, char* tmp_ref,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
-	char* best_cigar, Output_buffer_sub_block* sub_block)
+	char* best_cigar, Output_buffer_sub_block* sub_block, Methylation* methy)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -4898,15 +5605,28 @@ inline int calculate_best_map_cigar_end_to_end_pbat_output_buffer(seed_votes* ca
 
 	}
 
+	if (output_methy == 1)
+	{
+		output_methy_end_to_end_output_buffer
+			(name, read, r_read, qulity,
+			candidate_votes[0].site,
+			candidate_votes[0].end_site,
+			start_site,
+			candidate_votes[0].err, best_cigar,
+			read_length, methy);
+	}
+	else
+	{
+		output_sam_end_to_end_pbat_output_buffer(name, read, r_read, qulity,
+			candidate_votes[0].site,
+			candidate_votes[0].end_site,
+			start_site,
+			candidate_votes[0].err, best_cigar,
+			read_length, sub_block);
 
+	}
 
-	output_sam_end_to_end_pbat_output_buffer(name, read, r_read, qulity,
-		candidate_votes[0].site,
-		candidate_votes[0].end_site,
-		start_site,
-		candidate_votes[0].err, best_cigar,
-		read_length, sub_block);
-
+	
 
 
 	return 0;
@@ -4925,7 +5645,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat_output_buffer(seed_votes* ca
 inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold, char* tmp_ref,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
-	char* best_cigar)
+	char* best_cigar, Methylation* methy)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -4967,6 +5687,9 @@ inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitm
 		}
 		else
 		{
+
+			///fprintf(stderr, "path_length: %llu\n", path_length);
+
 			///double start = Get_T();
 			calculate_cigar_end_to_end(candidate_votes[0].site, path, path_length, best_cigar, t_length);
 			///total = total + Get_T() - start;
@@ -4984,13 +5707,28 @@ inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitm
 	}
 
 
-	
-	output_sam_end_to_end(name, read, r_read, qulity,
-		candidate_votes[0].site,
-		candidate_votes[0].end_site,
-		start_site,
-		candidate_votes[0].err, best_cigar,
-		read_length);
+
+
+
+	if (output_methy == 1)
+	{
+		output_methy_end_to_end(name, read, r_read, qulity,
+			candidate_votes[0].site,
+			candidate_votes[0].end_site,
+			start_site,
+			candidate_votes[0].err, best_cigar,
+			read_length, 
+			methy);
+	}
+	else
+	{
+		output_sam_end_to_end(name, read, r_read, qulity,
+			candidate_votes[0].site,
+			candidate_votes[0].end_site,
+			start_site,
+			candidate_votes[0].err, best_cigar,
+			read_length);
+	}
 	
 
 
@@ -5009,7 +5747,7 @@ inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitm
 inline int calculate_best_map_cigar_end_to_end_pbat(seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold, char* tmp_ref,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
-	char* best_cigar)
+	char* best_cigar, Methylation* methy)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -5111,14 +5849,26 @@ inline int calculate_best_map_cigar_end_to_end_pbat(seed_votes* candidate_votes,
 
 	}
 
+	if (output_methy == 1)
+	{
+		output_methy_end_to_end_pbat(name, read, r_read, qulity,
+			candidate_votes[0].site,
+			candidate_votes[0].end_site,
+			start_site,
+			candidate_votes[0].err, best_cigar,
+			read_length, methy);
+	}
+	else
+	{
+		output_sam_end_to_end_pbat(name, read, r_read, qulity,
+			candidate_votes[0].site,
+			candidate_votes[0].end_site,
+			start_site,
+			candidate_votes[0].err, best_cigar,
+			read_length);
+	}
 
-
-	output_sam_end_to_end_pbat(name, read, r_read, qulity,
-		candidate_votes[0].site,
-		candidate_votes[0].end_site,
-		start_site,
-		candidate_votes[0].err, best_cigar,
-		read_length);
+	
 
 
 
@@ -5139,7 +5889,8 @@ inline int calculate_best_map_cigar_end_to_end_pbat(seed_votes* candidate_votes,
 inline int try_process_unique_mismatch_end_to_end(
 	bitmapper_bs_iter read_length, char* read, char* r_read, char* qulity, char* cigar, char* name,
 	bitmapper_bs_iter* locates,
-	bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, int* get_error)
+	bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, int* get_error,
+	Methylation* methy)
 {
 	bitmapper_bs_iter tmp_SA_length = 0;
 
@@ -5217,13 +5968,26 @@ inline int try_process_unique_mismatch_end_to_end(
 	{
 		sprintf(cigar, "%dM", read_length);
 
+		if (output_methy == 1)
+		{
+			output_methy_end_to_end(name, read, r_read, qulity,
+				locates[0],
+				read_length - 1,
+				0,
+				0,
+				cigar, read_length, methy);
+		}
+		else
+		{
+			output_sam_end_to_end(name, read, r_read, qulity,
+				locates[0],
+				read_length - 1,
+				0,
+				0,
+				cigar, read_length);
+		}
 
-		output_sam_end_to_end(name, read, r_read, qulity,
-			locates[0],
-			read_length - 1,
-			0,
-			0,
-			cigar, read_length);
+		
 
 		return 1;
 
@@ -5240,7 +6004,8 @@ inline int try_process_unique_mismatch_end_to_end(
 inline int try_process_unique_mismatch_end_to_end_pbat(
 		bitmapper_bs_iter read_length, char* read, char* r_read, char* qulity, char* cigar, char* name,
 		bitmapper_bs_iter* locates,
-		bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, int* get_error)
+		bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, int* get_error, 
+		Methylation* methy)
 	{
 		bitmapper_bs_iter tmp_SA_length = 0;
 
@@ -5318,12 +6083,26 @@ inline int try_process_unique_mismatch_end_to_end_pbat(
 		{
 			sprintf(cigar, "%dM", read_length);
 
-			output_sam_end_to_end_pbat(name, read, r_read, qulity,
-				locates[0],
-				read_length - 1,
-				0,
-				0,
-				cigar, read_length);
+			if (output_methy == 1)
+			{
+				output_methy_end_to_end_pbat(name, read, r_read, qulity,
+					locates[0],
+					read_length - 1,
+					0,
+					0,
+					cigar, read_length, methy);
+			}
+			else
+			{
+				output_sam_end_to_end_pbat(name, read, r_read, qulity,
+					locates[0],
+					read_length - 1,
+					0,
+					0,
+					cigar, read_length);
+			}
+
+			
 
 
 			return 1;
@@ -5345,7 +6124,8 @@ inline int try_process_unique_mismatch_end_to_end_output_buffer(
 	bitmapper_bs_iter read_length, char* read, char* r_read, char* qulity, char* cigar, char* name,
 	bitmapper_bs_iter* locates,
 	bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, 
-	Output_buffer_sub_block* sub_block, int* get_error)
+	Output_buffer_sub_block* sub_block, int* get_error,
+	Methylation* methy)
 {
 	bitmapper_bs_iter tmp_SA_length = 0;
 
@@ -5422,14 +6202,26 @@ inline int try_process_unique_mismatch_end_to_end_output_buffer(
 	{
 		sprintf(cigar, "%dM", read_length);
 
+		if (output_methy == 1)
+		{
+			output_methy_end_to_end_output_buffer(name, read, r_read, qulity,
+				locates[0],
+				read_length - 1,
+				0,
+				0,
+				cigar, read_length, methy);
+		}
+		else
+		{
+			output_sam_end_to_end_output_buffer(name, read, r_read, qulity,
+				locates[0],
+				read_length - 1,
+				0,
+				0,
+				cigar, read_length, sub_block);
+		}
 
-
-		output_sam_end_to_end_output_buffer(name, read, r_read, qulity,
-			locates[0],
-			read_length - 1,
-			0,
-			0,
-			cigar, read_length, sub_block);
+		
 
 
 		return 1;
@@ -5458,7 +6250,7 @@ inline int try_process_unique_mismatch_end_to_end_pbat_get_output_buffer(
 		bitmapper_bs_iter read_length, char* read, char* r_read, char* qulity, char* cigar, char* name,
 		bitmapper_bs_iter* locates,
 		bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, 
-		Output_buffer_sub_block* sub_block, int* get_error)
+		Output_buffer_sub_block* sub_block, int* get_error, Methylation* methy)
 	{
 		bitmapper_bs_iter tmp_SA_length = 0;
 
@@ -5535,14 +6327,26 @@ inline int try_process_unique_mismatch_end_to_end_pbat_get_output_buffer(
 		{
 			sprintf(cigar, "%dM", read_length);
 
+			if (output_methy == 1)
+			{
+				output_methy_end_to_end_output_buffer(name, read, r_read, qulity,
+					locates[0],
+					read_length - 1,
+					0,
+					0,
+					cigar, read_length, methy);
+			}
+			else
+			{
+				output_sam_end_to_end_pbat_output_buffer(name, read, r_read, qulity,
+					locates[0],
+					read_length - 1,
+					0,
+					0,
+					cigar, read_length, sub_block);
+			}
 
-
-			output_sam_end_to_end_pbat_output_buffer(name, read, r_read, qulity,
-				locates[0],
-				read_length - 1,
-				0,
-				0,
-				cigar, read_length, sub_block);
+			
 
 
 			return 1;
@@ -8281,6 +9085,19 @@ read1_end:
 
 int Map_Pair_Seq_end_to_end_fast(int thread_id)
 {
+
+	int my_methylation_size = methylation_size;
+
+	Methylation methy;
+
+
+	if (output_methy == 1)
+	{
+		init_methylation(&methy, my_methylation_size);
+	}
+
+
+
 	long long enq_i = 0;
 	mappingCnt[thread_id] = 0;
 	mappedSeqCnt[thread_id] = 0;
@@ -9016,13 +9833,31 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 				unique_matched_read++;
 
 
-				directly_output_read1(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
-					&result1, &result2, current_read1.length,
-					matched_length1, matched_length2);
 
-				directly_output_read2(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
-					&result2, &result1, current_read2.length,
-					matched_length2, matched_length1);
+
+
+
+				if (output_methy == 1)
+				{
+					output_paired_methy_buffer_1(current_read1.seq, current_read1.rseq, &result1, matched_length1,
+						&methy);
+
+					output_paired_methy_buffer_2(current_read2.seq, current_read2.rseq, &result2, matched_length2,
+						&methy);
+				
+				}
+				else
+				{
+					directly_output_read1(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
+						&result1, &result2, current_read1.length,
+						matched_length1, matched_length2);
+
+					directly_output_read2(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
+						&result2, &result1, current_read2.length,
+						matched_length2, matched_length1);
+
+				}
+
 			}
 
 
@@ -9034,6 +9869,15 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 		{
 			ambious_matched_read++;
 		}
+
+	}
+
+
+	if (methy.current_size != 0)
+	{
+		assign_cuts(&methy);
+		output_methylation(&methy);
+		clear_methylation(&methy);
 
 	}
 
@@ -9455,6 +10299,22 @@ read1_end:
 ///和一端unique一端不匹配的结果
 int Map_Pair_Seq_end_to_end(int thread_id)
 {
+
+	int my_methylation_size = methylation_size;
+
+	Methylation methy;
+
+
+	if (output_methy == 1)
+	{
+		init_methylation(&methy, my_methylation_size);
+	}
+
+
+
+
+
+
 	long long enq_i = 0;
 	mappingCnt[thread_id] = 0;
 	mappedSeqCnt[thread_id] = 0;
@@ -10696,14 +11556,35 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 			{
 				unique_matched_read++;
 
+				if (output_methy == 1)
+				{
+					/**
+					if (strcmp("@SRR6804872.31961", current_read1.name)==0)
+					{
+						fprintf(stderr, "result1.flag: %llu\n", result1.flag);
+						fprintf(stderr, "result2.flag: %llu\n", result2.flag);
+					}
+					**/
 
-				directly_output_read1(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
-					&result1, &result2, current_read1.length,
-					matched_length1, matched_length2);
+					output_paired_methy_buffer_1(current_read1.seq, current_read1.rseq, &result1, matched_length1,
+						&methy);
 
-				directly_output_read2(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
-					&result2, &result1, current_read2.length,
-					matched_length2, matched_length1);
+					output_paired_methy_buffer_2(current_read2.seq, current_read2.rseq, &result2, matched_length2,
+						&methy);
+				}
+				else
+				{
+					directly_output_read1(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
+						&result1, &result2, current_read1.length,
+						matched_length1, matched_length2);
+
+					directly_output_read2(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
+						&result2, &result1, current_read2.length,
+						matched_length2, matched_length1);
+				}
+				
+				
+				
 			}
 
 			
@@ -10716,34 +11597,18 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 			ambious_matched_read++;
 		}
 
-		/**
-		if (mapping_pair < 1 && (best_mapp_occ1 == 0 || best_mapp_occ2 == 0))
-		{
-			fprintf(stderr, "%s\n", current_read1.name);
-			fprintf(stderr, "best_mapp_occ1: %llu\n", best_mapp_occ1);
-			fprintf(stderr, "best_mapp_occ2: %llu\n", best_mapp_occ2);
-			fprintf(stderr, "*************\n");
-		}
-		**/
-
-
-
 	
-		/**
-		fprintf(stderr, "%s\n", current_read1.name);
-		fprintf(stderr, "%llu\n", best_mapp_occ1);
-		fprintf(stderr, "%llu\n", best_mapp_occ2);
-		fprintf(stderr, "*************\n");
-		
-		if (best_mapp_occ1&&best_mapp_occ2)
-		{
-			total_1++;
-		}
-		**/
-		
-
 
 		i++;
+	}
+
+
+	if (methy.current_size != 0)
+	{
+		assign_cuts(&methy);
+		output_methylation(&methy);
+		clear_methylation(&methy);
+
 	}
 
 
@@ -11053,7 +11918,24 @@ void* Map_Pair_Seq_split_fast(void* arg)
 	init_single_sub_block_pe(&curr_sub_block);
 
 	Output_buffer_sub_block current_sub_buffer;
-	init_buffer_sub_block(&current_sub_buffer);
+	Methylation methy;
+
+
+
+	if (output_methy == 1)
+	{
+		int my_methylation_size = methylation_size;
+		init_methylation(&methy, my_methylation_size);
+	}
+	else
+	{
+		init_buffer_sub_block(&current_sub_buffer);
+	}
+
+	
+
+
+
 
 	double startTime = Get_T();
 
@@ -11472,23 +12354,28 @@ void* Map_Pair_Seq_split_fast(void* arg)
 				if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
 				{
 					unique_matched_read++;
-					/**
-					directly_output_read1_return_result(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
-						&result1, &result2, read_batch1[i].length,
-						matched_length1, matched_length2, result_string);
+					
+					if (output_methy == 1)
+					{
 
-					directly_output_read2_return_result(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
-						&result2, &result1, read_batch2[i].length,
-						matched_length2, matched_length1, result_string);
-					**/
+						output_paired_methy_buffer_mutiple_threads_1(read_batch1[i].seq, read_batch1[i].rseq, &result1, matched_length1,
+							&methy);
 
-					directly_output_read1_return_buffer(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
-						&result1, &result2, read_batch1[i].length,
-						matched_length1, matched_length2, &current_sub_buffer);
+						output_paired_methy_buffer_mutiple_threads_2(read_batch2[i].seq, read_batch2[i].rseq, &result2, matched_length2,
+							&methy);
+					}
+					else
+					{
+						directly_output_read1_return_buffer(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
+							&result1, &result2, read_batch1[i].length,
+							matched_length1, matched_length2, &current_sub_buffer);
 
-					directly_output_read2_return_buffer(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
-						&result2, &result1, read_batch2[i].length,
-						matched_length2, matched_length1, &current_sub_buffer);
+						directly_output_read2_return_buffer(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
+							&result2, &result1, read_batch2[i].length,
+							matched_length2, matched_length1, &current_sub_buffer);
+					}
+
+					
 
 				}
 
@@ -11506,13 +12393,29 @@ void* Map_Pair_Seq_split_fast(void* arg)
 			i++;
 		}
 
-		current_sub_buffer.buffer[current_sub_buffer.length] = '\0';
+		if (output_methy == 0)
+		{
 
-		push_results_to_buffer(&current_sub_buffer);
+			current_sub_buffer.buffer[current_sub_buffer.length] = '\0';
 
-		current_sub_buffer.length = 0;
+			push_results_to_buffer(&current_sub_buffer);
+
+			current_sub_buffer.length = 0;
+		}
 
 	}
+
+	if (methy.current_size != 0)
+	{
+		assign_cuts(&methy);
+
+		push_methy_to_buffer(&methy);
+
+		///这个不用清理，因为再push 的时候清理过了
+		///clear_methylation(&methy);
+
+	}
+
 
 	finish_output_buffer();
 
@@ -11818,7 +12721,20 @@ void* Map_Pair_Seq_split(void* arg)
 	init_single_sub_block_pe(&curr_sub_block);
 
 	Output_buffer_sub_block current_sub_buffer;
-	init_buffer_sub_block(&current_sub_buffer);
+	
+
+	Methylation methy;
+
+	if (output_methy == 1)
+	{
+		int my_methylation_size = methylation_size;
+		init_methylation(&methy, my_methylation_size);
+	}
+	else
+	{
+		init_buffer_sub_block(&current_sub_buffer);
+	}
+
 
 	
 
@@ -12749,23 +13665,29 @@ void* Map_Pair_Seq_split(void* arg)
 				if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
 				{
 					unique_matched_read++;
-					/**
-					directly_output_read1_return_result(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
-						&result1, &result2, read_batch1[i].length,
-						matched_length1, matched_length2, result_string);
 
-					directly_output_read2_return_result(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
-						&result2, &result1, read_batch2[i].length,
-						matched_length2, matched_length1, result_string);
-					**/
 
-					directly_output_read1_return_buffer(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
-						&result1, &result2, read_batch1[i].length,
-						matched_length1, matched_length2, &current_sub_buffer);
 
-					directly_output_read2_return_buffer(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
-						&result2, &result1, read_batch2[i].length,
-						matched_length2, matched_length1, &current_sub_buffer);
+					if (output_methy == 1)
+					{
+						output_paired_methy_buffer_mutiple_threads_1(read_batch1[i].seq, read_batch1[i].rseq, &result1, matched_length1,
+							&methy);
+
+						output_paired_methy_buffer_mutiple_threads_2(read_batch2[i].seq, read_batch2[i].rseq, &result2, matched_length2,
+							&methy);
+					}
+					else
+					{
+						directly_output_read1_return_buffer(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
+							&result1, &result2, read_batch1[i].length,
+							matched_length1, matched_length2, &current_sub_buffer);
+
+						directly_output_read2_return_buffer(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
+							&result2, &result1, read_batch2[i].length,
+							matched_length2, matched_length1, &current_sub_buffer);
+					}
+
+					
 
 				}
 
@@ -12782,14 +13704,29 @@ void* Map_Pair_Seq_split(void* arg)
 		}
 
 
+		if (output_methy == 0)
+		{
+			current_sub_buffer.buffer[current_sub_buffer.length] = '\0';
 
-		current_sub_buffer.buffer[current_sub_buffer.length] = '\0';
+			push_results_to_buffer(&current_sub_buffer);
 
-		push_results_to_buffer(&current_sub_buffer);
-
-		current_sub_buffer.length = 0;
+			current_sub_buffer.length = 0;
+		}
 
 	}
+
+
+	if (methy.current_size != 0)
+	{
+		assign_cuts(&methy);
+
+		push_methy_to_buffer(&methy);
+
+		///这个不用清理，因为再push 的时候清理过了
+		///clear_methylation(&methy);
+
+	}
+
 
 
 	finish_output_buffer();
@@ -12812,6 +13749,21 @@ void* Map_Pair_Seq_split(void* arg)
 
 int Map_Single_Seq_end_to_end(int thread_id)
 {
+	///int my_methylation_size = methylation_size / THREAD_COUNT;
+	int my_methylation_size = methylation_size;
+
+	Methylation methy;
+	
+
+	if (output_methy == 1)
+	{
+		init_methylation(&methy, my_methylation_size);
+	}
+
+
+
+	
+
 	long long enq_i = 0;
 
 	mappingCnt[thread_id] = 0;
@@ -12959,6 +13911,7 @@ int Map_Single_Seq_end_to_end(int thread_id)
 	int C_site_array[SEQ_MAX_LENGTH];
 	int C_site_number;
 
+
 	int start_site;
 
 	double check_error_threshold = 0.1;
@@ -13093,7 +14046,8 @@ int Map_Single_Seq_end_to_end(int thread_id)
 			if (number_of_hits == 1 && try_process_unique_mismatch_end_to_end(
 				current_read.length, current_read.seq, current_read.rseq, current_read.qual, cigar, current_read.name,
 				locates,
-				top, tmp_ref, &match_length, current_read.length - C_site - 1, &get_error))
+				top, tmp_ref, &match_length, current_read.length - C_site - 1, &get_error,
+				&methy))
 			{
 
 				///debug_0_mismatch++;
@@ -13348,18 +14302,43 @@ int Map_Single_Seq_end_to_end(int thread_id)
 		{
 			sprintf(cigar, "%dM", current_read.length);
 
-			output_sam_end_to_end
-				(
-				current_read.name, 
-				current_read.seq, 
-				current_read.rseq, 
-				current_read.qual,
-				candidates[0],
-				current_read.length - 1,
-				0,
-				1,
-				cigar, 
-				current_read.length);
+
+
+			if (output_methy == 1)
+			{
+				output_methy_end_to_end(
+					current_read.name,
+					current_read.seq,
+					current_read.rseq,
+					current_read.qual,
+					candidates[0],
+					current_read.length - 1,
+					0,
+					1,
+					cigar,
+					current_read.length,
+					&methy);
+			}
+			else
+			{
+				output_sam_end_to_end
+					(
+					current_read.name,
+					current_read.seq,
+					current_read.rseq,
+					current_read.qual,
+					candidates[0],
+					current_read.length - 1,
+					0,
+					1,
+					cigar,
+					current_read.length);
+			}
+
+
+
+
+			
 
 			unique_matched_read++;
 			matched_read++;
@@ -13428,7 +14407,7 @@ int Map_Single_Seq_end_to_end(int thread_id)
 					(candidates_votes, &min_candidates_votes_length,
 					current_read.length, error_threshold1, tmp_ref,
 					current_read.seq, current_read.rseq, current_read.qual, cigar, path, matrix, matrix_bit, current_read.name,
-					best_cigar);
+					best_cigar, &methy);
 
 				unique_matched_read++;
 			}
@@ -13440,6 +14419,22 @@ int Map_Single_Seq_end_to_end(int thread_id)
 		}
 	}
 
+	
+	if (methy.current_size != 0)
+	{
+		assign_cuts(&methy);
+		output_methylation(&methy);
+		clear_methylation(&methy);
+
+	}
+
+	/**
+	for (i = 0; i < methy_out.genome_cut; i++)
+	{
+		fprintf(stderr, "i: %d, %llu\n", i, methy_out.cut_index[i]);
+	}
+	**/
+	
 
 	double totalMappingTime;
 	totalMappingTime = Get_T() - startTime;
@@ -13463,6 +14458,21 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 int Map_Single_Seq_end_to_end_pbat(int thread_id)
 {
+	///int my_methylation_size = methylation_size / THREAD_COUNT;
+	int my_methylation_size = methylation_size;
+
+	Methylation methy;
+
+
+	if (output_methy == 1)
+	{
+		init_methylation(&methy, my_methylation_size);
+	}
+
+
+
+
+
 	long long enq_i = 0;
 	mappingCnt[thread_id] = 0;
 	mappedSeqCnt[thread_id] = 0;
@@ -13813,7 +14823,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 			if (number_of_hits == 1 && try_process_unique_mismatch_end_to_end_pbat(
 				current_read.length, current_read.seq, current_read.rseq, current_read.qual, cigar, current_read.name,
 				locates,
-				top, tmp_ref, &match_length, current_read.length - C_site - 1, &get_error))
+				top, tmp_ref, &match_length, current_read.length - C_site - 1, &get_error, &methy))
 			{
 
 				unique_matched_read++;
@@ -14153,18 +15163,41 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 		{
 			sprintf(cigar, "%dM", current_read.length);
 
-			output_sam_end_to_end_pbat
-				(
-				current_read.name,
-				current_read.seq,
-				current_read.rseq,
-				current_read.qual,
-				candidates[0],
-				current_read.length - 1,
-				0,
-				1,
-				cigar,
-				current_read.length);
+
+			if (output_methy == 1)
+			{
+				output_methy_end_to_end_pbat
+					(
+					current_read.name,
+					current_read.seq,
+					current_read.rseq,
+					current_read.qual,
+					candidates[0],
+					current_read.length - 1,
+					0,
+					1,
+					cigar,
+					current_read.length,
+					&methy);
+			}
+			else
+			{
+				output_sam_end_to_end_pbat
+					(
+					current_read.name,
+					current_read.seq,
+					current_read.rseq,
+					current_read.qual,
+					candidates[0],
+					current_read.length - 1,
+					0,
+					1,
+					cigar,
+					current_read.length);
+
+			}
+
+
 
 			unique_matched_read++;
 			matched_read++;
@@ -14257,7 +15290,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 					(candidates_votes, &min_candidates_votes_length,
 					current_read.length, error_threshold1, tmp_ref,
 					current_read.seq, current_read.rseq, current_read.qual, cigar, path, matrix, matrix_bit, current_read.name,
-					best_cigar);
+					best_cigar, &methy);
 
 				unique_matched_read++;
 
@@ -14291,6 +15324,14 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 
 
 		i++;
+	}
+
+	if (methy.current_size != 0)
+	{
+		assign_cuts(&methy);
+		output_methylation(&methy);
+		clear_methylation(&methy);
+
 	}
 
 
@@ -14334,16 +15375,38 @@ int Map_Pair_Seq_muti_thread(int thread_id)
 {
 	///build_back_up_set();
 
-	init_Pair_Seq_input_buffer(THREAD_COUNT);
-	init_output_buffer(THREAD_COUNT);
+	
+
+	if (output_methy == 0)
+	{
+		init_output_buffer(THREAD_COUNT);
+	}
+	else
+	{
+		init_output_methy_buffer(THREAD_COUNT);
+	}
+
+	
 
 	pthread_t inputReadsHandle;
-	pthread_create(&inputReadsHandle, NULL, input_pe_reads_muti_threads, NULL);
+	init_Pair_Seq_input_buffer(THREAD_COUNT);
+
+	if (read_format == FASTQ)
+	{
+		pthread_create(&inputReadsHandle, NULL, input_pe_reads_muti_threads, NULL);
+	}
 
 
 
 	pthread_t outputResultSinkHandle;
-	pthread_create(&outputResultSinkHandle, NULL, pop_buffer, NULL);
+	if (output_methy == 0)
+	{
+		pthread_create(&outputResultSinkHandle, NULL, pop_buffer, NULL);
+	}
+	else
+	{
+		pthread_create(&outputResultSinkHandle, NULL, pop_methy_buffer, NULL);
+	}
 
 
 
@@ -14376,7 +15439,10 @@ int Map_Pair_Seq_muti_thread(int thread_id)
 
 	}
 
-	pthread_join(inputReadsHandle, NULL);
+	if (read_format == FASTQ)
+	{
+		pthread_join(inputReadsHandle, NULL);
+	}
 
 	for (i = 0; i<THREAD_COUNT; i++)
 		pthread_join(_r_threads[i], NULL);
@@ -14394,19 +15460,44 @@ int Map_Pair_Seq_muti_thread(int thread_id)
 int Map_Single_Seq_muti_thread(int thread_id)
 {
 
-	init_Single_Seq_input_buffer(THREAD_COUNT);
-	init_output_buffer(THREAD_COUNT);
+	
 
+	if (output_methy == 0)
+	{
+		init_output_buffer(THREAD_COUNT);
+	}
+	else
+	{
+		init_output_methy_buffer(THREAD_COUNT);
+	}
+	
 	pthread_t inputReadsHandle;
-	pthread_create(&inputReadsHandle, NULL, input_single_reads_muti_threads, NULL);
+
+	
+
+	init_Single_Seq_input_buffer(THREAD_COUNT);
+
+	if (read_format == FASTQ)
+	{
+		
+		pthread_create(&inputReadsHandle, NULL, input_single_reads_muti_threads, NULL);
+	}
+
+	
 
 
 
 	pthread_t outputResultSinkHandle;
-	pthread_create(&outputResultSinkHandle, NULL, pop_buffer, NULL);
+	if (output_methy == 0)
+	{
+		pthread_create(&outputResultSinkHandle, NULL, pop_buffer, NULL);
+	}
+	else
+	{
+		pthread_create(&outputResultSinkHandle, NULL, pop_methy_buffer, NULL);
+	}
 
-
-
+	
 
 	int ijkijk = 0;
 
@@ -14431,7 +15522,11 @@ int Map_Single_Seq_muti_thread(int thread_id)
 
 	}
 
-	pthread_join(inputReadsHandle, NULL);
+	if (read_format == FASTQ)
+	{
+		pthread_join(inputReadsHandle, NULL);
+	}
+
 
 	for (i = 0; i<THREAD_COUNT; i++)
 		pthread_join(_r_threads[i], NULL);
@@ -14449,16 +15544,36 @@ int Map_Single_Seq_muti_thread(int thread_id)
 int Map_Single_Seq_pbat_muti_thread(int thread_id)
 {
 
-	init_Single_Seq_input_buffer(THREAD_COUNT);
-	init_output_buffer(THREAD_COUNT);
+	
+	if (output_methy == 0)
+	{
+		init_output_buffer(THREAD_COUNT);
+	}
+	else
+	{
+		init_output_methy_buffer(THREAD_COUNT);
+	}
+
 
 	pthread_t inputReadsHandle;
-	pthread_create(&inputReadsHandle, NULL, input_single_reads_muti_threads_pbat, NULL);
 
+	init_Single_Seq_input_buffer(THREAD_COUNT);
+
+	if (read_format == FASTQ)
+	{
+		pthread_create(&inputReadsHandle, NULL, input_single_reads_muti_threads_pbat, NULL);
+	}
 
 
 	pthread_t outputResultSinkHandle;
-	pthread_create(&outputResultSinkHandle, NULL, pop_buffer, NULL);
+	if (output_methy == 0)
+	{
+		pthread_create(&outputResultSinkHandle, NULL, pop_buffer, NULL);
+	}
+	else
+	{
+		pthread_create(&outputResultSinkHandle, NULL, pop_methy_buffer, NULL);
+	}
 
 
 
@@ -14486,10 +15601,16 @@ int Map_Single_Seq_pbat_muti_thread(int thread_id)
 
 	}
 
-	pthread_join(inputReadsHandle, NULL);
+	if (read_format == FASTQ)
+	{
+		pthread_join(inputReadsHandle, NULL);
+	}
+
 
 	for (i = 0; i<THREAD_COUNT; i++)
 		pthread_join(_r_threads[i], NULL);
+
+
 
 	pthread_join(outputResultSinkHandle, NULL);
 
@@ -14565,11 +15686,10 @@ inline void load_batch_read_pbat(Read* read_batch, int batch_read_size,
 
 void* Map_Single_Seq_split(void* arg)
 {
+
 	int thread_id = *((int *)arg);
 
 	FILE* output_file = get_Ouput_Dec();
-
-	
 
 	long long enq_i = 0;
 	mappingCnt[thread_id] = 0;
@@ -14779,7 +15899,18 @@ void* Map_Single_Seq_split(void* arg)
 	init_single_sub_block_single(&curr_sub_block);
 
 	Output_buffer_sub_block current_sub_buffer;
-	init_buffer_sub_block(&current_sub_buffer);
+	Methylation methy;
+
+	
+	if (output_methy == 1)
+	{
+		int my_methylation_size = methylation_size;
+		init_methylation(&methy, my_methylation_size);
+	}
+	else
+	{
+		init_buffer_sub_block(&current_sub_buffer);
+	}
 
 
 
@@ -14822,10 +15953,10 @@ void* Map_Single_Seq_split(void* arg)
 		**/
 
 
+
 		file_flag = get_single_reads_mul_thread(&curr_sub_block);
 		obtain_reads_num = curr_sub_block.sub_block_read_number;
 		read_batch = curr_sub_block.read;
-
 
 
 		
@@ -14914,7 +16045,8 @@ void* Map_Single_Seq_split(void* arg)
 				if (number_of_hits == 1 && try_process_unique_mismatch_end_to_end_output_buffer(
 					read_batch[i].length, read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual, cigar, read_batch[i].name,
 					locates,
-					top, tmp_ref, &match_length, read_batch[i].length - C_site - 1, &current_sub_buffer, &get_error))
+					top, tmp_ref, &match_length, read_batch[i].length - C_site - 1, &current_sub_buffer, &get_error,
+					&methy))
 				{
 					direct_match++;
 
@@ -15224,32 +16356,37 @@ void* Map_Single_Seq_split(void* arg)
 				))
 			{
 				sprintf(cigar, "%dM", read_batch[i].length);
-				/**
-				output_sam_end_to_end_result_string
-					(
-					read_batch[i].name,
-					read_batch[i].seq,
-					read_batch[i].rseq,
-					read_batch[i].qual,
-					candidates[0],
-					read_batch[i].length - 1,
-					0,
-					1,
-					cigar,
-					read_batch[i].length, result_string);
-				**/
 
-				output_sam_end_to_end_output_buffer(
-					read_batch[i].name,
-					read_batch[i].seq,
-					read_batch[i].rseq,
-					read_batch[i].qual,
-					candidates[0],
-					read_batch[i].length - 1,
-					0,
-					1,
-					cigar,
-					read_batch[i].length, &current_sub_buffer);
+				if (output_methy == 1)
+				{
+					output_methy_end_to_end_output_buffer(
+						read_batch[i].name,
+						read_batch[i].seq,
+						read_batch[i].rseq,
+						read_batch[i].qual,
+						candidates[0],
+						read_batch[i].length - 1,
+						0,
+						1,
+						cigar,
+						read_batch[i].length, &methy);
+				}
+				else
+				{
+					output_sam_end_to_end_output_buffer(
+						read_batch[i].name,
+						read_batch[i].seq,
+						read_batch[i].rseq,
+						read_batch[i].qual,
+						candidates[0],
+						read_batch[i].length - 1,
+						0,
+						1,
+						cigar,
+						read_batch[i].length, &current_sub_buffer);
+				}
+
+				
 
 
 
@@ -15342,7 +16479,7 @@ void* Map_Single_Seq_split(void* arg)
 						read_batch[i].length, error_threshold1, tmp_ref,
 						read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual,
 						cigar, path, matrix, matrix_bit, read_batch[i].name,
-						best_cigar, &current_sub_buffer);
+						best_cigar, &current_sub_buffer, &methy);
 
 					unique_matched_read++;
 
@@ -15373,29 +16510,31 @@ void* Map_Single_Seq_split(void* arg)
 
 		}
 
-	/**
-		pthread_mutex_lock(&queueMutex);
 
-		fprintf(output_file, "%s", result_string.str().c_str());
-		///out << result_string.str();
+		if (output_methy == 0)
+		{
 
-		pthread_mutex_unlock(&queueMutex);
+			current_sub_buffer.buffer[current_sub_buffer.length] = '\0';
 
-		///stringstream和string都要清空
-		result_string.clear();
-		result_string.str("");
+			push_results_to_buffer(&current_sub_buffer);
 
-		
-	}
-	**/
-
-		current_sub_buffer.buffer[current_sub_buffer.length] = '\0';
-
-		push_results_to_buffer(&current_sub_buffer);
-
-		current_sub_buffer.length = 0;
+			current_sub_buffer.length = 0;
+		}
 
 	}
+
+
+	if (methy.current_size != 0)
+	{
+		assign_cuts(&methy);
+
+		push_methy_to_buffer(&methy);
+
+		///这个不用清理，因为再push 的时候清理过了
+		///clear_methylation(&methy);
+
+	}
+
 
 	finish_output_buffer();
 
@@ -15630,7 +16769,19 @@ void* Map_Single_Seq_split_pbat(void* arg)
 	init_single_sub_block_single(&curr_sub_block);
 
 	Output_buffer_sub_block current_sub_buffer;
-	init_buffer_sub_block(&current_sub_buffer);
+	Methylation methy;
+
+
+	if (output_methy == 1)
+	{
+		int my_methylation_size = methylation_size;
+		init_methylation(&methy, my_methylation_size);
+	}
+	else
+	{
+		init_buffer_sub_block(&current_sub_buffer);
+	}
+
 
 
 
@@ -15651,13 +16802,9 @@ void* Map_Single_Seq_split_pbat(void* arg)
 	int extra_seed_flag = 1;
 
 
-
-
 	file_flag = 1;
 	while (file_flag != 0)
 	{
-
-
 
 		/**
 		pthread_mutex_lock(&readinputMutex);
@@ -15671,7 +16818,6 @@ void* Map_Single_Seq_split_pbat(void* arg)
 		file_flag = get_single_reads_mul_thread_pbat(&curr_sub_block);
 		obtain_reads_num = curr_sub_block.sub_block_read_number;
 		read_batch = curr_sub_block.read;
-
 
 
 		enq_i = enq_i + obtain_reads_num;
@@ -15748,7 +16894,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 				if (number_of_hits == 1 && try_process_unique_mismatch_end_to_end_pbat_get_output_buffer(
 					read_batch[i].length, read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual, cigar, read_batch[i].name,
 					locates,
-					top, tmp_ref, &match_length, read_batch[i].length - C_site - 1, &current_sub_buffer, &get_error))
+					top, tmp_ref, &match_length, read_batch[i].length - C_site - 1, &current_sub_buffer, &get_error, &methy))
 				{
 					direct_match++;
 					unique_matched_read++;
@@ -16054,19 +17200,41 @@ void* Map_Single_Seq_split_pbat(void* arg)
 			{
 				sprintf(cigar, "%dM", read_batch[i].length);
 
-				output_sam_end_to_end_pbat_output_buffer
-					(
-					read_batch[i].name,
-					read_batch[i].seq,
-					read_batch[i].rseq,
-					read_batch[i].qual,
-					candidates[0],
-					read_batch[i].length - 1,
-					0,
-					1,
-					cigar,
-					read_batch[i].length,
-					&current_sub_buffer);
+
+				if (output_methy == 1)
+				{
+					output_methy_end_to_end_output_buffer
+						(
+						read_batch[i].name,
+						read_batch[i].seq,
+						read_batch[i].rseq,
+						read_batch[i].qual,
+						candidates[0],
+						read_batch[i].length - 1,
+						0,
+						1,
+						cigar,
+						read_batch[i].length,
+						&methy);
+				}
+				else
+				{
+					output_sam_end_to_end_pbat_output_buffer
+						(
+						read_batch[i].name,
+						read_batch[i].seq,
+						read_batch[i].rseq,
+						read_batch[i].qual,
+						candidates[0],
+						read_batch[i].length - 1,
+						0,
+						1,
+						cigar,
+						read_batch[i].length,
+						&current_sub_buffer);
+				}
+
+				
 
 				unique_matched_read++;
 				matched_read++;
@@ -16148,7 +17316,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 						read_batch[i].length, error_threshold1, tmp_ref,
 						read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual,
 						cigar, path, matrix, matrix_bit, read_batch[i].name,
-						best_cigar, &current_sub_buffer);
+						best_cigar, &current_sub_buffer, &methy);
 
 					unique_matched_read++;
 
@@ -16179,28 +17347,29 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 		}
 
-	/**
-		pthread_mutex_lock(&queueMutex);
 
-		fprintf(output_file, "%s", result_string.str().c_str());
-		///out << result_string.str();
+		if (output_methy == 0)
+		{
+			current_sub_buffer.buffer[current_sub_buffer.length] = '\0';
 
-		pthread_mutex_unlock(&queueMutex);
+			push_results_to_buffer(&current_sub_buffer);
 
-		///stringstream和string都要清空
-		result_string.clear();
-		result_string.str("");
-
+			current_sub_buffer.length = 0;
+		}
 
 	}
-	**/
-		current_sub_buffer.buffer[current_sub_buffer.length] = '\0';
 
-		push_results_to_buffer(&current_sub_buffer);
+	if (methy.current_size != 0)
+	{
+		assign_cuts(&methy);
 
-		current_sub_buffer.length = 0;
+		push_methy_to_buffer(&methy);
+
+		///这个不用清理，因为再push 的时候清理过了
+		///clear_methylation(&methy);
 
 	}
+
 
 	finish_output_buffer();
 

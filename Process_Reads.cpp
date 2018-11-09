@@ -14,6 +14,12 @@
 #include "Process_Reads.h"
 #include "Index.h"
 #include <pthread.h>
+#include <zlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+
 
 pthread_mutex_t i_readinputMutex;
 pthread_mutex_t i_queueMutex;
@@ -26,6 +32,10 @@ pthread_mutex_t i_doneMutex;
 
 FILE *_r_fp1;
 FILE *_r_fp2;
+
+gzFile g_r_fp1;
+gzFile g_r_fp2;
+
 Read *_r_seq;
 int _r_seqCnt;
 
@@ -42,15 +52,37 @@ Read_buffer_single_sub_block tmp_sub_block_single;
 char tmp_read_buffer1[SEQ_MAX_LENGTH];
 char tmp_read_buffer2[SEQ_MAX_LENGTH];
 
+int file_format;
+char flag_array[2];
 
 inline char *Input_line_from_file1( char *seq )
 {
-  return fgets(seq, SEQ_MAX_LENGTH, _r_fp1);
+	if (file_format == FASTQ)
+	{
+		return fgets(seq, SEQ_MAX_LENGTH, _r_fp1);
+	}
+	else
+	{
+		seq = gzgets(g_r_fp1, seq, SEQ_MAX_LENGTH);
+
+		return (!gzeof(g_r_fp1)) ? flag_array : NULL;
+
+	}
+  
 }
 
 inline char *Input_line_from_file2(char *seq)
 {
-  return fgets(seq, SEQ_MAX_LENGTH, _r_fp2);
+	if (file_format == FASTQ)
+	{
+		return fgets(seq, SEQ_MAX_LENGTH, _r_fp2);
+	}
+	else
+	{
+		seq = gzgets(g_r_fp2, seq, SEQ_MAX_LENGTH);
+
+		return (!gzeof(g_r_fp2)) ? flag_array : NULL;
+	}
 }
 
 
@@ -1460,44 +1492,153 @@ int inputReads_paired(
 
 }
 
+int check_file_format(char *fileName)
+{
+	int i = 0;
+
+	char* file_extention;
+	i = strlen(fileName) - 1;
+	while (i >= 0 && fileName[i] != '.')
+	{
+		i--;
+	}
+
+	if (i < 0)
+	{
+		fprintf(stderr, 
+			"ERROR: the input read files must be FASTQ format (file extension: .fq or .fastq) or compressed FASTQ format (file extension: .fq.gz or .fastq.gz)!\n");
+		exit(0);
+	}
+
+	if ((strcmp(".fq", fileName+i) == 0)
+		||
+		strcmp(".fastq", fileName + i) == 0)
+	{
+		return FASTQ;
+	}
+	else if (strcmp(".gz", fileName + i) == 0)
+	{
+		i--;
+		while (i >= 0 && fileName[i] != '.')
+		{
+			i--;
+		}
+
+
+		if (i < 0)
+		{
+			fprintf(stderr,
+				"ERROR: the input read files must be FASTQ format (file extension: .fq or .fastq) or compressed FASTQ format (file extension: .fq.gz or .fastq.gz)!\n");
+			exit(0);
+		}
+
+		if ((strcmp(".fq.gz", fileName + i) == 0)
+			||
+			strcmp(".fastq.gz", fileName + i) == 0)
+		{
+			return FASTQGZ;
+		}
+		else
+		{
+			fprintf(stderr,
+				"ERROR: the input read files must be FASTQ format (file extension: .fq or .fastq) or compressed FASTQ format (file extension: .fq.gz or .fastq.gz)!\n");
+			exit(0);
+		}
+
+	}
+
+
+	fprintf(stderr,
+		"ERROR: the input read files must be FASTQ format (file extension: .fq or .fastq) or compressed FASTQ format (file extension: .fq.gz or .fastq.gz)!\n");
+	exit(0);
+}
+
 
 /**********************************************/
 int initiReadAllReads(char *fileName1,
 		 char *fileName2,
-		 unsigned char pairedEnd
+		 unsigned char pairedEnd,
+		 int* format
 		 )
 {
 
-	///打开read1
-	_r_fp1 = fopen (fileName1, "r");
-
-    if (_r_fp1 == NULL)
+	int format1, format2;
+	format1 = check_file_format(fileName1);
+	
+	if (format1 == FASTQ)
 	{
-	  return 0;
+		///打开read1
+		_r_fp1 = fopen(fileName1, "r");
+
+		if (_r_fp1 == NULL)
+		{
+			return 0;
+		}
 	}
+	else if (format1 == FASTQGZ)
+	{
+		int fd = open(fileName1, O_CREAT | O_RDONLY, 0666);
+		g_r_fp1 = gzdopen(fd, "rb");
+	}
+	
+
+    
 
 
 	///处理read2
     if ( pairedEnd && fileName2 != NULL )
 	{
-	  _r_fp2 = fopen (fileName2, "r");
-	  if (_r_fp2 == NULL)
+	  format2 = check_file_format(fileName2);
+
+
+	  if (format2 == FASTQ)
 	  {
-	     return 0;
+
+		  _r_fp2 = fopen(fileName2, "r");
+		  if (_r_fp2 == NULL)
+		  {
+			  return 0;
+		  }
 	  }
+	  else if (format2 == FASTQGZ)
+	  {
+		  int fd = open(fileName2, O_CREAT | O_RDONLY, 0666);
+		  g_r_fp2 = gzdopen(fd, "rb");
+	  }
+
+
 	}
     else
 	{
+	  format2 = format1;
 	  _r_fp2 = _r_fp1;
+	  g_r_fp2 = g_r_fp1;
 	}
 
-	/**
-	///如果编辑距离阈值没设置，默认我们设成5
-	if (thread_e == (unsigned char)-1)
+
+
+	if (format2 == format1 && format2 > 0)
 	{
-		thread_e = 7;
+		if (format2 == FASTQ)
+		{
+			fprintf(stdout,
+				" Read files are in FASTQ format...\n");
+		}
+
+		if (format2 == FASTQGZ)
+		{
+			fprintf(stdout,
+				" Read files are in compressed FASTQ format...\n");
+		}
+		
 	}
-	**/
+	else
+	{
+		fprintf(stderr,
+			"ERROR: the input read files must be FASTQ format (file extension: .fq or .fastq) or compressed FASTQ format (file extension: .fq.gz or .fastq.gz)!\n");
+		exit(0);
+	}
+
 	
 	for (size_t i = 0; i < 128; i++)
 	{
@@ -1510,6 +1651,9 @@ int initiReadAllReads(char *fileName1,
 	rc_table['T'] = 'A';
 	rc_table['C'] = 'G';
 	rc_table['G'] = 'C';
+
+	*format = format1;
+	file_format = format1;
 
 	return 1;
 }
@@ -1528,6 +1672,12 @@ int exchange_two_reads()
 	tmp = _r_fp1;
 	_r_fp1 = _r_fp2;
 	_r_fp2 = tmp;
+
+
+	gzFile tmp_gz;
+	tmp_gz = g_r_fp1;
+	g_r_fp1 = g_r_fp2;
+	g_r_fp2 = tmp_gz;
 
 	return 1;
 }
@@ -1687,51 +1837,38 @@ inline void load_sub_block_single_read_pbat(Read* read_batch1, int batch_read_si
 ///初始化缓冲区
 void init_Pair_Seq_input_buffer(int thread_number)
 {
-	///每一个sub_block的大小
-	sub_block_inner_size = sub_block_inner_size / 2;
-
-
-	buffer_pe.sub_block_number = 0;
-	///总共有多少个sub_block
-	buffer_pe.sub_block_size = sub_block_number * thread_number;
-	///每个sub_block内部有多少对reads
-	buffer_pe.sub_block_inner_size = sub_block_inner_size;
-
-
-
-	buffer_pe.sub_block = (Read_buffer_pe_sub_block*)
-		malloc(sizeof(Read_buffer_pe_sub_block)*buffer_pe.sub_block_size);
-
-	for (int i = 0; i < buffer_pe.sub_block_size; i++)
+	if (file_format == FASTQ)
 	{
-		init_single_sub_block_pe(&buffer_pe.sub_block[i]);
-		/**
-		buffer_pe.sub_block[i].read1 = (Read*)malloc(sizeof(Read)*buffer_pe.sub_block_inner_size);
-		buffer_pe.sub_block[i].read2 = (Read*)malloc(sizeof(Read)*buffer_pe.sub_block_inner_size);
-		for (int j = 0; j < buffer_pe.sub_block_inner_size; j++)
+		///每一个sub_block的大小
+		sub_block_inner_size = sub_block_inner_size / 2;
+
+
+		buffer_pe.sub_block_number = 0;
+		///总共有多少个sub_block
+		buffer_pe.sub_block_size = sub_block_number * thread_number;
+		///每个sub_block内部有多少对reads
+		buffer_pe.sub_block_inner_size = sub_block_inner_size;
+
+
+
+		buffer_pe.sub_block = (Read_buffer_pe_sub_block*)
+			malloc(sizeof(Read_buffer_pe_sub_block)*buffer_pe.sub_block_size);
+
+		for (int i = 0; i < buffer_pe.sub_block_size; i++)
 		{
-			buffer_pe.sub_block[i].read1[j].name = (char*)malloc(READ_NAME_INIT_LENGTH);
-			buffer_pe.sub_block[i].read1[j].seq = (char*)malloc(READ_SEQ_INIT_LENGTH);
-			buffer_pe.sub_block[i].read1[j].rseq = (char*)malloc(READ_SEQ_INIT_LENGTH);
-			buffer_pe.sub_block[i].read1[j].qual = (char*)malloc(READ_SEQ_INIT_LENGTH);
-			buffer_pe.sub_block[i].read1[j].name_size = READ_NAME_INIT_LENGTH;
-			buffer_pe.sub_block[i].read1[j].seq_size = READ_SEQ_INIT_LENGTH;
-
-
-			buffer_pe.sub_block[i].read2[j].name = (char*)malloc(READ_NAME_INIT_LENGTH);
-			buffer_pe.sub_block[i].read2[j].seq = (char*)malloc(READ_SEQ_INIT_LENGTH);
-			buffer_pe.sub_block[i].read2[j].rseq = (char*)malloc(READ_SEQ_INIT_LENGTH);
-			buffer_pe.sub_block[i].read2[j].qual = (char*)malloc(READ_SEQ_INIT_LENGTH);
-			buffer_pe.sub_block[i].read2[j].name_size = READ_NAME_INIT_LENGTH;
-			buffer_pe.sub_block[i].read2[j].seq_size = READ_SEQ_INIT_LENGTH;
+			init_single_sub_block_pe(&buffer_pe.sub_block[i]);
 		}
 
-
-		buffer_pe.sub_block[i].sub_block_read_number = 0;
-		**/
+		buffer_pe.all_read_end = 0;
+	}
+	else
+	{
+		///每一个sub_block的大小
+		sub_block_inner_size = sub_block_inner_size / 2;
+		buffer_pe.sub_block_inner_size = sub_block_inner_size;
 	}
 
-	buffer_pe.all_read_end = 0;
+	
 
 
 }
@@ -1744,53 +1881,36 @@ void init_Pair_Seq_input_buffer(int thread_number)
 ///初始化缓冲区
 void init_Single_Seq_input_buffer(int thread_number)
 {
-	///每一个sub_block的大小
-	///单端是不是不用除以2
-	///sub_block_inner_size = sub_block_inner_size / 2;
-	sub_block_inner_size = sub_block_inner_size;
-
-	///这个好像是指针，代表有多少有效的block
-	buffer_single.sub_block_number = 0;
-	///总共有多少个sub_block，这个是最大的block数量
-	buffer_single.sub_block_size = sub_block_number * thread_number;
-	///每个sub_block内部有多少对reads
-	buffer_single.sub_block_inner_size = sub_block_inner_size;
-
-
-
-	buffer_single.sub_block = (Read_buffer_single_sub_block*)
-		malloc(sizeof(Read_buffer_single_sub_block)*buffer_single.sub_block_size);
-
-	for (int i = 0; i < buffer_single.sub_block_size; i++)
+	if (file_format == FASTQ)
 	{
-		init_single_sub_block_single(&buffer_single.sub_block[i]);
-		/**
-		buffer_single.sub_block[i].read1 = (Read*)malloc(sizeof(Read)*buffer_single.sub_block_inner_size);
-		buffer_single.sub_block[i].read2 = (Read*)malloc(sizeof(Read)*buffer_single.sub_block_inner_size);
-		for (int j = 0; j < buffer_single.sub_block_inner_size; j++)
+		///每一个sub_block的大小
+		///单端是不是不用除以2
+		///sub_block_inner_size = sub_block_inner_size / 2;
+		sub_block_inner_size = sub_block_inner_size;
+		///这个好像是指针，代表有多少有效的block
+		buffer_single.sub_block_number = 0;
+		///总共有多少个sub_block，这个是最大的block数量
+		buffer_single.sub_block_size = sub_block_number * thread_number;
+		///每个sub_block内部有多少对reads
+		buffer_single.sub_block_inner_size = sub_block_inner_size;
+
+
+
+		buffer_single.sub_block = (Read_buffer_single_sub_block*)
+			malloc(sizeof(Read_buffer_single_sub_block)*buffer_single.sub_block_size);
+
+		for (int i = 0; i < buffer_single.sub_block_size; i++)
 		{
-		buffer_single.sub_block[i].read1[j].name = (char*)malloc(READ_NAME_INIT_LENGTH);
-		buffer_single.sub_block[i].read1[j].seq = (char*)malloc(READ_SEQ_INIT_LENGTH);
-		buffer_single.sub_block[i].read1[j].rseq = (char*)malloc(READ_SEQ_INIT_LENGTH);
-		buffer_single.sub_block[i].read1[j].qual = (char*)malloc(READ_SEQ_INIT_LENGTH);
-		buffer_single.sub_block[i].read1[j].name_size = READ_NAME_INIT_LENGTH;
-		buffer_single.sub_block[i].read1[j].seq_size = READ_SEQ_INIT_LENGTH;
-
-
-		buffer_single.sub_block[i].read2[j].name = (char*)malloc(READ_NAME_INIT_LENGTH);
-		buffer_single.sub_block[i].read2[j].seq = (char*)malloc(READ_SEQ_INIT_LENGTH);
-		buffer_single.sub_block[i].read2[j].rseq = (char*)malloc(READ_SEQ_INIT_LENGTH);
-		buffer_single.sub_block[i].read2[j].qual = (char*)malloc(READ_SEQ_INIT_LENGTH);
-		buffer_single.sub_block[i].read2[j].name_size = READ_NAME_INIT_LENGTH;
-		buffer_single.sub_block[i].read2[j].seq_size = READ_SEQ_INIT_LENGTH;
+			init_single_sub_block_single(&buffer_single.sub_block[i]);
 		}
 
-
-		buffer_single.sub_block[i].sub_block_read_number = 0;
-		**/
+		buffer_single.all_read_end = 0;
+	}
+	else
+	{
+		buffer_single.sub_block_inner_size = sub_block_inner_size;
 	}
 
-	buffer_single.all_read_end = 0;
 
 
 }
@@ -2218,6 +2338,9 @@ void init_single_sub_block_pe(Read_buffer_pe_sub_block* tmp_sub_block)
 
 void init_single_sub_block_single(Read_buffer_single_sub_block* tmp_sub_block)
 {
+
+	///buffer_single.sub_block_inner_size = sub_block_inner_size;
+
 	tmp_sub_block->read = (Read*)malloc(sizeof(Read)*buffer_single.sub_block_inner_size);
 
 
@@ -2258,59 +2381,76 @@ void init_single_read(Read* read)
 int get_pe_reads_mul_thread(Read_buffer_pe_sub_block* curr_sub_block)
 {
 
-	pthread_mutex_lock(&i_readinputMutex);
-
-
-	///如果缓冲区为0且read还没从文件里读完
-	///则消费者要等待，并且通知生成者进行生产
-	while (if_empty_pe() && buffer_pe.all_read_end == 0)
+	if (file_format == FASTQ)
 	{
-		///按道理这个信号量似乎不用发
-		///因为队列不可能一边满一边空
-		pthread_cond_signal(&i_readinputflushCond);
+		pthread_mutex_lock(&i_readinputMutex);
+
+
+		///如果缓冲区为0且read还没从文件里读完
+		///则消费者要等待，并且通知生成者进行生产
+		while (if_empty_pe() && buffer_pe.all_read_end == 0)
+		{
+			///按道理这个信号量似乎不用发
+			///因为队列不可能一边满一边空
+			pthread_cond_signal(&i_readinputflushCond);
 
 
 
-		pthread_cond_wait(&i_readinputstallCond, &i_readinputMutex);
+			pthread_cond_wait(&i_readinputstallCond, &i_readinputMutex);
+		}
+
+
+		///如果走到这一步的时候，缓冲区里还有东西
+		///则明显要取东西了
+		if (!if_empty_pe())
+		{
+			pop_back_sub_block_pe(curr_sub_block);
+
+			pthread_cond_signal(&i_readinputflushCond);
+			pthread_mutex_unlock(&i_readinputMutex);
+
+
+
+			///这个时候已经拿到了read，并且出了临界区
+			///在这里要对read做后处理
+			post_process_paired_reads(curr_sub_block);
+
+
+			return 1;
+		}
+		else
+		{
+			curr_sub_block->sub_block_read_number = 0;
+
+			pthread_cond_signal(&i_readinputstallCond);   //这行非常重要，必须要加！否则会陷入死锁！！！
+
+			pthread_mutex_unlock(&i_readinputMutex);
+			return 0;
+		}
+
 	}
-
-
-	///如果走到这一步的时候，缓冲区里还有东西
-	///则明显要取东西了
-	if (!if_empty_pe())
+	else
 	{
-		pop_back_sub_block_pe(curr_sub_block);
+		int file_flag = 0;
 
-		pthread_cond_signal(&i_readinputflushCond);
+		pthread_mutex_lock(&i_readinputMutex);
+
+		load_sub_block_paired_read(curr_sub_block->read1, curr_sub_block->read2,
+			buffer_pe.sub_block_inner_size, &file_flag, &curr_sub_block->sub_block_read_number);
+
 		pthread_mutex_unlock(&i_readinputMutex);
 
-
+		if (file_flag == 0)
+		{
+			return 0;
+		}
 
 		///这个时候已经拿到了read，并且出了临界区
 		///在这里要对read做后处理
 		post_process_paired_reads(curr_sub_block);
 
-
-
-
-
-
-
-
-
 		return 1;
 	}
-	else
-	{
-		curr_sub_block->sub_block_read_number = 0;
-
-		pthread_cond_signal(&i_readinputstallCond);   //这行非常重要，必须要加！否则会陷入死锁！！！
-
-		pthread_mutex_unlock(&i_readinputMutex);
-		return 0;
-	}
-
-
 
 
 
@@ -2323,60 +2463,75 @@ int get_pe_reads_mul_thread(Read_buffer_pe_sub_block* curr_sub_block)
 int get_single_reads_mul_thread(Read_buffer_single_sub_block* curr_sub_block)
 {
 
-	pthread_mutex_lock(&i_readinputMutex);
-
-
-	///如果缓冲区为0且read还没从文件里读完
-	///则消费者要等待，并且通知生成者进行生产
-	while (if_empty_single() && buffer_single.all_read_end == 0)
+	if (file_format == FASTQ)
 	{
-		///按道理这个信号量似乎不用发
-		///因为队列不可能一边满一边空
-		pthread_cond_signal(&i_readinputflushCond);
+		pthread_mutex_lock(&i_readinputMutex);
+
+
+		///如果缓冲区为0且read还没从文件里读完
+		///则消费者要等待，并且通知生成者进行生产
+		while (if_empty_single() && buffer_single.all_read_end == 0)
+		{
+			///按道理这个信号量似乎不用发
+			///因为队列不可能一边满一边空
+			pthread_cond_signal(&i_readinputflushCond);
 
 
 
-		pthread_cond_wait(&i_readinputstallCond, &i_readinputMutex);
+			pthread_cond_wait(&i_readinputstallCond, &i_readinputMutex);
+		}
+
+
+		///如果走到这一步的时候，缓冲区里还有东西
+		///则明显要取东西了
+		if (!if_empty_single())
+		{
+			pop_back_sub_block_single(curr_sub_block);
+
+			pthread_cond_signal(&i_readinputflushCond);
+			pthread_mutex_unlock(&i_readinputMutex);
+
+
+
+			///这个时候已经拿到了read，并且出了临界区
+			///在这里要对read做后处理
+			post_process_single_reads(curr_sub_block);
+
+			return 1;
+		}
+		else
+		{
+			curr_sub_block->sub_block_read_number = 0;
+
+			pthread_cond_signal(&i_readinputstallCond);   //这行非常重要，必须要加！否则会陷入死锁！！！
+
+			pthread_mutex_unlock(&i_readinputMutex);
+
+			return 0;
+		}
 	}
-
-
-	///如果走到这一步的时候，缓冲区里还有东西
-	///则明显要取东西了
-	if (!if_empty_single())
+	else
 	{
-		pop_back_sub_block_single(curr_sub_block);
+		int file_flag = 0;
 
-		pthread_cond_signal(&i_readinputflushCond);
+		pthread_mutex_lock(&i_readinputMutex);
+
+		load_sub_block_single_read(curr_sub_block->read,
+			sub_block_inner_size, &file_flag, &curr_sub_block->sub_block_read_number);
+		                  
 		pthread_mutex_unlock(&i_readinputMutex);
 
-
+		if (file_flag == 0)
+		{
+			return 0;
+		}
 
 		///这个时候已经拿到了read，并且出了临界区
 		///在这里要对read做后处理
 		post_process_single_reads(curr_sub_block);
 
-
-
-
-
-
-
-
-
 		return 1;
 	}
-	else
-	{
-		curr_sub_block->sub_block_read_number = 0;
-
-		pthread_cond_signal(&i_readinputstallCond);   //这行非常重要，必须要加！否则会陷入死锁！！！
-
-		pthread_mutex_unlock(&i_readinputMutex);
-		return 0;
-	}
-
-
-
 
 
 }
@@ -2391,60 +2546,88 @@ int get_single_reads_mul_thread(Read_buffer_single_sub_block* curr_sub_block)
 int get_single_reads_mul_thread_pbat(Read_buffer_single_sub_block* curr_sub_block)
 {
 
-	pthread_mutex_lock(&i_readinputMutex);
-
-
-	///如果缓冲区为0且read还没从文件里读完
-	///则消费者要等待，并且通知生成者进行生产
-	while (if_empty_single() && buffer_single.all_read_end == 0)
+	if (file_format == FASTQ)
 	{
-		///按道理这个信号量似乎不用发
-		///因为队列不可能一边满一边空
-		pthread_cond_signal(&i_readinputflushCond);
+
+
+		pthread_mutex_lock(&i_readinputMutex);
+
+
+		///如果缓冲区为0且read还没从文件里读完
+		///则消费者要等待，并且通知生成者进行生产
+		while (if_empty_single() && buffer_single.all_read_end == 0)
+		{
+			///按道理这个信号量似乎不用发
+			///因为队列不可能一边满一边空
+			pthread_cond_signal(&i_readinputflushCond);
 
 
 
-		pthread_cond_wait(&i_readinputstallCond, &i_readinputMutex);
+			pthread_cond_wait(&i_readinputstallCond, &i_readinputMutex);
+		}
+
+
+		///如果走到这一步的时候，缓冲区里还有东西
+		///则明显要取东西了
+		if (!if_empty_single())
+		{
+			pop_back_sub_block_single(curr_sub_block);
+
+			pthread_cond_signal(&i_readinputflushCond);
+			pthread_mutex_unlock(&i_readinputMutex);
+
+
+
+			///这个时候已经拿到了read，并且出了临界区
+			///在这里要对read做后处理
+			post_process_single_reads_pbat(curr_sub_block);
+
+
+
+
+
+
+
+
+
+			return 1;
+		}
+		else
+		{
+			curr_sub_block->sub_block_read_number = 0;
+
+			pthread_cond_signal(&i_readinputstallCond);   //这行非常重要，必须要加！否则会陷入死锁！！！
+
+			pthread_mutex_unlock(&i_readinputMutex);
+			return 0;
+		}
+
+
 	}
-
-
-	///如果走到这一步的时候，缓冲区里还有东西
-	///则明显要取东西了
-	if (!if_empty_single())
+	else
 	{
-		pop_back_sub_block_single(curr_sub_block);
 
-		pthread_cond_signal(&i_readinputflushCond);
+
+		int file_flag = 0;
+
+		pthread_mutex_lock(&i_readinputMutex);
+
+		load_sub_block_single_read_pbat(curr_sub_block->read,
+			sub_block_inner_size, &file_flag, &curr_sub_block->sub_block_read_number);
+
 		pthread_mutex_unlock(&i_readinputMutex);
 
-
+		if (file_flag == 0)
+		{
+			return 0;
+		}
 
 		///这个时候已经拿到了read，并且出了临界区
 		///在这里要对read做后处理
 		post_process_single_reads_pbat(curr_sub_block);
 
-
-
-
-
-
-
-
-
 		return 1;
 	}
-	else
-	{
-		curr_sub_block->sub_block_read_number = 0;
-
-		pthread_cond_signal(&i_readinputstallCond);   //这行非常重要，必须要加！否则会陷入死锁！！！
-
-		pthread_mutex_unlock(&i_readinputMutex);
-		return 0;
-	}
-
-
-
 
 
 }

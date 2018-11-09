@@ -60,9 +60,9 @@ void OutPutSAM_Nounheader(_rg_name_l  *_ih_refGenName, int refChromeCont, int ar
 ///双端read没有符合要求的比对上(满足一定距离)
 #define MATE_UNMAPPED 8
 ///read本身比对到反向互补链
-#define RC_MAPPED 16
+#define RC_MAPPED 16        ///OX10
 ///双端read的另一条比对到反向互补链，也就是该read本身比对到正向链了
-#define RC_MATE_MAPPED 32
+#define RC_MATE_MAPPED 32  ///OX20
 ///双端read中的read1
 #define READ1 64
 ///双端read中的read2
@@ -92,11 +92,27 @@ typedef struct
 } Output_buffer;
 
 
+typedef struct
+{
+	Methylation* sub_buffer;
+
+	///这两个单位是subblock
+	long long sub_block_size;
+	long long sub_block_number;
+	int all_buffer_end = 0;
+
+} Output_methy_buffer;
+
 void init_buffer_sub_block(Output_buffer_sub_block* sub_block);
 void init_output_buffer(int thread_number);
 void* pop_buffer(void*);
 void push_results_to_buffer(Output_buffer_sub_block* sub_block);
 void finish_output_buffer();
+
+
+void init_output_methy_buffer(int thread_number);
+void* pop_methy_buffer(void*);
+void push_methy_to_buffer(Methylation* methy);
 
 
 #define OFFSET 32
@@ -111,14 +127,7 @@ inline void output_to_buffer_char_no_length(Output_buffer_sub_block* sub_block, 
 
 	int input_length = strlen(input);
 
-	/**
-	fprintf(stderr, "****inner_no_length****\nsub_block->length: %llu\n", sub_block->length);
-	fflush(stderr);
-	fprintf(stderr, "sub_block->size: %llu\n", sub_block->size);
-	fflush(stderr);
-	fprintf(stderr, "input_length: %llu\n", input_length);
-	fflush(stderr);
-	**/
+
 
 	///更新了length
 	sub_block->length = sub_block->length + input_length;
@@ -142,10 +151,7 @@ inline void output_to_buffer_char_no_length(Output_buffer_sub_block* sub_block, 
 
 	}
 
-	/**
-	fprintf(stderr, "hahahah\n");
-	fflush(stderr);
-	**/
+
 }
 
 
@@ -154,32 +160,19 @@ inline void output_to_buffer_char_no_length(Output_buffer_sub_block* sub_block, 
 ///如果输入变量是char*,且长度已知
 inline void output_to_buffer_char_length(Output_buffer_sub_block* sub_block, char* input, int input_length)
 {
-	/**
-	fprintf(stderr, "****inner_length****\nsub_block->length: %llu\n", sub_block->length);
-	fflush(stderr);
-	fprintf(stderr, "sub_block->size: %llu\n", sub_block->size);
-	fflush(stderr);
-	fprintf(stderr, "input_length: %llu\n", input_length);
-	fflush(stderr);
-	**/
+
 
 	///更新了length
 	sub_block->length = sub_block->length + input_length;
 
-	/**
-	fprintf(stderr, "sub_block->length: %llu\n", sub_block->length);
-	fflush(stderr);
-	**/
+
 
 	///如果空间足够的,则size不用更新
 	if (sub_block->length + OFFSET< sub_block->size)
 	{
 		memcpy(sub_block->buffer + sub_block->length - input_length, input, input_length);
 		///sub_block->buffer[sub_block->length] = '\0';
-		/**
-		fprintf(stderr, "xxxxxxxxxxx\n");
-		fflush(stderr);
-		**/
+
 	}
 	else
 	{
@@ -194,10 +187,7 @@ inline void output_to_buffer_char_length(Output_buffer_sub_block* sub_block, cha
 
 	}
 
-	/**
-	fprintf(stderr, "hahahah\n");
-	fflush(stderr);
-	**/
+
 }
 
 
@@ -209,12 +199,7 @@ inline void output_to_buffer_char_length(Output_buffer_sub_block* sub_block, cha
 ///注意这个数是
 inline void output_to_buffer_int(Output_buffer_sub_block* sub_block, bitmapper_bs_iter input)
 {
-	/**
-	fprintf(stderr, "****inner_int****\nsub_block->length: %llu\n", sub_block->length);
-	fflush(stderr);
-	fprintf(stderr, "sub_block->size: %llu\n", sub_block->size);
-	fflush(stderr);
-	**/
+
 
 	int input_int_length;
 	//2^64 -1 = 18446744073709551615, 占了20位
@@ -240,10 +225,7 @@ inline void output_to_buffer_int(Output_buffer_sub_block* sub_block, bitmapper_b
 
 	}
 
-	/**
-	fprintf(stderr, "hahahah\n");
-	fflush(stderr);
-	**/
+
 	
 }
 

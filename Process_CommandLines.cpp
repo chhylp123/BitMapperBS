@@ -15,9 +15,12 @@
 #include <pthread.h>
 #include "Auxiliary.h"
 #include "Process_CommandLines.h"
+#include "bwt.h"
 
-int				is_index;
-int				is_search;
+
+int				is_index = 0;
+int				is_search = 0;
+int             is_methy = 0;
 int				is_pairedEnd;
 int				cropSize = 0;
 int				minDistance_pair=0;
@@ -41,6 +44,14 @@ double bs_edit_distance_threshold = -1;
 int is_local = 1;
 int bs_available_seed_length = -1;
 int pbat = 0;
+///int methylation_size = 1000000;
+int methylation_size = 100000;
+///double methylation_buffer_times = 2.5;
+double methylation_buffer_times = 2.5;
+int output_methy = 0;
+bitmapper_bs_iter genome_cuts = 32;
+bitmapper_bs_iter cut_length;
+
 
 
 void Print_H();
@@ -55,10 +66,12 @@ int CommandLine_process (int argc, char *argv[])
   static struct option longOptions[] =
     {
       {"pe",		no_argument,  	    &is_pairedEnd,		1},
-	  ///{ "local",    no_argument,        &is_local,    1},
 	  { "sensitive", no_argument,      &is_local,  0},
 	  { "fast", no_argument, &is_local, 1},
 	  { "pbat", no_argument, &pbat, 1},
+	  { "methy_out", no_argument, &output_methy, 1},
+	  { "nomethy_out", no_argument, &output_methy, 0},
+	  { "methy_extract", required_argument, 0, 'f' },
       {"index",		required_argument,  0, 			'i'},
       {"search",	required_argument,  0,			'g'},
       {"help",		no_argument,	    0,			'h'},
@@ -72,6 +85,7 @@ int CommandLine_process (int argc, char *argv[])
       {"crop",		required_argument,  0,			'c'},
       {"threads",	required_argument,  0,			't'},
 	  { "seed", required_argument, 0, 's' },
+	  { "query", required_argument, 0, 'q' },
       {0,  0,  0, 0},
     };
 
@@ -80,7 +94,7 @@ int CommandLine_process (int argc, char *argv[])
     Print_H();
     return 0;
   }
-  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:d:g:p:r:s:t:", longOptions, &index)) != -1 )
+  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:d:g:p:r:s:t:q:", longOptions, &index)) != -1 )
     {
       switch (o)
 	  {/**
@@ -94,6 +108,10 @@ int CommandLine_process (int argc, char *argv[])
 	  is_index = 1;
 	  fastaFile = optarg;
 	  break;
+	case 'f':
+		is_methy = 1;
+		fastaFile = optarg;
+		break;
 	case 'g':
 	  is_search = 1;
 	  fastaFile = optarg;
@@ -108,6 +126,9 @@ int CommandLine_process (int argc, char *argv[])
 	case 'x':
 	  Read_File1 = optarg;
 	  break;
+	case 'q':
+	  Read_File1 = optarg;
+		break;
 	case 'y':
 	  Read_File2 = optarg;
 	  break;
@@ -160,7 +181,7 @@ int CommandLine_process (int argc, char *argv[])
 
     }
 
-  if (is_index + is_search != 1)
+  if (is_index + is_search + is_methy!= 1)
     {
       fprintf(stdout, "Please select indexing or searching mode!\n");
       return 0;
@@ -182,7 +203,7 @@ int CommandLine_process (int argc, char *argv[])
           return 0;
         }
     }
-  else
+  else if (is_search)
   {
 
 
@@ -194,13 +215,13 @@ int CommandLine_process (int argc, char *argv[])
 	  
 
 
-      if (fastaFile == NULL)
+    if (fastaFile == NULL)
 	{
 	  fprintf(stdout, "Please indicate the reference file for searching!\n");
 	  return 0;
 	}
 
-      if (Read_File1 == NULL && Read_File2 == NULL)
+    if (Read_File1 == NULL && Read_File2 == NULL)
 	{
 	  fprintf(stdout, "Please indicate the read files for searching!\n");
 	  return 0;
@@ -227,6 +248,21 @@ int CommandLine_process (int argc, char *argv[])
 
 
     }
+  else
+  {
+	  if (fastaFile == NULL)
+	  {
+		  fprintf(stdout, "Please indicate the reference file for extracting!\n");
+		  return 0;
+	  }
+
+
+	  if (Read_File1 == NULL)
+	  {
+		  fprintf(stdout, "Please indicate the alignment files for extracting!\n");
+		  return 0;
+	  }
+  }
   sprintf(fileName[0], "%s", fastaFile);
   sprintf(fileName[1], "%s.index", fileName[0]);
 

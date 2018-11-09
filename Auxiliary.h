@@ -8,6 +8,9 @@
 #ifndef __COMMON__
 #define __COMMON__
 
+#include "bwt.h"
+
+
 #define READS_QUENUE_MAX_LENGTH		10000
 #define SEQ_MAX_LENGTH		1000			// Seq Max Length
 #define NAME_LENGTH	400			// Filename Max Length
@@ -51,6 +54,13 @@ extern int sub_block_inner_size;
 extern int sub_block_number;
 extern int ouput_buffer_size;
 extern int	over_all_seed_length;
+extern int methylation_size;
+extern int output_methy;
+extern bitmapper_bs_iter genome_cuts;
+extern bitmapper_bs_iter cut_length;
+extern double methylation_buffer_times;
+extern int is_methy;
+
 
 double	Get_T(void);
 void	reverseComplement (char *seq, char *rcSeq , int length);

@@ -20,6 +20,9 @@ typedef struct
 	unsigned int* hashTable_order;
 } Commpress_HashTable;
 
+
+
+
 unsigned int	hashVal(char *seq);
 unsigned char			*getRefGenome();
 int				Start_Load_Indexz(char *fileName);
@@ -35,5 +38,8 @@ bitmapper_bs_iter getRefGenomeLength();
 bitmapper_bs_iter getRefGenomeLength_2bit();
 int  hashVal_EN(char *seq, unsigned int *N_site, unsigned int *hash_key);
 void add_hashVal(char *seq, unsigned int *N_site, unsigned int *hash_key);
+
+int Load_Methy_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs_iter* msf_refChromeCont, char* indexName);
+FILE* get_index_file();
 
 #endif

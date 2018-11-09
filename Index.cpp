@@ -155,6 +155,161 @@ void initSavingIHashTable(char *fileName, bitmapper_bs_iter reference_length, _r
 
 }
 
+
+
+FILE* get_index_file()
+{
+	return _ih_fp;
+}
+
+int Load_Methy_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs_iter* msf_refChromeCont, char* indexName)
+{
+
+
+	_ih_fp = fopen(indexName, "r");
+
+	if (_ih_fp == NULL)
+	{
+		fprintf(stdout, "Cannot open %s!\n", indexName);
+		return 0;
+	}
+	else
+	{
+		fprintf(stdout, "Open %s sucessfully!\n", indexName);
+	}
+
+
+	bitmapper_bs_iter len;
+
+	bitmapper_bs_iter tmpSize;
+	bitmapper_bs_iter refChromeCont;
+
+	bitmapper_bs_iter tmp;//tmp各种打酱油，各种做临时暂存变量
+	bitmapper_bs_iter i = 0, j = 0;
+
+
+
+	//读入染色体数目
+	tmp = fread(&refChromeCont, sizeof(refChromeCont), 1, _ih_fp);
+
+	///接下来是读入各染色体信息
+	_rg_name_l* _ih_refGenName = (_rg_name_l*)malloc(sizeof(_rg_name_l)*refChromeCont);
+
+	i = 0;
+	len = 0;
+	bitmapper_bs_iter tmp_start = 0;
+	bitmapper_bs_iter tmp_end = 0;
+	for (i = 0; i < refChromeCont; i++)
+	{
+		tmp = fread(&len, sizeof(len), 1, _ih_fp);
+
+		char* tmp_refGenName = (char*)malloc(sizeof(char)*(len + 1));
+		tmp = fread(tmp_refGenName, sizeof(char), len, _ih_fp);
+		tmp_refGenName[len] = '\0';
+		strcpy(_ih_refGenName[i]._rg_chrome_name, tmp_refGenName);
+
+		tmp = fread(&(_ih_refGenName[i]._rg_chrome_length), sizeof (_ih_refGenName[i]._rg_chrome_length), 1, _ih_fp);
+		_ih_refGenName[i].start_location = tmp_start;
+
+		tmp_end = tmp_start + _ih_refGenName[i]._rg_chrome_length - 1;
+		_ih_refGenName[i].end_location = tmp_end;
+		tmp_start = tmp_end + 1;
+		free(tmp_refGenName);
+	}
+
+
+	///染色体的各种信息
+	*msf_ih_refGenName = _ih_refGenName;
+	///有多少条染色体
+	*msf_refChromeCont = refChromeCont;
+
+
+
+	///这个是基因组总长
+	tmp = fread(&refGenLength, sizeof(refGenLength), 1, _ih_fp);
+
+	fprintf(stdout, "refGenLength = %llu \n", refGenLength);
+
+
+	return 1;
+}
+
+
+void SavingMethyIndex(char *fileName, bitmapper_bs_iter reference_length, _rg_name_l **refChromeName1,
+	bitmapper_bs_iter refChromeCont, char* refGen)
+{
+	bitmapper_bs_iter tmp;
+
+	FILE* methy_ih_fp;
+
+	char methy_fileName[SEQ_MAX_LENGTH];
+
+	sprintf(methy_fileName, "%s.methy", fileName);
+
+	methy_ih_fp = fopen(methy_fileName, "w");
+	tmp = fwrite(&refChromeCont, sizeof(refChromeCont), 1, methy_ih_fp);
+
+	bitmapper_bs_iter len = 0;
+	bitmapper_bs_iter i = 0;
+
+
+	for (i = 0; i < refChromeCont; i++)
+	{
+		len = strlen((*refChromeName1)[i]._rg_chrome_name);
+		tmp = fwrite(&len, sizeof(len), 1, methy_ih_fp);
+		tmp = fwrite((*refChromeName1)[i]._rg_chrome_name, sizeof(char), len, methy_ih_fp);
+		tmp = fwrite(&((*refChromeName1)[i]._rg_chrome_length),
+			sizeof(((*refChromeName1)[i]._rg_chrome_length)), 1, methy_ih_fp);
+	}
+
+
+	//写入参考基因组与参考基因组长度
+	tmp = fwrite(&reference_length, sizeof(reference_length), 1, methy_ih_fp);
+
+	char tmp_char;
+
+	for (i = 0; i < reference_length; i++)
+	{
+		refGen[i] = toupper(refGen[i]);
+
+		switch (refGen[i])
+		{
+		case 'A':
+			tmp_char = 0;
+			break;
+		case 'C':
+			tmp_char = 1;
+			break;
+		case 'G':
+			tmp_char = 2;
+			break;
+		case 'T':
+			tmp_char = 3;
+			break;
+		default:
+			tmp_char = 4;
+			break;
+		}
+		tmp = fwrite(&tmp_char, sizeof(tmp_char), 1, methy_ih_fp);
+	}
+
+	fseek(methy_ih_fp, 0, SEEK_END);
+	bitmapper_bs_iter file_length = ftell(methy_ih_fp);
+	fseek(methy_ih_fp, 0, SEEK_SET);
+	/**
+	if (file_length != reference_length)
+	{
+		fprintf(stdout, "ERRORE: file_length!=reference_length\n");
+		exit(0);
+	}
+	**/
+
+	fclose(methy_ih_fp);
+
+}
+
+
+
 void saveIHashTable(unsigned int  whole_length, unsigned int *hashTable, unsigned int * hashTable_order,  unsigned int maxSize , _rg_name_l **refChromeName1,
 int refChromeCont, unsigned int reference_length, char** refGen)
 {
@@ -576,6 +731,7 @@ void createIndex(char *fileName, char *indexName)
   ///写染色体信息
   initSavingIHashTable(indexName, reference_length, &refChromeName, refChromeCont);
 
+  SavingMethyIndex(indexName, reference_length, &refChromeName, refChromeCont, refGen);
 
   ///char file_name[30] = "tmp_bs_ref";
 
@@ -612,6 +768,7 @@ void createIndex(char *fileName, char *indexName)
   int error = system(command_string);
   error = system("rm *.sa5");
 
+  
 
 
 
@@ -619,6 +776,12 @@ void createIndex(char *fileName, char *indexName)
   //free(refGen);
   //free(refChromeName);
   fclose(_ih_fp);
+
+
+
+
+
+
   fprintf(stdout, "\nDONE in %0.2fs!\n", (Get_T()-startTime));
 }
 
@@ -744,6 +907,8 @@ int Start_Load_Index(char *fileName)
 
   return 1;
 }
+
+
 
 unsigned char *getRefGenome()
 {

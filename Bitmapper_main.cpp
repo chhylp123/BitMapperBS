@@ -30,19 +30,21 @@ int main(int argc, char *argv[])
 	_rg_name_l  *chhy_ih_refGenName;//存储各条染色体的信息
 	bitmapper_bs_iter refChromeCont;//染色体条数
 	pthread_t *_r_threads;
+	int read_format;
 
   if (!CommandLine_process(argc, argv))
     return 1;
 
 
 
+	  ///fprintf(stderr, "output_methy:%d\n", output_methy);
   
 
   if(is_index)
     {
       createIndex(fileName[0], fileName[1]);
     }
-  else
+  else if (is_search)
     {
 
 
@@ -60,7 +62,7 @@ int main(int argc, char *argv[])
 
 
 	  ///这就是打开read文件
-      if (!initiReadAllReads(Read_File1, Read_File2, is_pairedEnd))
+	  if (!initiReadAllReads(Read_File1, Read_File2, is_pairedEnd, &read_format))
       {
 		 fprintf(stdout, "Cannot open read files. \n");
          return 1;
@@ -71,9 +73,12 @@ int main(int argc, char *argv[])
 
        sprintf(outputFileName, "%s%s",Mapped_FilePath , Mapped_File);
 
+	   if (output_methy == 0)
+	   {
+		   Output_gene(outputFileName);
+	   }
 
-
-       Output_gene(outputFileName);
+       
 
         if (!is_pairedEnd)
         {
@@ -99,11 +104,15 @@ int main(int argc, char *argv[])
             totalLoadingTime += Get_T()-startTime;
             fprintf(stdout, "Start alignment!\n");
 
-            //这个Prepare_alignment()就是将这个文件里的变量各种配置到新文件中
-			OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
+			if (output_methy == 0)
+			{
+				//这个Prepare_alignment()就是将这个文件里的变量各种配置到新文件中
+				OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
+			}
+            
             
 
-            Prepare_alignment( fileName[0],chhy_ih_refGenName,refChromeCont);
+			Prepare_alignment(outputFileName, fileName[0], chhy_ih_refGenName, refChromeCont, read_format);
 
 			startTime = Get_T();
 
@@ -142,6 +151,12 @@ int main(int argc, char *argv[])
         }
         else
         {
+			if (output_methy == 1 && methylation_size % 2 != 0)
+			{
+				fprintf(stdout, "The variable 'methylation_size' must be an even! Please change it to be even!\n");
+				exit(1);
+			}
+
 			///_r_fp1
 			if (pbat == 1)
 			{
@@ -184,14 +199,16 @@ int main(int argc, char *argv[])
 			///fprintf(stderr, "is_local: %d\n", is_local);
             
 
-			
+			if (output_methy == 0)
+			{
 
-			OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
+				OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
+			}
 
 
             startTime = Get_T();
 
-            Prepare_alignment( fileName[0],chhy_ih_refGenName,refChromeCont);
+			Prepare_alignment(outputFileName, fileName[0], chhy_ih_refGenName, refChromeCont, read_format);
 
 
              if(THREAD_COUNT==1)
@@ -236,6 +253,22 @@ int main(int argc, char *argv[])
 		  number_of_unmapped_read, ((double)number_of_unmapped_read / (double)number_of_read) * 100);
 
     }
+	else if (is_methy)
+	{
+
+		sprintf(fileName[1], "%s.methy", fileName[1]);
+
+		if (!Load_Methy_Index(thread_e, &chhy_ih_refGenName, &refChromeCont, fileName[1]))
+		{
+			fprintf(stderr, "Load hash table index failed!\n");
+			return 1;
+		}
+
+
+		Prepare_methy(fileName[0], chhy_ih_refGenName, refChromeCont);
+
+		methy_extract(0, Read_File1);
+	}
 
 
   return 0;
