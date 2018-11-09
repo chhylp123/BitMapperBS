@@ -228,4 +228,3 @@ Haoyu Cheng: chhy@mail.ustc.edu.cn
 
 
 [1] Kärkkäinen J, Kempa D, Puglisi S J. Parallel external memory suffix sorting[C]//Annual Symposium on Combinatorial Pattern Matching. Springer, Cham, 2015: 329-342.
-
