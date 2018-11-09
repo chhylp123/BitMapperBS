@@ -10,8 +10,7 @@ BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequenc
 -------  
 
 Here are the implementations of "BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequencing". 
-BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads
-from directional protocol. 
+BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads from directional protocol. 
 
 
 ### - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Please Note!!!` ###
@@ -24,7 +23,6 @@ from directional protocol.
 
 >2. (update on November 6, 2018) If BitMapperBS reports “Illegal instruction”, please check whether your CPU supports AVX2 instructions or not. If your CPU does not support AVX2 instructions, please use the SSE4.2 version of BitMapperBS. The detailed steps are listed as follows: 
   >> (1) cd BitMapperBS/for_old_machine_sse4.2
-<<<<<<< HEAD
 
   >> (2) make
 
@@ -32,7 +30,6 @@ from directional protocol.
 >3. (update on November 9, 2018) If you get the error message "fatal error: zlib.h: no such file or directory" when compiling BitMapperBS, please install zlib. In Ubuntu, please try:
    >> sudo apt-get install libz-dev zlib1g-dev
 
-check whether your CPU supports AVX2 instructions or not. If your CPU does not support AVX2 instructions, please use the SSE4.2 version of BitMapperBS. The detailed steps are listed as follows: 
 
 >4. (update on November 9, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
    >> (1) To reduce the amount of disk I/O, you can use the compressed fastq files (.fastq.gz or .fq.gz format) rather than the uncompressed raw files (.fastq or .fq format).
@@ -40,18 +37,6 @@ check whether your CPU supports AVX2 instructions or not. If your CPU does not s
    >> (2) The input files and output files of BitMapperBS (e.g., the read files and the output SAM files) can be saved in fast solid-state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
 
 
-=======
-
-  >> (2) make
-
-
->3. (update on November 9, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
-   >> (1) To reduce the amount of disk I/O, you can use the compressed fastq files (.fastq.gz or .fq.gz format) rather than the uncompressed raw files (.fastq or .fq format).
-   
-   >> (2) The input files and output files of BitMapperBS (e.g., the read files and the output SAM files) can be saved in fast solid-state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
-
-
->>>>>>> 1ef665d106d703650580bc93c46f2892d98e5b2f
 If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
 
 ### Build Requirements ###
