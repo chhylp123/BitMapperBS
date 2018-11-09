@@ -185,7 +185,12 @@ The default maximum allowed edit distance is 8% of read length (0.08). This opti
 
     ./bitmapperBS --search ../../ssd/human_genome.fa --seq ../../ssd/read.fq -t 6 -e 0.04
 
+### Changelog ###
 
+(1) November 9, 2018: version 1.0.0.1 released. 
+     
+     >>Added support of BitMapperBS to accept read files compressed by gzip (.fq.gz or .fastq.gz).
+     >>BitMapperBS fixed the bug of the SAM flag when aligning the single-end reads from pbat protocol.
 
 ### Contacts ###
 
