@@ -28,10 +28,10 @@ from directional protocol.
   >> (2) make
 
 
->2. (update on November 9, 2018) If BitMapperBS reports “Illegal instruction”, please check whether your CPU supports AVX2 instructions or not. If your CPU does not support AVX2 instructions, please use the SSE4.2 version of BitMapperBS. The detailed steps are listed as follows: 
-  >> (1) cd BitMapperBS/for_old_machine_sse4.2
+>3. (update on November 9, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
+   >> (1) To reduce the amount of disk I/O, you can use the compressed fastq files (.fastq.gz or .fq.gz) rather than the uncompressed raw files (.fastq or .fq).
+   >> (2) The input files and output files of BitMapperBS (e.g., the read files and the output SAM files) can be saved in fast solid-state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
 
-  >> (2) make
 
 If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
 
