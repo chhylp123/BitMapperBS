@@ -29,7 +29,8 @@ from directional protocol.
 
 
 >3. (update on November 9, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
-   >> (1) To reduce the amount of disk I/O, you can use the compressed fastq files (.fastq.gz or .fq.gz) rather than the uncompressed raw files (.fastq or .fq).
+   >> (1) To reduce the amount of disk I/O, you can use the compressed fastq files (.fastq.gz or .fq.gz format) rather than the uncompressed raw files (.fastq or .fq format).
+   
    >> (2) The input files and output files of BitMapperBS (e.g., the read files and the output SAM files) can be saved in fast solid-state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
 
 
