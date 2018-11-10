@@ -62,7 +62,7 @@ BitMapperBS has been successfully tested using six CPU threads on a computer wit
 
     git clone https://github.com/chhylp123/BitMapperBS.git
 
-(2) Build (CPU must support AVX2 instructions)
+(2) Build (CPU must support AVX2 instructions or SSE4.2 instructions)
     
     cd BitMapperBS
     make
