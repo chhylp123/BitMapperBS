@@ -21,17 +21,12 @@ BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for W
 
  >> (2) Copy psascan (binary file) to the folder of BitMapperBS.
 
->2. (update on November 6, 2018) If BitMapperBS reports “Illegal instruction”, please check whether your CPU supports AVX2 instructions or not. If your CPU does not support AVX2 instructions, please use the SSE4.2 version of BitMapperBS. The detailed steps are listed as follows: 
-  >> (1) cd BitMapperBS/for_old_machine_sse4.2
 
-  >> (2) make
-
-
->3. (update on November 9, 2018) If you get the error message "fatal error: zlib.h: no such file or directory" when compiling BitMapperBS, please install zlib. In Ubuntu, please try:
+>2. (update on November 9, 2018) If you get the error message "fatal error: zlib.h: no such file or directory" when compiling BitMapperBS, please install zlib. In Ubuntu, please try:
    >> sudo apt-get install libz-dev zlib1g-dev
 
 
->4. (update on November 9, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
+>3. (update on November 9, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
    >> (1) To reduce the amount of disk I/O, you can use the compressed fastq files (.fastq.gz or .fq.gz format) rather than the uncompressed raw files (.fastq or .fq format).
    
    >> (2) The input files and output files of BitMapperBS (e.g., the read files and the output SAM files) can be saved in fast solid state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
@@ -74,14 +69,8 @@ BitMapperBS has been successfully tested using six CPU threads on a computer wit
     
 - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If system reports: "cmake: not found" or "psascan_src/inmem_psascan_src/divsufsort_template.h:42:24: fatal error: divsufsort.h: not found", please install CMake in your system.`
 
-(3) If the CPU does not support AVX2 instructions (in this case, BitMapperBS may be slower without AVX2 instructions)
 
-    cd BitMapperBS/for_old_machine_sse4.2
-    make
-
-- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If system reports: "cmake: not found" or "psascan_src/inmem_psascan_src/divsufsort_template.h:42:24: fatal error: divsufsort.h: not found", please install CMake in your system.`
-
-(4) (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS. 
+(3) (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS. 
 
 
 
@@ -196,6 +185,9 @@ The default maximum allowed edit distance is 8% of read length (0.08). This opti
      
      >>Added support of BitMapperBS to accept read files compressed by gzip (.fq.gz or .fastq.gz).
      >>BitMapperBS fixed the bug of the SAM flag when aligning the single-end reads from pbat protocol.
+     >>BitMapperBS can check if the AVX2 instructions are supported by CPU automatically. If AVX2 is supported, the AVX2 version of BitMapperBS will be compiled, otherwise the SSE4.2 version of BitMapperBS will be compiled. Please note that the AVX2 version of BitMapperBS may be slightly slower than SSE4.2 version of BitMapperBS.
+
+ fixed the bug of the SAM flag when aligning the single-end reads from pbat protocol.
 
 ### Contacts ###
 
