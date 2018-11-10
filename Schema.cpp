@@ -1088,11 +1088,1461 @@ inline void get_actuall_rc_genome(char* tmp_ref, bitmapper_bs_iter rc_start_site
 
 
 
+inline void map_candidate_votes_mutiple_cut_end_to_end_4_sse(
+	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
+	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold,
+	char* tmp_ref, char* read, __m128i* Peq_SSE, unsigned int* min_err, int* min_err_index)
+{
+	bitmapper_bs_iter i = 0;
+	bitmapper_bs_iter t_length = read_length;
+	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
+	bitmapper_bs_iter site;
+	int return_sites[4];
+	unsigned int return_sites_error[4];
+
+	char* t[4];
+
+
+	t[0] = tmp_ref;
+	t[1] = t[0] + p_length + 32;
+	t[2] = t[1] + p_length + 32;
+	t[3] = t[2] + p_length + 32;
+
+
+	i = 0;
+
+	///这个数不能随便改...
+	(*min_err) = ((unsigned int)-1) - 1;
+	(*min_err_index) = -1;
+	bitmapper_bs_iter min_err_site = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter tmp_min_err_site;
+
+	while (i + 4 <= *candidate_votes_length)
+	{
+
+		if (candidate_votes[i].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[0], candidate_votes[i].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[0], candidate_votes[i].site - _msf_refGenLength, p_length);
+		}
+
+
+		if (candidate_votes[i + 1].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[1], candidate_votes[i + 1].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[1], candidate_votes[i + 1].site - _msf_refGenLength, p_length);
+		}
+
+
+		if (candidate_votes[i + 2].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[2], candidate_votes[i + 2].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[2], candidate_votes[i + 2].site - _msf_refGenLength, p_length);
+		}
+
+
+
+		if (candidate_votes[i + 3].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[3], candidate_votes[i + 3].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[3], candidate_votes[i + 3].site - _msf_refGenLength, p_length);
+		}
 
 
 
 
 
+		BS_Reserve_Banded_BPM_4_SSE_only(t[0], t[1], t[2], t[3], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		candidate_votes[i].end_site = return_sites[0];
+		candidate_votes[i + 1].end_site = return_sites[1];
+		candidate_votes[i + 2].end_site = return_sites[2];
+		candidate_votes[i + 3].end_site = return_sites[3];
+
+		candidate_votes[i].err = return_sites_error[0];
+		candidate_votes[i + 1].err = return_sites_error[1];
+		candidate_votes[i + 2].err = return_sites_error[2];
+		candidate_votes[i + 3].err = return_sites_error[3];
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[0] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+		}
+		else if (return_sites_error[0]<(*min_err))
+		{
+			(*min_err) = return_sites_error[0];
+			(*min_err_index) = i;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+		tmp_min_err_site = candidate_votes[i + 1].site + candidate_votes[i + 1].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[1] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+		}
+		else if (return_sites_error[1]<(*min_err))
+		{
+			(*min_err) = return_sites_error[1];
+			(*min_err_index) = i + 1;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+
+		tmp_min_err_site = candidate_votes[i + 2].site + candidate_votes[i + 2].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[2] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+		}
+		else if (return_sites_error[2]<(*min_err))
+		{
+			(*min_err) = return_sites_error[2];
+			(*min_err_index) = i + 2;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+
+		tmp_min_err_site = candidate_votes[i + 3].site + candidate_votes[i + 3].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[3] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+		}
+		else if (return_sites_error[3]<(*min_err))
+		{
+			(*min_err) = return_sites_error[3];
+			(*min_err_index) = i + 3;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+
+
+		i = i + 4;
+
+	}
+
+	memset(tmp_ref, 0, (SEQ_MAX_LENGTH)* 16);
+
+	int last = i;
+	for (; last < *candidate_votes_length; last++)
+	{
+
+
+		if (candidate_votes[last].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[last - i], candidate_votes[last].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[last - i], candidate_votes[last].site - _msf_refGenLength, p_length);
+		}
+
+
+
+	}
+
+
+	int last_length = *candidate_votes_length - i;
+
+	if (last_length == 1)
+	{
+		candidate_votes[i].end_site =
+			BS_Reserve_Banded_BPM(t[0], p_length, read, t_length, error_threshold, &(candidate_votes[i].err));
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (candidate_votes[i].err == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+		}
+		else if (candidate_votes[i].err < (*min_err))
+		{
+			(*min_err) = candidate_votes[i].err;
+			(*min_err_index) = i;
+			min_err_site = tmp_min_err_site;
+		}
+
+	}
+	else if (last_length != 0)
+	{
+
+
+		BS_Reserve_Banded_BPM_4_SSE_only(t[0], t[1], t[2], t[3], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		int inner_i = 0;
+
+		for (inner_i = 0; inner_i < last_length; inner_i++)
+		{
+
+			candidate_votes[i + inner_i].end_site = return_sites[inner_i];
+			candidate_votes[i + inner_i].err = return_sites_error[inner_i];
+
+			tmp_min_err_site = candidate_votes[i + inner_i].site + candidate_votes[i + inner_i].end_site;
+			///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+			if (return_sites_error[inner_i] == (*min_err)
+				&&
+				min_err_site != tmp_min_err_site)
+			{
+				(*min_err_index) = -2;
+			}
+			else if (return_sites_error[inner_i]<(*min_err))
+			{
+				(*min_err) = return_sites_error[inner_i];
+				(*min_err_index) = i + inner_i;
+				min_err_site = tmp_min_err_site;
+			}
+
+		}
+
+	}
+
+
+	if ((*min_err_index) >= 0)
+	{
+
+		candidate_votes[0].err = candidate_votes[(*min_err_index)].err;
+		candidate_votes[0].end_site = candidate_votes[(*min_err_index)].end_site;
+		candidate_votes[0].site = candidate_votes[(*min_err_index)].site;
+	}
+
+
+}
+
+
+
+inline void map_candidate_votes_mutiple_cut_end_to_end_2_sse(
+	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
+	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold,
+	char* tmp_ref, char* read, __m128i* Peq_SSE, unsigned int* min_err, int* min_err_index)
+{
+	bitmapper_bs_iter i = 0;
+	bitmapper_bs_iter t_length = read_length;
+	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
+	bitmapper_bs_iter site;
+	int return_sites[2];
+	unsigned int return_sites_error[2];
+
+	char* t[2];
+
+
+	t[0] = tmp_ref;
+	t[1] = t[0] + p_length + 32;
+
+
+	i = 0;
+
+	///这个数不能随便改...
+	(*min_err) = ((unsigned int)-1) - 1;
+	(*min_err_index) = -1;
+	bitmapper_bs_iter min_err_site = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter tmp_min_err_site;
+
+	while (i + 2 <= *candidate_votes_length)
+	{
+
+		if (candidate_votes[i].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[0], candidate_votes[i].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[0], candidate_votes[i].site - _msf_refGenLength, p_length);
+		}
+
+
+		if (candidate_votes[i + 1].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[1], candidate_votes[i + 1].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[1], candidate_votes[i + 1].site - _msf_refGenLength, p_length);
+		}
+
+
+
+
+
+
+		BS_Reserve_Banded_BPM_2_SSE_only(t[0], t[1], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		candidate_votes[i].end_site = return_sites[0];
+		candidate_votes[i + 1].end_site = return_sites[1];
+
+
+		candidate_votes[i].err = return_sites_error[0];
+		candidate_votes[i + 1].err = return_sites_error[1];
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[0] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+		}
+		else if (return_sites_error[0]<(*min_err))
+		{
+			(*min_err) = return_sites_error[0];
+			(*min_err_index) = i;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+		tmp_min_err_site = candidate_votes[i + 1].site + candidate_votes[i + 1].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[1] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+		}
+		else if (return_sites_error[1]<(*min_err))
+		{
+			(*min_err) = return_sites_error[1];
+			(*min_err_index) = i + 1;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+		i = i + 2;
+
+	}
+
+	memset(tmp_ref, 0, (SEQ_MAX_LENGTH)* 16);
+
+	int last = i;
+	for (; last < *candidate_votes_length; last++)
+	{
+
+
+		if (candidate_votes[last].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[last - i], candidate_votes[last].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[last - i], candidate_votes[last].site - _msf_refGenLength, p_length);
+		}
+
+
+
+	}
+
+
+	int last_length = *candidate_votes_length - i;
+
+	if (last_length == 1)
+	{
+		candidate_votes[i].end_site =
+			BS_Reserve_Banded_BPM(t[0], p_length, read, t_length, error_threshold, &(candidate_votes[i].err));
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (candidate_votes[i].err == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+		}
+		else if (candidate_votes[i].err < (*min_err))
+		{
+			(*min_err) = candidate_votes[i].err;
+			(*min_err_index) = i;
+			min_err_site = tmp_min_err_site;
+		}
+
+	}
+	else if (last_length != 0)
+	{
+
+
+		BS_Reserve_Banded_BPM_2_SSE_only(t[0], t[1], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		int inner_i = 0;
+
+		for (inner_i = 0; inner_i < last_length; inner_i++)
+		{
+
+			candidate_votes[i + inner_i].end_site = return_sites[inner_i];
+			candidate_votes[i + inner_i].err = return_sites_error[inner_i];
+
+			tmp_min_err_site = candidate_votes[i + inner_i].site + candidate_votes[i + inner_i].end_site;
+			///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+			if (return_sites_error[inner_i] == (*min_err)
+				&&
+				min_err_site != tmp_min_err_site)
+			{
+				(*min_err_index) = -2;
+			}
+			else if (return_sites_error[inner_i]<(*min_err))
+			{
+				(*min_err) = return_sites_error[inner_i];
+				(*min_err_index) = i + inner_i;
+				min_err_site = tmp_min_err_site;
+			}
+
+		}
+
+	}
+
+
+	if ((*min_err_index) >= 0)
+	{
+
+		candidate_votes[0].err = candidate_votes[(*min_err_index)].err;
+		candidate_votes[0].end_site = candidate_votes[(*min_err_index)].end_site;
+		candidate_votes[0].site = candidate_votes[(*min_err_index)].site;
+	}
+
+
+}
+
+
+
+
+
+inline void map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end_sse(
+	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
+	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold,
+	char* tmp_ref, char* read, __m128i* Peq_SSE, unsigned int* min_err, int* best_mapping_occ,
+	char* name)
+{
+	bitmapper_bs_iter i = 0;
+	bitmapper_bs_iter t_length = read_length;
+	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
+	bitmapper_bs_iter site;
+	int return_sites[4];
+	unsigned int return_sites_error[4];
+
+	char* t[4];
+
+
+
+	t[0] = tmp_ref;
+	t[1] = t[0] + p_length + 32;
+	t[2] = t[1] + p_length + 32;
+	t[3] = t[2] + p_length + 32;
+
+
+	i = 0;
+
+	///这个数不能随便改...
+	(*min_err) = ((unsigned int)-1) - 1;
+	///(*min_err_index) = -1;
+	(*best_mapping_occ) = 0;
+	bitmapper_bs_iter pre_err_site = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter tmp_min_err_site;
+
+
+
+	while (i + 4 <= *candidate_votes_length)
+	{
+
+		if (candidate_votes[i].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[0], candidate_votes[i].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[0], candidate_votes[i].site - _msf_refGenLength, p_length);
+		}
+
+
+		if (candidate_votes[i + 1].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[1], candidate_votes[i + 1].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[1], candidate_votes[i + 1].site - _msf_refGenLength, p_length);
+		}
+
+
+		if (candidate_votes[i + 2].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[2], candidate_votes[i + 2].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[2], candidate_votes[i + 2].site - _msf_refGenLength, p_length);
+		}
+
+
+
+		if (candidate_votes[i + 3].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[3], candidate_votes[i + 3].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[3], candidate_votes[i + 3].site - _msf_refGenLength, p_length);
+		}
+
+
+
+
+
+		BS_Reserve_Banded_BPM_4_SSE_only(t[0], t[1], t[2], t[3], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		candidate_votes[i].end_site = return_sites[0];
+		candidate_votes[i + 1].end_site = return_sites[1];
+		candidate_votes[i + 2].end_site = return_sites[2];
+		candidate_votes[i + 3].end_site = return_sites[3];
+
+		candidate_votes[i].err = return_sites_error[0];
+		candidate_votes[i + 1].err = return_sites_error[1];
+		candidate_votes[i + 2].err = return_sites_error[2];
+		candidate_votes[i + 3].err = return_sites_error[3];
+
+
+
+
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		if (return_sites_error[0] <= error_threshold
+			&&
+			pre_err_site != tmp_min_err_site)
+		{
+			candidate_votes[(*best_mapping_occ)].site = candidate_votes[i].site;
+			candidate_votes[(*best_mapping_occ)].err = candidate_votes[i].err;
+			candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i].end_site;
+			(*best_mapping_occ)++;
+		}
+		pre_err_site = tmp_min_err_site;
+
+
+
+		tmp_min_err_site = candidate_votes[i + 1].site + candidate_votes[i + 1].end_site;
+		if (return_sites_error[1] <= error_threshold
+			&&
+			pre_err_site != tmp_min_err_site)
+		{
+			candidate_votes[(*best_mapping_occ)].site = candidate_votes[i + 1].site;
+			candidate_votes[(*best_mapping_occ)].err = candidate_votes[i + 1].err;
+			candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i + 1].end_site;
+			(*best_mapping_occ)++;
+		}
+		pre_err_site = tmp_min_err_site;
+
+
+
+		tmp_min_err_site = candidate_votes[i + 2].site + candidate_votes[i + 2].end_site;
+		if (return_sites_error[2] <= error_threshold
+			&&
+			pre_err_site != tmp_min_err_site)
+		{
+			candidate_votes[(*best_mapping_occ)].site = candidate_votes[i + 2].site;
+			candidate_votes[(*best_mapping_occ)].err = candidate_votes[i + 2].err;
+			candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i + 2].end_site;
+			(*best_mapping_occ)++;
+		}
+		pre_err_site = tmp_min_err_site;
+
+
+
+		tmp_min_err_site = candidate_votes[i + 3].site + candidate_votes[i + 3].end_site;
+		if (return_sites_error[3] <= error_threshold
+			&&
+			pre_err_site != tmp_min_err_site)
+		{
+			candidate_votes[(*best_mapping_occ)].site = candidate_votes[i + 3].site;
+			candidate_votes[(*best_mapping_occ)].err = candidate_votes[i + 3].err;
+			candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i + 3].end_site;
+			(*best_mapping_occ)++;
+		}
+		pre_err_site = tmp_min_err_site;
+
+
+		i = i + 4;
+
+	}
+
+	memset(tmp_ref, 0, (SEQ_MAX_LENGTH)* 16);
+
+	int last = i;
+	for (; last < *candidate_votes_length; last++)
+	{
+
+
+		if (candidate_votes[last].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[last - i], candidate_votes[last].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[last - i], candidate_votes[last].site - _msf_refGenLength, p_length);
+		}
+
+
+
+	}
+
+
+	int last_length = *candidate_votes_length - i;
+
+	if (last_length == 1)
+	{
+		candidate_votes[i].end_site =
+			BS_Reserve_Banded_BPM(t[0], p_length, read, t_length, error_threshold, &(candidate_votes[i].err));
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		if (candidate_votes[i].err <= error_threshold
+			&&
+			pre_err_site != tmp_min_err_site)
+		{
+			candidate_votes[(*best_mapping_occ)].site = candidate_votes[i].site;
+			candidate_votes[(*best_mapping_occ)].err = candidate_votes[i].err;
+			candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i].end_site;
+			(*best_mapping_occ)++;
+		}
+		pre_err_site = tmp_min_err_site;
+
+	}
+	else if (last_length != 0)
+	{
+
+
+		BS_Reserve_Banded_BPM_4_SSE_only(t[0], t[1], t[2], t[3], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		int inner_i = 0;
+
+		for (inner_i = 0; inner_i < last_length; inner_i++)
+		{
+
+			candidate_votes[i + inner_i].end_site = return_sites[inner_i];
+			candidate_votes[i + inner_i].err = return_sites_error[inner_i];
+
+
+			tmp_min_err_site = candidate_votes[i + inner_i].site + candidate_votes[i + inner_i].end_site;
+			if (return_sites_error[inner_i] <= error_threshold
+				&&
+				pre_err_site != tmp_min_err_site)
+			{
+				candidate_votes[(*best_mapping_occ)].site = candidate_votes[i + inner_i].site;
+				candidate_votes[(*best_mapping_occ)].err = candidate_votes[i + inner_i].err;
+				candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i + inner_i].end_site;
+				(*best_mapping_occ)++;
+			}
+			pre_err_site = tmp_min_err_site;
+
+
+		}
+
+	}
+
+}
+
+
+
+
+
+inline void map_candidate_votes_mutiple_cut_end_to_end_2_for_paired_end_sse(
+	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
+	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold,
+	char* tmp_ref, char* read, __m128i* Peq_SSE, unsigned int* min_err, int* best_mapping_occ,
+	char* name)
+{
+	bitmapper_bs_iter i = 0;
+	bitmapper_bs_iter t_length = read_length;
+	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
+	bitmapper_bs_iter site;
+	int return_sites[2];
+	unsigned int return_sites_error[2];
+
+	char* t[2];
+
+
+
+	t[0] = tmp_ref;
+	t[1] = t[0] + p_length + 32;
+
+
+
+	i = 0;
+
+	///这个数不能随便改...
+	(*min_err) = ((unsigned int)-1) - 1;
+	///(*min_err_index) = -1;
+	(*best_mapping_occ) = 0;
+	bitmapper_bs_iter pre_err_site = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter tmp_min_err_site;
+
+
+
+	while (i + 2 <= *candidate_votes_length)
+	{
+
+		if (candidate_votes[i].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[0], candidate_votes[i].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[0], candidate_votes[i].site - _msf_refGenLength, p_length);
+		}
+
+
+		if (candidate_votes[i + 1].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[1], candidate_votes[i + 1].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[1], candidate_votes[i + 1].site - _msf_refGenLength, p_length);
+		}
+
+
+
+
+
+
+
+
+		BS_Reserve_Banded_BPM_2_SSE_only(t[0], t[1], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		candidate_votes[i].end_site = return_sites[0];
+		candidate_votes[i + 1].end_site = return_sites[1];
+
+
+		candidate_votes[i].err = return_sites_error[0];
+		candidate_votes[i + 1].err = return_sites_error[1];
+
+
+
+
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		if (return_sites_error[0] <= error_threshold
+			&&
+			pre_err_site != tmp_min_err_site)
+		{
+			candidate_votes[(*best_mapping_occ)].site = candidate_votes[i].site;
+			candidate_votes[(*best_mapping_occ)].err = candidate_votes[i].err;
+			candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i].end_site;
+			(*best_mapping_occ)++;
+		}
+		pre_err_site = tmp_min_err_site;
+
+
+
+		tmp_min_err_site = candidate_votes[i + 1].site + candidate_votes[i + 1].end_site;
+		if (return_sites_error[1] <= error_threshold
+			&&
+			pre_err_site != tmp_min_err_site)
+		{
+			candidate_votes[(*best_mapping_occ)].site = candidate_votes[i + 1].site;
+			candidate_votes[(*best_mapping_occ)].err = candidate_votes[i + 1].err;
+			candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i + 1].end_site;
+			(*best_mapping_occ)++;
+		}
+		pre_err_site = tmp_min_err_site;
+
+		i = i + 2;
+
+	}
+
+	memset(tmp_ref, 0, (SEQ_MAX_LENGTH)* 16);
+
+	int last = i;
+	for (; last < *candidate_votes_length; last++)
+	{
+
+
+		if (candidate_votes[last].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[last - i], candidate_votes[last].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[last - i], candidate_votes[last].site - _msf_refGenLength, p_length);
+		}
+
+
+
+	}
+
+
+	int last_length = *candidate_votes_length - i;
+
+	if (last_length == 1)
+	{
+		candidate_votes[i].end_site =
+			BS_Reserve_Banded_BPM(t[0], p_length, read, t_length, error_threshold, &(candidate_votes[i].err));
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		if (candidate_votes[i].err <= error_threshold
+			&&
+			pre_err_site != tmp_min_err_site)
+		{
+			candidate_votes[(*best_mapping_occ)].site = candidate_votes[i].site;
+			candidate_votes[(*best_mapping_occ)].err = candidate_votes[i].err;
+			candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i].end_site;
+			(*best_mapping_occ)++;
+		}
+		pre_err_site = tmp_min_err_site;
+
+	}
+	else if (last_length != 0)
+	{
+
+
+		BS_Reserve_Banded_BPM_2_SSE_only(t[0], t[1], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		int inner_i = 0;
+
+		for (inner_i = 0; inner_i < last_length; inner_i++)
+		{
+
+			candidate_votes[i + inner_i].end_site = return_sites[inner_i];
+			candidate_votes[i + inner_i].err = return_sites_error[inner_i];
+
+
+			tmp_min_err_site = candidate_votes[i + inner_i].site + candidate_votes[i + inner_i].end_site;
+			if (return_sites_error[inner_i] <= error_threshold
+				&&
+				pre_err_site != tmp_min_err_site)
+			{
+				candidate_votes[(*best_mapping_occ)].site = candidate_votes[i + inner_i].site;
+				candidate_votes[(*best_mapping_occ)].err = candidate_votes[i + inner_i].err;
+				candidate_votes[(*best_mapping_occ)].end_site = candidate_votes[i + inner_i].end_site;
+				(*best_mapping_occ)++;
+			}
+			pre_err_site = tmp_min_err_site;
+
+
+		}
+
+	}
+
+}
+
+
+inline int map_candidate_votes_mutiple_end_to_end_4_sse(
+	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
+	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold,
+	char* tmp_ref, char* read, __m128i* Peq_SSE, unsigned int* min_err, int* min_err_index)
+{
+	bitmapper_bs_iter i = 0;
+	bitmapper_bs_iter t_length = read_length;
+	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
+	bitmapper_bs_iter site;
+	int return_sites[4];
+	unsigned int return_sites_error[4];
+	int mumber_of_exact_matches = 0;
+
+	char* t[4];
+
+	t[0] = tmp_ref;
+	t[1] = t[0] + p_length + 32;
+	t[2] = t[1] + p_length + 32;
+	t[3] = t[2] + p_length + 32;
+
+
+	i = 0;
+
+	//这个数不能随便改...
+	(*min_err) = ((unsigned int)-1) - 1;
+	(*min_err_index) = -1;
+
+	bitmapper_bs_iter min_err_site = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter tmp_min_err_site;
+
+	while (i + 4 <= *candidate_votes_length)
+	{
+
+		if (candidate_votes[i].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[0], candidate_votes[i].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[0], candidate_votes[i].site - _msf_refGenLength, p_length);
+		}
+
+
+		if (candidate_votes[i + 1].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[1], candidate_votes[i + 1].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[1], candidate_votes[i + 1].site - _msf_refGenLength, p_length);
+		}
+
+
+		if (candidate_votes[i + 2].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[2], candidate_votes[i + 2].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[2], candidate_votes[i + 2].site - _msf_refGenLength, p_length);
+		}
+
+
+
+		if (candidate_votes[i + 3].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[3], candidate_votes[i + 3].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[3], candidate_votes[i + 3].site - _msf_refGenLength, p_length);
+		}
+
+
+
+		BS_Reserve_Banded_BPM_4_SSE_only(t[0], t[1], t[2], t[3], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+		candidate_votes[i].end_site = return_sites[0];
+		candidate_votes[i + 1].end_site = return_sites[1];
+		candidate_votes[i + 2].end_site = return_sites[2];
+		candidate_votes[i + 3].end_site = return_sites[3];
+
+		candidate_votes[i].err = return_sites_error[0];
+		candidate_votes[i + 1].err = return_sites_error[1];
+		candidate_votes[i + 2].err = return_sites_error[2];
+		candidate_votes[i + 3].err = return_sites_error[3];
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[0] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+
+			if ((*min_err) == 0)
+			{
+				return 0;
+			}
+
+		}
+		else if (return_sites_error[0]<(*min_err))
+		{
+			(*min_err) = return_sites_error[0];
+			(*min_err_index) = i;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+
+
+		tmp_min_err_site = candidate_votes[i + 1].site + candidate_votes[i + 1].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[1] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+
+			if ((*min_err) == 0)
+			{
+				return 0;
+			}
+
+		}
+		else if (return_sites_error[1]<(*min_err))
+		{
+			(*min_err) = return_sites_error[1];
+			(*min_err_index) = i + 1;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+
+
+		tmp_min_err_site = candidate_votes[i + 2].site + candidate_votes[i + 2].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[2] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+
+			if ((*min_err) == 0)
+			{
+				return 0;
+			}
+
+		}
+		else if (return_sites_error[2]<(*min_err))
+		{
+			(*min_err) = return_sites_error[2];
+			(*min_err_index) = i + 2;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+
+		tmp_min_err_site = candidate_votes[i + 3].site + candidate_votes[i + 3].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[3] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+
+			if ((*min_err) == 0)
+			{
+				return 0;
+			}
+
+		}
+		else if (return_sites_error[3]<(*min_err))
+		{
+			(*min_err) = return_sites_error[3];
+			(*min_err_index) = i + 3;
+			min_err_site = tmp_min_err_site;
+		}
+
+		i = i + 4;
+
+	}
+
+
+	memset(tmp_ref, 0, (SEQ_MAX_LENGTH)* 16);
+
+
+	int last = i;
+	for (; last < *candidate_votes_length; last++)
+	{
+		if (candidate_votes[last].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[last - i], candidate_votes[last].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[last - i], candidate_votes[last].site - _msf_refGenLength, p_length);
+		}
+	}
+
+
+	int last_length = *candidate_votes_length - i;
+
+	if (last_length == 1)
+	{
+		candidate_votes[i].end_site =
+			BS_Reserve_Banded_BPM(t[0], p_length, read, t_length, error_threshold, &(candidate_votes[i].err));
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (candidate_votes[i].err == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+
+			if ((*min_err) == 0)
+			{
+				return 0;
+			}
+		}
+		else if (candidate_votes[i].err < (*min_err))
+		{
+			(*min_err) = candidate_votes[i].err;
+			(*min_err_index) = i;
+			min_err_site = tmp_min_err_site;
+		}
+
+	}
+	else if (last_length != 0)
+	{
+
+
+		BS_Reserve_Banded_BPM_4_SSE_only(t[0], t[1], t[2], t[3], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		int inner_i = 0;
+
+		for (inner_i = 0; inner_i < last_length; inner_i++)
+		{
+
+			candidate_votes[i + inner_i].end_site = return_sites[inner_i];
+			candidate_votes[i + inner_i].err = return_sites_error[inner_i];
+
+
+			tmp_min_err_site = candidate_votes[i + inner_i].site + candidate_votes[i + inner_i].end_site;
+			///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+			if (return_sites_error[inner_i] == (*min_err)
+				&&
+				min_err_site != tmp_min_err_site)
+			{
+				(*min_err_index) = -2;
+
+				if ((*min_err) == 0)
+				{
+					return 0;
+				}
+			}
+			else if (return_sites_error[inner_i]<(*min_err))
+			{
+				(*min_err) = return_sites_error[inner_i];
+				(*min_err_index) = i + inner_i;
+				min_err_site = tmp_min_err_site;
+			}
+
+		}
+
+	}
+
+
+
+	if ((*min_err_index) >= 0)
+	{
+
+		candidate_votes[0].err = candidate_votes[(*min_err_index)].err;
+		candidate_votes[0].end_site = candidate_votes[(*min_err_index)].end_site;
+		candidate_votes[0].site = candidate_votes[(*min_err_index)].site;
+	}
+
+
+	return 1;
+
+}
+
+
+
+inline int map_candidate_votes_mutiple_end_to_end_2_sse(
+	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
+	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold,
+	char* tmp_ref, char* read, __m128i* Peq_SSE, unsigned int* min_err, int* min_err_index)
+{
+	bitmapper_bs_iter i = 0;
+	bitmapper_bs_iter t_length = read_length;
+	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
+	bitmapper_bs_iter site;
+	int return_sites[2];
+	unsigned int return_sites_error[2];
+	int mumber_of_exact_matches = 0;
+
+	char* t[2];
+
+	t[0] = tmp_ref;
+	t[1] = t[0] + p_length + 32;
+
+
+	i = 0;
+
+	//这个数不能随便改...
+	(*min_err) = ((unsigned int)-1) - 1;
+	(*min_err_index) = -1;
+
+	bitmapper_bs_iter min_err_site = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter tmp_min_err_site;
+
+	while (i + 2 <= *candidate_votes_length)
+	{
+
+		if (candidate_votes[i].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[0], candidate_votes[i].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[0], candidate_votes[i].site - _msf_refGenLength, p_length);
+		}
+
+
+		if (candidate_votes[i + 1].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[1], candidate_votes[i + 1].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[1], candidate_votes[i + 1].site - _msf_refGenLength, p_length);
+		}
+
+
+
+
+		BS_Reserve_Banded_BPM_2_SSE_only(t[0], t[1], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+		candidate_votes[i].end_site = return_sites[0];
+		candidate_votes[i + 1].end_site = return_sites[1];
+
+
+		candidate_votes[i].err = return_sites_error[0];
+		candidate_votes[i + 1].err = return_sites_error[1];
+
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[0] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+
+			if ((*min_err) == 0)
+			{
+				return 0;
+			}
+
+		}
+		else if (return_sites_error[0]<(*min_err))
+		{
+			(*min_err) = return_sites_error[0];
+			(*min_err_index) = i;
+			min_err_site = tmp_min_err_site;
+		}
+
+
+
+
+		tmp_min_err_site = candidate_votes[i + 1].site + candidate_votes[i + 1].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (return_sites_error[1] == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+
+			if ((*min_err) == 0)
+			{
+				return 0;
+			}
+
+		}
+		else if (return_sites_error[1]<(*min_err))
+		{
+			(*min_err) = return_sites_error[1];
+			(*min_err_index) = i + 1;
+			min_err_site = tmp_min_err_site;
+		}
+
+		i = i + 2;
+
+	}
+
+
+	memset(tmp_ref, 0, (SEQ_MAX_LENGTH)* 16);
+
+
+	int last = i;
+	for (; last < *candidate_votes_length; last++)
+	{
+		if (candidate_votes[last].site < _msf_refGenLength)
+		{
+			get_actuall_genome(t[last - i], candidate_votes[last].site, p_length);
+
+		}
+		else
+		{
+			get_actuall_rc_genome(t[last - i], candidate_votes[last].site - _msf_refGenLength, p_length);
+		}
+	}
+
+
+	int last_length = *candidate_votes_length - i;
+
+	if (last_length == 1)
+	{
+		candidate_votes[i].end_site =
+			BS_Reserve_Banded_BPM(t[0], p_length, read, t_length, error_threshold, &(candidate_votes[i].err));
+
+
+
+		tmp_min_err_site = candidate_votes[i].site + candidate_votes[i].end_site;
+		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+		if (candidate_votes[i].err == (*min_err)
+			&&
+			min_err_site != tmp_min_err_site)
+		{
+			(*min_err_index) = -2;
+
+			if ((*min_err) == 0)
+			{
+				return 0;
+			}
+		}
+		else if (candidate_votes[i].err < (*min_err))
+		{
+			(*min_err) = candidate_votes[i].err;
+			(*min_err_index) = i;
+			min_err_site = tmp_min_err_site;
+		}
+
+	}
+	else if (last_length != 0)
+	{
+
+
+		BS_Reserve_Banded_BPM_2_SSE_only(t[0], t[1], p_length, read, t_length,
+			return_sites, return_sites_error, error_threshold, Peq_SSE);
+
+
+
+		int inner_i = 0;
+
+		for (inner_i = 0; inner_i < last_length; inner_i++)
+		{
+
+			candidate_votes[i + inner_i].end_site = return_sites[inner_i];
+			candidate_votes[i + inner_i].err = return_sites_error[inner_i];
+
+
+			tmp_min_err_site = candidate_votes[i + inner_i].site + candidate_votes[i + inner_i].end_site;
+			///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
+			if (return_sites_error[inner_i] == (*min_err)
+				&&
+				min_err_site != tmp_min_err_site)
+			{
+				(*min_err_index) = -2;
+
+				if ((*min_err) == 0)
+				{
+					return 0;
+				}
+			}
+			else if (return_sites_error[inner_i]<(*min_err))
+			{
+				(*min_err) = return_sites_error[inner_i];
+				(*min_err_index) = i + inner_i;
+				min_err_site = tmp_min_err_site;
+			}
+
+		}
+
+	}
+
+
+
+	if ((*min_err_index) >= 0)
+	{
+
+		candidate_votes[0].err = candidate_votes[(*min_err_index)].err;
+		candidate_votes[0].end_site = candidate_votes[(*min_err_index)].end_site;
+		candidate_votes[0].site = candidate_votes[(*min_err_index)].site;
+	}
+
+
+	return 1;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if defined __AVX2__
 
 inline void map_candidate_votes_mutiple_cut_end_to_end_4(
 	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
@@ -1383,11 +2833,11 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4(
 
 }
 
+#endif
 
 
 
-
-
+#if defined __AVX2__
 
 inline void map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end(
 	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
@@ -1634,7 +3084,9 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end(
 	}
 
 }
+#endif
 
+#if defined __AVX2__
 
 ///就是加了一个返回值，返回值记录best mapping的下标罢了
 inline void map_candidate_votes_mutiple_cut_end_to_end_8_for_paired_end(
@@ -2003,12 +3455,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8_for_paired_end(
 
 }
 
+#endif
 
 
 
 
-
-
+#if defined __AVX2__
 
 inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
@@ -2410,6 +3862,7 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 
 }
 
+#endif
 
 
 
@@ -2424,7 +3877,7 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 
 
 
-
+#if defined __AVX2__
 
 inline int map_candidate_votes_mutiple_end_to_end_8(
 	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
@@ -2891,12 +4344,12 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 }
 
 
+#endif
 
 
 
 
-
-
+#if defined __AVX2__
 
 
 inline int map_candidate_votes_mutiple_end_to_end_4(
@@ -3264,7 +4717,7 @@ inline int map_candidate_votes_mutiple_end_to_end_4(
 
 }
 
-
+#endif
 
 
 
@@ -6934,7 +8387,11 @@ int inline process_rest_seed_filter_debug(
 	bitmapper_bs_iter candidates_votes_length1,
 	bitmapper_bs_iter error_threshold,
 	char* tmp_ref,
+#if defined __AVX2__
 	__m256i* Peq_SSE,
+#else
+	__m128i* Peq_SSE,
+#endif
 	unsigned int min_err,
 	seed_votes* candidates_votes2,
 	int best_mapp_occ2,
@@ -7187,13 +8644,23 @@ int inline process_rest_seed_filter_debug(
 
 		if (error_threshold <= 15)
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_8_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 		else
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_2_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 
 
@@ -7299,7 +8766,11 @@ int inline reseed_filter(
 	bitmapper_bs_iter candidates_votes_length1,
 	bitmapper_bs_iter error_threshold,
 	char* tmp_ref,
+#if defined __AVX2__
 	__m256i* Peq_SSE,
+#else
+	__m128i* Peq_SSE,
+#endif
 	unsigned int min_err,
 	seed_votes* candidates_votes2,
 	int best_mapp_occ2,
@@ -7555,13 +9026,23 @@ int inline reseed_filter(
 
 		if (error_threshold <= 15)
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_8_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 		else
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_2_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 
 
@@ -7605,7 +9086,11 @@ int inline reseed_filter_muti_thread(
 	bitmapper_bs_iter candidates_votes_length1,
 	bitmapper_bs_iter error_threshold,
 	char* tmp_ref,
+#if defined __AVX2__
 	__m256i* Peq_SSE,
+#else
+	__m128i* Peq_SSE,
+#endif
 	unsigned int min_err,
 	seed_votes* candidates_votes2,
 	int best_mapp_occ2,
@@ -7791,13 +9276,23 @@ int inline reseed_filter_muti_thread(
 
 		if (error_threshold <= 15)
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_8_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 		else
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_2_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 
 
@@ -7837,7 +9332,11 @@ int inline process_rest_seed_filter_muti_thread(
 	bitmapper_bs_iter candidates_votes_length1,
 	bitmapper_bs_iter error_threshold,
 	char* tmp_ref,
+#if defined __AVX2__
 	__m256i* Peq_SSE,
+#else
+	__m128i* Peq_SSE,
+#endif
 	unsigned int min_err,
 	seed_votes* candidates_votes2,
 	int best_mapp_occ2,
@@ -8091,13 +9590,23 @@ int inline process_rest_seed_filter_muti_thread(
 
 		if (error_threshold <= 15)
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_8_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 		else
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_2_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 
 
@@ -8152,7 +9661,11 @@ int inline process_rest_seed_debug(
 	bitmapper_bs_iter candidates_votes_length1,
 	bitmapper_bs_iter error_threshold,
 	char* tmp_ref,
+#if defined __AVX2__
 	__m256i* Peq_SSE,
+#else
+	__m128i* Peq_SSE,
+#endif
 	unsigned int min_err,
 	int get_error1,
 	long long first_seed_match_length1,
@@ -8360,13 +9873,23 @@ int inline process_rest_seed_debug(
 
 		if (error_threshold <= 15)
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_8_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 		else
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_2_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 
 
@@ -8415,7 +9938,11 @@ int inline process_rest_seed_muti_thread(
 	bitmapper_bs_iter candidates_votes_length1,
 	bitmapper_bs_iter error_threshold,
 	char* tmp_ref,
+#if defined __AVX2__
 	__m256i* Peq_SSE,
+#else
+	__m128i* Peq_SSE,
+#endif
 	unsigned int min_err,
 	bwt_locate_queue* get_queue,
 	int get_error1,
@@ -8624,13 +10151,23 @@ int inline process_rest_seed_muti_thread(
 
 		if (error_threshold <= 15)
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_8_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 		else
 		{
+#if defined __AVX2__
 			map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end(candidates_votes1, &candidates_votes_length1, (*current_read).length,
 				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#else
+			map_candidate_votes_mutiple_cut_end_to_end_2_for_paired_end_sse(candidates_votes1, &candidates_votes_length1, (*current_read).length,
+				error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ1, (*current_read).name);
+#endif
 		}
 
 
@@ -8667,20 +10204,34 @@ inline int verify_candidate_locations(
 	char* cigar,
 	char* tmp_ref,
 	seed_votes *candidates_votes,
+#if defined __AVX2__
 	__m256i* Peq_SSE)
+#else
+	__m128i* Peq_SSE)
+#endif
 {
 	unsigned int min_err;
 	int best_mapp_occ = 0;
 
 	if (error_threshold <= 15)
 	{
+#if defined __AVX2__
 		map_candidate_votes_mutiple_cut_end_to_end_8_for_paired_end(candidates_votes, &candidates_votes_length, (*current_read).length,
 			error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ, (*current_read).name);
+#else
+		map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end_sse(candidates_votes, &candidates_votes_length, (*current_read).length,
+			error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ, (*current_read).name);
+#endif
 	}
 	else
 	{
+#if defined __AVX2__
 		map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end(candidates_votes, &candidates_votes_length, (*current_read).length,
 			error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ, (*current_read).name);
+#else
+		map_candidate_votes_mutiple_cut_end_to_end_2_for_paired_end_sse(candidates_votes, &candidates_votes_length, (*current_read).length,
+			error_threshold, tmp_ref, (*current_read).seq, Peq_SSE, &min_err, &best_mapp_occ, (*current_read).name);
+#endif
 	}
 
 	return best_mapp_occ;
@@ -9288,12 +10839,40 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 	int reseed_length;
 	bitmapper_bs_iter re_seed_error_threshold;
 
+
+
+
+
+
+#if defined __AVX2__
+
 	__m256i Peq_SSE[256];
 
 	for (i = 0; i < 256; i++)
 	{
 		Peq_SSE[i] = _mm256_setzero_si256();
 	}
+
+#else
+
+	__m128i Peq_SSE[256];
+
+	for (i = 0; i < 256; i++)
+	{
+		Peq_SSE[i] = _mm_setzero_si128();
+	}
+
+#endif
+
+
+
+
+
+
+
+
+
+
 
 	long long total_number_of_hit = 0;
 
@@ -10509,6 +12088,9 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 	int reseed_length;
 	bitmapper_bs_iter re_seed_error_threshold;
 
+
+#if defined __AVX2__
+
 	__m256i Peq_SSE[256];
 
 	for (i = 0; i < 256; i++)
@@ -10516,7 +12098,21 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 		Peq_SSE[i] = _mm256_setzero_si256();
 	}
 
-	long long total_number_of_hit = 0;
+#else
+
+	__m128i Peq_SSE[256];
+
+	for (i = 0; i < 256; i++)
+	{
+		Peq_SSE[i] = _mm_setzero_si128();
+	}
+
+#endif
+
+
+
+
+
 
 
 	fprintf(stdout, "Welcome to BitMapperBS!\n");
@@ -11833,12 +13429,28 @@ void* Map_Pair_Seq_split_fast(void* arg)
 	int reseed_length;
 	bitmapper_bs_iter re_seed_error_threshold;
 
+
+
+
+#if defined __AVX2__
+
 	__m256i Peq_SSE[256];
 
 	for (i = 0; i < 256; i++)
 	{
 		Peq_SSE[i] = _mm256_setzero_si256();
 	}
+
+#else
+
+	__m128i Peq_SSE[256];
+
+	for (i = 0; i < 256; i++)
+	{
+		Peq_SSE[i] = _mm_setzero_si128();
+	}
+
+#endif
 
 	long long total_number_of_hit = 0;
 
@@ -12635,12 +14247,31 @@ void* Map_Pair_Seq_split(void* arg)
 	int reseed_length;
 	bitmapper_bs_iter re_seed_error_threshold;
 
+
+
+#if defined __AVX2__
+
 	__m256i Peq_SSE[256];
 
 	for (i = 0; i < 256; i++)
 	{
 		Peq_SSE[i] = _mm256_setzero_si256();
 	}
+
+#else
+
+	__m128i Peq_SSE[256];
+
+	for (i = 0; i < 256; i++)
+	{
+		Peq_SSE[i] = _mm_setzero_si128();
+	}
+
+#endif
+
+
+
+
 
 	long long total_number_of_hit = 0;
 
@@ -13938,12 +15569,27 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 	fprintf(stdout, "Welcome to BitMapperBS!\n");
 
+	#if defined __AVX2__
+
 	__m256i Peq_SSE[256];
 
 	for (i = 0; i < 256; i++)
 	{
 		Peq_SSE[i] = _mm256_setzero_si256();
 	}
+
+	#else
+
+	__m128i Peq_SSE[256];
+
+	for (i = 0; i < 256; i++)
+	{
+		Peq_SSE[i] = _mm_setzero_si128();
+	}
+
+	#endif
+
+	
 
 
 	int is_mutiple_map = 0;
@@ -14367,15 +16013,24 @@ int Map_Single_Seq_end_to_end(int thread_id)
 				
 				if (error_threshold1 <= 15)
 				{
+				#if defined __AVX2__
 					map_candidate_votes_mutiple_cut_end_to_end_8(candidates_votes, &candidates_votes_length, current_read.length,
 						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
-
+				#else
+					map_candidate_votes_mutiple_cut_end_to_end_4_sse(candidates_votes, &candidates_votes_length, current_read.length,
+						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+				#endif
 					
 				}
 				else
 				{
+				#if defined __AVX2__
 					map_candidate_votes_mutiple_cut_end_to_end_4(candidates_votes, &candidates_votes_length, current_read.length,
 						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+				#else
+					map_candidate_votes_mutiple_cut_end_to_end_2_sse(candidates_votes, &candidates_votes_length, current_read.length,
+						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+				#endif
 				}
 					
 				
@@ -14385,14 +16040,24 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 				if (error_threshold1 <= 15)
 				{
+				#if defined __AVX2__
 					map_candidate_votes_mutiple_end_to_end_8(candidates_votes, &candidates_votes_length, current_read.length,
 						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+				#else
+					map_candidate_votes_mutiple_end_to_end_4_sse(candidates_votes, &candidates_votes_length, current_read.length,
+						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+				#endif
 					
 				}
 				else
 				{
+				#if defined __AVX2__
 					map_candidate_votes_mutiple_end_to_end_4(candidates_votes, &candidates_votes_length, current_read.length,
 						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+				#else
+					map_candidate_votes_mutiple_end_to_end_2_sse(candidates_votes, &candidates_votes_length, current_read.length,
+						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+				#endif
 				}
 				
 				
@@ -14665,12 +16330,36 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 	int reseed_length;
 	bitmapper_bs_iter re_seed_error_threshold;
 
+
+
+
+
+
+
+#if defined __AVX2__
+
 	__m256i Peq_SSE[256];
 
 	for (i = 0; i < 256; i++)
 	{
 		Peq_SSE[i] = _mm256_setzero_si256();
 	}
+
+#else
+
+	__m128i Peq_SSE[256];
+
+	for (i = 0; i < 256; i++)
+	{
+		Peq_SSE[i] = _mm_setzero_si128();
+	}
+
+#endif
+
+
+
+
+
 
 	long long total_number_of_hit = 0;
 
@@ -15242,15 +16931,25 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 
 				if (error_threshold1 <= 15)
 				{
+					#if defined __AVX2__
 					map_candidate_votes_mutiple_cut_end_to_end_8(candidates_votes, &candidates_votes_length, current_read.length,
 						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+					#else
+					map_candidate_votes_mutiple_cut_end_to_end_4_sse(candidates_votes, &candidates_votes_length, current_read.length,
+						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+					#endif
 
 
 				}
 				else
 				{
+					#if defined __AVX2__
 					map_candidate_votes_mutiple_cut_end_to_end_4(candidates_votes, &candidates_votes_length, current_read.length,
 						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+					#else
+					map_candidate_votes_mutiple_cut_end_to_end_2_sse(candidates_votes, &candidates_votes_length, current_read.length,
+						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+					#endif
 				}
 
 
@@ -15260,14 +16959,24 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 
 				if (error_threshold1 <= 15)
 				{
+					#if defined __AVX2__
 					map_candidate_votes_mutiple_end_to_end_8(candidates_votes, &candidates_votes_length, current_read.length,
 						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+					#else
+					map_candidate_votes_mutiple_end_to_end_4_sse(candidates_votes, &candidates_votes_length, current_read.length,
+						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+					#endif
 
 				}
 				else
 				{
+					#if defined __AVX2__
 					map_candidate_votes_mutiple_end_to_end_4(candidates_votes, &candidates_votes_length, current_read.length,
 						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+					#else
+					map_candidate_votes_mutiple_end_to_end_2_sse(candidates_votes, &candidates_votes_length, current_read.length,
+						error_threshold1, tmp_ref, current_read.seq, Peq_SSE, &min_err, &min_err_index);
+					#endif
 				}
 
 
@@ -15861,12 +17570,36 @@ void* Map_Single_Seq_split(void* arg)
 	int reseed_length;
 	bitmapper_bs_iter re_seed_error_threshold;
 
+
+
+
+
+
+
+#if defined __AVX2__
+
 	__m256i Peq_SSE[256];
 
 	for (i = 0; i < 256; i++)
 	{
 		Peq_SSE[i] = _mm256_setzero_si256();
 	}
+
+#else
+
+	__m128i Peq_SSE[256];
+
+	for (i = 0; i < 256; i++)
+	{
+		Peq_SSE[i] = _mm_setzero_si128();
+	}
+
+#endif
+
+
+
+
+
 
 	long long total_number_of_hit = 0;
 
@@ -16422,15 +18155,26 @@ void* Map_Single_Seq_split(void* arg)
 
 					if (error_threshold1 <= 15)
 					{
+
+						#if defined __AVX2__
 						map_candidate_votes_mutiple_cut_end_to_end_8(candidates_votes, &candidates_votes_length, read_batch[i].length,
 							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#else
+						map_candidate_votes_mutiple_cut_end_to_end_4_sse(candidates_votes, &candidates_votes_length, read_batch[i].length,
+							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#endif
 
 
 					}
 					else
 					{
+						#if defined __AVX2__
 						map_candidate_votes_mutiple_cut_end_to_end_4(candidates_votes, &candidates_votes_length, read_batch[i].length,
 							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#else
+						map_candidate_votes_mutiple_cut_end_to_end_2_sse(candidates_votes, &candidates_votes_length, read_batch[i].length,
+							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#endif
 					}
 
 
@@ -16442,14 +18186,24 @@ void* Map_Single_Seq_split(void* arg)
 
 					if (error_threshold1 <= 15)
 					{
+						#if defined __AVX2__
 						map_candidate_votes_mutiple_end_to_end_8(candidates_votes, &candidates_votes_length, read_batch[i].length,
 							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#else
+						map_candidate_votes_mutiple_end_to_end_4_sse(candidates_votes, &candidates_votes_length, read_batch[i].length,
+							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#endif
 
 					}
 					else
 					{
+						#if defined __AVX2__
 						map_candidate_votes_mutiple_end_to_end_4(candidates_votes, &candidates_votes_length, read_batch[i].length,
 							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#else
+						map_candidate_votes_mutiple_end_to_end_2_sse(candidates_votes, &candidates_votes_length, read_batch[i].length,
+							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#endif
 					}
 
 
@@ -16733,12 +18487,31 @@ void* Map_Single_Seq_split_pbat(void* arg)
 	int reseed_length;
 	bitmapper_bs_iter re_seed_error_threshold;
 
-	__m256i Peq_SSE[256];
 
-	for (i = 0; i < 256; i++)
-	{
-		Peq_SSE[i] = _mm256_setzero_si256();
-	}
+
+
+	#if defined __AVX2__
+
+		__m256i Peq_SSE[256];
+
+		for (i = 0; i < 256; i++)
+		{
+			Peq_SSE[i] = _mm256_setzero_si256();
+		}
+
+	#else
+
+		__m128i Peq_SSE[256];
+
+		for (i = 0; i < 256; i++)
+		{
+			Peq_SSE[i] = _mm_setzero_si128();
+		}
+
+	#endif
+
+
+
 
 	long long total_number_of_hit = 0;
 
@@ -17268,15 +19041,25 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 					if (error_threshold1 <= 15)
 					{
+						#if defined __AVX2__
 						map_candidate_votes_mutiple_cut_end_to_end_8(candidates_votes, &candidates_votes_length, read_batch[i].length,
 							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#else
+						map_candidate_votes_mutiple_cut_end_to_end_4_sse(candidates_votes, &candidates_votes_length, read_batch[i].length,
+							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#endif
 
 
 					}
 					else
 					{
+						#if defined __AVX2__
 						map_candidate_votes_mutiple_cut_end_to_end_4(candidates_votes, &candidates_votes_length, read_batch[i].length,
 							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#else
+						map_candidate_votes_mutiple_cut_end_to_end_2_sse(candidates_votes, &candidates_votes_length, read_batch[i].length,
+							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#endif
 					}
 
 
@@ -17288,14 +19071,24 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 					if (error_threshold1 <= 15)
 					{
+						#if defined __AVX2__
 						map_candidate_votes_mutiple_end_to_end_8(candidates_votes, &candidates_votes_length, read_batch[i].length,
 							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#else
+						map_candidate_votes_mutiple_end_to_end_4_sse(candidates_votes, &candidates_votes_length, read_batch[i].length,
+							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#endif
 
 					}
 					else
 					{
+						#if defined __AVX2__
 						map_candidate_votes_mutiple_end_to_end_4(candidates_votes, &candidates_votes_length, read_batch[i].length,
 							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#else
+						map_candidate_votes_mutiple_end_to_end_2_sse(candidates_votes, &candidates_votes_length, read_batch[i].length,
+							error_threshold1, tmp_ref, read_batch[i].seq, Peq_SSE, &min_err, &min_err_index);
+						#endif
 					}
 
 

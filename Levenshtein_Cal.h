@@ -1258,6 +1258,11 @@ inline int BS_Reserve_Banded_BPM_2_SSE(char *pattern1, char *pattern2, int p_len
 
 
 
+
+
+#if defined __AVX2__
+
+
 /***************************************************4条比对**************************************************/
 inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char *pattern3, char *pattern4, int p_length, char *text, int t_length,
 	int* return_sites, unsigned int* return_sites_error, unsigned short errthold, __m256i* Peq_SSE)
@@ -1267,10 +1272,10 @@ inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char
 	return_sites_error[2] = (unsigned int)-1;
 	return_sites_error[3] = (unsigned int)-1;
 
-    return_sites[0] = -1;
-    return_sites[1] = -1;
-    return_sites[2] = -1;
-    return_sites[3] = -1;
+	return_sites[0] = -1;
+	return_sites[1] = -1;
+	return_sites[2] = -1;
+	return_sites[3] = -1;
 
 
 
@@ -1345,12 +1350,12 @@ inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char
 	__m256i HN = _mm256_setzero_si256();
 	__m256i HP = _mm256_setzero_si256();
 	__m256i tmp_process;
-    __m256i tmp_process1;
+	__m256i tmp_process1;
 
 	__m256i Err_4 = _mm256_setzero_si256();
 	__m256i err_mask = _mm256_set_epi64x(1, 1, 1, 1);
 	///for_not li quan shi 1
-	__m256i for_not=_mm256_set1_epi32(-1);
+	__m256i for_not = _mm256_set1_epi32(-1);
 	__m256i err_arry;
 	__m256i cmp_result;
 
@@ -1364,24 +1369,24 @@ inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char
 	int last_high = (errthold << 1);
 	int t_length_1 = t_length - 1;
 	int err1;
-    int err2;
-    int err3;
-    int err4;
+	int err2;
+	int err3;
+	int err4;
 
-	__m256i pre_end=_mm256_set_epi64x(last_high+errthold,last_high+errthold, last_high+errthold, last_high+errthold);
+	__m256i pre_end = _mm256_set_epi64x(last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold);
 
-    i=0;
+	i = 0;
 	while (i<t_length_1)
 	{
 
 
-        ///X = Peq[text[i]] | VN;
+		///X = Peq[text[i]] | VN;
 		X = _mm256_or_si256(Peq_SSE[text[i]], VN);
 
 
 
 		/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
-        ///X&VP
+		///X&VP
 		tmp_process1 = _mm256_and_si256(X, VP);
 		///(VP + (X&VP))
 		tmp_process = _mm256_add_epi64(tmp_process1, VP);
@@ -1389,9 +1394,9 @@ inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char
 		tmp_process = _mm256_xor_si256(tmp_process, VP);
 		///((VP + (X&VP)) ^ VP) | X
 		D0 = _mm256_or_si256(tmp_process, X);
-        /*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+		/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
 
-        ///HN = VP&D0;
+		///HN = VP&D0;
 		HN = _mm256_and_si256(D0, VP);
 
 		///HP = VN | ~(VP | D0);
@@ -1400,26 +1405,26 @@ inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char
 		HP = _mm256_or_si256(tmp_process, VN);
 
 
-        ///X = D0 >> 1;
+		///X = D0 >> 1;
 		X = _mm256_srli_epi64(D0, 1);
-        ///VN = X&HP;
+		///VN = X&HP;
 		VN = _mm256_and_si256(X, HP);
 		///VP = HN | ~(X | HP);
 		tmp_process = _mm256_or_si256(X, HP);
 		tmp_process = _mm256_andnot_si256(tmp_process, for_not);
 		VP = _mm256_or_si256(HN, tmp_process);
 
-        ///D0&err_mask
+		///D0&err_mask
 		err_arry = _mm256_and_si256(D0, err_mask);
 		Err_4 = _mm256_add_epi64(Err_4, err_mask);
 		Err_4 = _mm256_sub_epi64(Err_4, err_arry);
 
-        ///shi ji shang zhe ge zhi hen xiao d
+		///shi ji shang zhe ge zhi hen xiao d
 		cmp_result = _mm256_cmpgt_epi64(Err_4, pre_end);
 
-        ///jian zhi
+		///jian zhi
 		if (_mm256_extract_epi64(cmp_result, 0) && _mm256_extract_epi64(cmp_result, 1)&
-            _mm256_extract_epi64(cmp_result, 2) && _mm256_extract_epi64(cmp_result, 3))
+			_mm256_extract_epi64(cmp_result, 2) && _mm256_extract_epi64(cmp_result, 3))
 			return 1;
 
 
@@ -1445,56 +1450,52 @@ inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char
 
 
 
-        ///X = Peq[text[i]] | VN;
-    X = _mm256_or_si256(Peq_SSE[text[i]], VN);
+	///X = Peq[text[i]] | VN;
+	X = _mm256_or_si256(Peq_SSE[text[i]], VN);
 
 
 
-    /*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
-    ///X&VP
-    tmp_process1 = _mm256_and_si256(X, VP);
-    ///(VP + (X&VP))
-    tmp_process = _mm256_add_epi64(tmp_process1, VP);
-    ///((VP + (X&VP)) ^ VP)
-    tmp_process = _mm256_xor_si256(tmp_process, VP);
-    ///((VP + (X&VP)) ^ VP) | X
-    D0 = _mm256_or_si256(tmp_process, X);
-    /*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+	/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+	///X&VP
+	tmp_process1 = _mm256_and_si256(X, VP);
+	///(VP + (X&VP))
+	tmp_process = _mm256_add_epi64(tmp_process1, VP);
+	///((VP + (X&VP)) ^ VP)
+	tmp_process = _mm256_xor_si256(tmp_process, VP);
+	///((VP + (X&VP)) ^ VP) | X
+	D0 = _mm256_or_si256(tmp_process, X);
+	/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
 
-    ///HN = VP&D0;
-    HN = _mm256_and_si256(D0, VP);
+	///HN = VP&D0;
+	HN = _mm256_and_si256(D0, VP);
 
-    ///HP = VN | ~(VP | D0);
-    tmp_process = _mm256_or_si256(D0, VP);
-    tmp_process = _mm256_andnot_si256(tmp_process, for_not);
-    HP = _mm256_or_si256(tmp_process, VN);
-
-
-    ///X = D0 >> 1;
-    X = _mm256_srli_epi64(D0, 1);
-    ///VN = X&HP;
-    VN = _mm256_and_si256(X, HP);
-    ///VP = HN | ~(X | HP);
-    tmp_process = _mm256_or_si256(X, HP);
-    tmp_process = _mm256_andnot_si256(tmp_process, for_not);
-    VP = _mm256_or_si256(HN, tmp_process);
-
-    ///D0&err_mask
-    err_arry = _mm256_and_si256(D0, err_mask);
-    Err_4 = _mm256_add_epi64(Err_4, err_mask);
-    Err_4 = _mm256_sub_epi64(Err_4, err_arry);
-
-    ///shi ji shang zhe ge zhi hen xiao d
-    cmp_result = _mm256_cmpgt_epi64(Err_4, pre_end);
-
-    ///jian zhi
-    if (_mm256_extract_epi64(cmp_result, 0) && _mm256_extract_epi64(cmp_result, 1)&
-        _mm256_extract_epi64(cmp_result, 2) && _mm256_extract_epi64(cmp_result, 3))
-        return 1;
+	///HP = VN | ~(VP | D0);
+	tmp_process = _mm256_or_si256(D0, VP);
+	tmp_process = _mm256_andnot_si256(tmp_process, for_not);
+	HP = _mm256_or_si256(tmp_process, VN);
 
 
+	///X = D0 >> 1;
+	X = _mm256_srli_epi64(D0, 1);
+	///VN = X&HP;
+	VN = _mm256_and_si256(X, HP);
+	///VP = HN | ~(X | HP);
+	tmp_process = _mm256_or_si256(X, HP);
+	tmp_process = _mm256_andnot_si256(tmp_process, for_not);
+	VP = _mm256_or_si256(HN, tmp_process);
 
+	///D0&err_mask
+	err_arry = _mm256_and_si256(D0, err_mask);
+	Err_4 = _mm256_add_epi64(Err_4, err_mask);
+	Err_4 = _mm256_sub_epi64(Err_4, err_arry);
 
+	///shi ji shang zhe ge zhi hen xiao d
+	cmp_result = _mm256_cmpgt_epi64(Err_4, pre_end);
+
+	///jian zhi
+	if (_mm256_extract_epi64(cmp_result, 0) && _mm256_extract_epi64(cmp_result, 1)&
+		_mm256_extract_epi64(cmp_result, 2) && _mm256_extract_epi64(cmp_result, 3))
+		return 1;
 
 
 
@@ -1502,35 +1503,39 @@ inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char
 
 
 
-    int site = t_length - 1;
-	err1=_mm256_extract_epi64(Err_4,0);
-    err2=_mm256_extract_epi64(Err_4,1);
-    err3=_mm256_extract_epi64(Err_4,2);
-    err4=_mm256_extract_epi64(Err_4,3);
-
-    if((err1<=errthold)&&(err1<=return_sites_error[0]))
-    {
-            return_sites[0]=site;
-            return_sites_error[0]=err1;
-    }
-    if((err2<=errthold)&&(err2<=return_sites_error[1]))
-    {
-            return_sites[1]=site;
-            return_sites_error[1]=err2;
-    }
-    if((err3<=errthold)&&(err3<=return_sites_error[2]))
-    {
-            return_sites[2]=site;
-            return_sites_error[2]=err3;
-    }
-    if((err4<=errthold)&&(err4<=return_sites_error[3]))
-    {
-            return_sites[3]=site;
-            return_sites_error[3]=err4;
-    }
 
 
-    i=0;
+
+
+	int site = t_length - 1;
+	err1 = _mm256_extract_epi64(Err_4, 0);
+	err2 = _mm256_extract_epi64(Err_4, 1);
+	err3 = _mm256_extract_epi64(Err_4, 2);
+	err4 = _mm256_extract_epi64(Err_4, 3);
+
+	if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
+	{
+		return_sites[0] = site;
+		return_sites_error[0] = err1;
+	}
+	if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
+	{
+		return_sites[1] = site;
+		return_sites_error[1] = err2;
+	}
+	if ((err3 <= errthold) && (err3 <= return_sites_error[2]))
+	{
+		return_sites[2] = site;
+		return_sites_error[2] = err3;
+	}
+	if ((err4 <= errthold) && (err4 <= return_sites_error[3]))
+	{
+		return_sites[3] = site;
+		return_sites_error[3] = err4;
+	}
+
+
+	i = 0;
 
 
 
@@ -1591,47 +1596,47 @@ inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char
 
 
 
-    while(i<last_high)
-    {
-        ///err = err + ((VP >> i)&(Word)1);
-        tmp_process=_mm256_srli_epi64(VP,i);
-        tmp_process=_mm256_and_si256(tmp_process,err_mask);
-        Err_4=_mm256_add_epi64(Err_4,tmp_process);
+	while (i<last_high)
+	{
+		///err = err + ((VP >> i)&(Word)1);
+		tmp_process = _mm256_srli_epi64(VP, i);
+		tmp_process = _mm256_and_si256(tmp_process, err_mask);
+		Err_4 = _mm256_add_epi64(Err_4, tmp_process);
 
-        ///err = err - ((VN >> i)&(Word)1);
-        tmp_process1=_mm256_srli_epi64(VN,i);
-        tmp_process1=_mm256_and_si256(tmp_process1,err_mask);
-        Err_4=_mm256_sub_epi64(Err_4,tmp_process1);
+		///err = err - ((VN >> i)&(Word)1);
+		tmp_process1 = _mm256_srli_epi64(VN, i);
+		tmp_process1 = _mm256_and_si256(tmp_process1, err_mask);
+		Err_4 = _mm256_sub_epi64(Err_4, tmp_process1);
 
-        ++i;
+		++i;
 
-        err1=_mm256_extract_epi64(Err_4,0);
-        err2=_mm256_extract_epi64(Err_4,1);
-        err3=_mm256_extract_epi64(Err_4,2);
-        err4=_mm256_extract_epi64(Err_4,3);
+		err1 = _mm256_extract_epi64(Err_4, 0);
+		err2 = _mm256_extract_epi64(Err_4, 1);
+		err3 = _mm256_extract_epi64(Err_4, 2);
+		err4 = _mm256_extract_epi64(Err_4, 3);
 
 
-		if ((err1 <= errthold) && (err1<=return_sites_error[0]))
+		if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
 		{
 			return_sites[0] = site + i;
 			return_sites_error[0] = err1;
 		}
-		if ((err2 <= errthold) && (err2<=return_sites_error[1]))
+		if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
 		{
 			return_sites[1] = site + i;
 			return_sites_error[1] = err2;
 		}
-		if ((err3 <= errthold) && (err3<=return_sites_error[2]))
+		if ((err3 <= errthold) && (err3 <= return_sites_error[2]))
 		{
 			return_sites[2] = site + i;
 			return_sites_error[2] = err3;
 		}
-		if ((err4 <= errthold) && (err4<=return_sites_error[3]))
+		if ((err4 <= errthold) && (err4 <= return_sites_error[3]))
 		{
 			return_sites[3] = site + i;
 			return_sites_error[3] = err4;
 		}
-    }
+	}
 
 
 
@@ -1678,13 +1683,13 @@ inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pat
 	return_sites_error[1] = (unsigned int)-1;
 	return_sites_error[2] = (unsigned int)-1;
 	return_sites_error[3] = (unsigned int)-1;
-	
-    return_sites[0] = -1;
-    return_sites[1] = -1;
-    return_sites[2] = -1;
-    return_sites[3] = -1;
+
+	return_sites[0] = -1;
+	return_sites[1] = -1;
+	return_sites[2] = -1;
+	return_sites[3] = -1;
 	**/
-	memset(return_sites, -1, sizeof(int) * 4);
+	memset(return_sites, -1, sizeof(int)* 4);
 	memset(return_sites_error, -1, sizeof(unsigned int)* 4);
 
 	Word Peq[256][4];
@@ -1763,12 +1768,12 @@ inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pat
 	__m256i HN = _mm256_setzero_si256();
 	__m256i HP = _mm256_setzero_si256();
 	__m256i tmp_process;
-    __m256i tmp_process1;
+	__m256i tmp_process1;
 
 	__m256i Err_4 = _mm256_setzero_si256();
 	__m256i err_mask = _mm256_set_epi64x(1, 1, 1, 1);
 	///for_not li quan shi 1
-	__m256i for_not=_mm256_set1_epi32(-1);
+	__m256i for_not = _mm256_set1_epi32(-1);
 	__m256i err_arry;
 	__m256i cmp_result;
 
@@ -1782,24 +1787,24 @@ inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pat
 	int last_high = (errthold << 1);
 	int t_length_1 = t_length - 1;
 	int err1;
-    int err2;
-    int err3;
-    int err4;
+	int err2;
+	int err3;
+	int err4;
 
-	__m256i pre_end=_mm256_set_epi64x(last_high+errthold,last_high+errthold, last_high+errthold, last_high+errthold);
+	__m256i pre_end = _mm256_set_epi64x(last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold);
 
-    i=0;
+	i = 0;
 	while (i<t_length_1)
 	{
 
 
-        ///X = Peq[text[i]] | VN;
+		///X = Peq[text[i]] | VN;
 		X = _mm256_or_si256(Peq_SSE[text[i]], VN);
 
 
 
 		/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
-        ///X&VP
+		///X&VP
 		tmp_process1 = _mm256_and_si256(X, VP);
 		///(VP + (X&VP))
 		tmp_process = _mm256_add_epi64(tmp_process1, VP);
@@ -1807,9 +1812,9 @@ inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pat
 		tmp_process = _mm256_xor_si256(tmp_process, VP);
 		///((VP + (X&VP)) ^ VP) | X
 		D0 = _mm256_or_si256(tmp_process, X);
-        /*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+		/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
 
-        ///HN = VP&D0;
+		///HN = VP&D0;
 		HN = _mm256_and_si256(D0, VP);
 
 		///HP = VN | ~(VP | D0);
@@ -1818,29 +1823,29 @@ inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pat
 		HP = _mm256_or_si256(tmp_process, VN);
 
 
-        ///X = D0 >> 1;
+		///X = D0 >> 1;
 		X = _mm256_srli_epi64(D0, 1);
-        ///VN = X&HP;
+		///VN = X&HP;
 		VN = _mm256_and_si256(X, HP);
 		///VP = HN | ~(X | HP);
 		tmp_process = _mm256_or_si256(X, HP);
 		tmp_process = _mm256_andnot_si256(tmp_process, for_not);
 		VP = _mm256_or_si256(HN, tmp_process);
 
-        ///D0&err_mask
+		///D0&err_mask
 		err_arry = _mm256_and_si256(D0, err_mask);
 		Err_4 = _mm256_add_epi64(Err_4, err_mask);
 		Err_4 = _mm256_sub_epi64(Err_4, err_arry);
 
 		/**
-        ///shi ji shang zhe ge zhi hen xiao d
+		///shi ji shang zhe ge zhi hen xiao d
 		cmp_result = _mm256_cmpgt_epi64(Err_4, pre_end);
 
-        ///jian zhi
+		///jian zhi
 		if (_mm256_extract_epi64(cmp_result, 0) && _mm256_extract_epi64(cmp_result, 1)&
-            _mm256_extract_epi64(cmp_result, 2) && _mm256_extract_epi64(cmp_result, 3))
-			return 1;
-        **/
+		_mm256_extract_epi64(cmp_result, 2) && _mm256_extract_epi64(cmp_result, 3))
+		return 1;
+		**/
 
 		Peq_SSE['A'] = _mm256_srli_epi64(Peq_SSE['A'], 1);
 		Peq_SSE['T'] = _mm256_srli_epi64(Peq_SSE['T'], 1);
@@ -1864,56 +1869,52 @@ inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pat
 
 
 
-        ///X = Peq[text[i]] | VN;
-    X = _mm256_or_si256(Peq_SSE[text[i]], VN);
+	///X = Peq[text[i]] | VN;
+	X = _mm256_or_si256(Peq_SSE[text[i]], VN);
 
 
 
-    /*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
-    ///X&VP
-    tmp_process1 = _mm256_and_si256(X, VP);
-    ///(VP + (X&VP))
-    tmp_process = _mm256_add_epi64(tmp_process1, VP);
-    ///((VP + (X&VP)) ^ VP)
-    tmp_process = _mm256_xor_si256(tmp_process, VP);
-    ///((VP + (X&VP)) ^ VP) | X
-    D0 = _mm256_or_si256(tmp_process, X);
-    /*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+	/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+	///X&VP
+	tmp_process1 = _mm256_and_si256(X, VP);
+	///(VP + (X&VP))
+	tmp_process = _mm256_add_epi64(tmp_process1, VP);
+	///((VP + (X&VP)) ^ VP)
+	tmp_process = _mm256_xor_si256(tmp_process, VP);
+	///((VP + (X&VP)) ^ VP) | X
+	D0 = _mm256_or_si256(tmp_process, X);
+	/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
 
-    ///HN = VP&D0;
-    HN = _mm256_and_si256(D0, VP);
+	///HN = VP&D0;
+	HN = _mm256_and_si256(D0, VP);
 
-    ///HP = VN | ~(VP | D0);
-    tmp_process = _mm256_or_si256(D0, VP);
-    tmp_process = _mm256_andnot_si256(tmp_process, for_not);
-    HP = _mm256_or_si256(tmp_process, VN);
-
-
-    ///X = D0 >> 1;
-    X = _mm256_srli_epi64(D0, 1);
-    ///VN = X&HP;
-    VN = _mm256_and_si256(X, HP);
-    ///VP = HN | ~(X | HP);
-    tmp_process = _mm256_or_si256(X, HP);
-    tmp_process = _mm256_andnot_si256(tmp_process, for_not);
-    VP = _mm256_or_si256(HN, tmp_process);
-
-    ///D0&err_mask
-    err_arry = _mm256_and_si256(D0, err_mask);
-    Err_4 = _mm256_add_epi64(Err_4, err_mask);
-    Err_4 = _mm256_sub_epi64(Err_4, err_arry);
-
-    ///shi ji shang zhe ge zhi hen xiao d
-    cmp_result = _mm256_cmpgt_epi64(Err_4, pre_end);
-
-    ///jian zhi
-    if (_mm256_extract_epi64(cmp_result, 0) && _mm256_extract_epi64(cmp_result, 1)&
-        _mm256_extract_epi64(cmp_result, 2) && _mm256_extract_epi64(cmp_result, 3))
-        return 1;
+	///HP = VN | ~(VP | D0);
+	tmp_process = _mm256_or_si256(D0, VP);
+	tmp_process = _mm256_andnot_si256(tmp_process, for_not);
+	HP = _mm256_or_si256(tmp_process, VN);
 
 
+	///X = D0 >> 1;
+	X = _mm256_srli_epi64(D0, 1);
+	///VN = X&HP;
+	VN = _mm256_and_si256(X, HP);
+	///VP = HN | ~(X | HP);
+	tmp_process = _mm256_or_si256(X, HP);
+	tmp_process = _mm256_andnot_si256(tmp_process, for_not);
+	VP = _mm256_or_si256(HN, tmp_process);
 
+	///D0&err_mask
+	err_arry = _mm256_and_si256(D0, err_mask);
+	Err_4 = _mm256_add_epi64(Err_4, err_mask);
+	Err_4 = _mm256_sub_epi64(Err_4, err_arry);
 
+	///shi ji shang zhe ge zhi hen xiao d
+	cmp_result = _mm256_cmpgt_epi64(Err_4, pre_end);
+
+	///jian zhi
+	if (_mm256_extract_epi64(cmp_result, 0) && _mm256_extract_epi64(cmp_result, 1)&
+		_mm256_extract_epi64(cmp_result, 2) && _mm256_extract_epi64(cmp_result, 3))
+		return 1;
 
 
 
@@ -1921,35 +1922,39 @@ inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pat
 
 
 
-    int site = t_length - 1;
-	err1=_mm256_extract_epi64(Err_4,0);
-    err2=_mm256_extract_epi64(Err_4,1);
-    err3=_mm256_extract_epi64(Err_4,2);
-    err4=_mm256_extract_epi64(Err_4,3);
-
-    if((err1<=errthold)&&(err1<=return_sites_error[0]))
-    {
-            return_sites[0]=site;
-            return_sites_error[0]=err1;
-    }
-    if((err2<=errthold)&&(err2<=return_sites_error[1]))
-    {
-            return_sites[1]=site;
-            return_sites_error[1]=err2;
-    }
-    if((err3<=errthold)&&(err3<=return_sites_error[2]))
-    {
-            return_sites[2]=site;
-            return_sites_error[2]=err3;
-    }
-    if((err4<=errthold)&&(err4<=return_sites_error[3]))
-    {
-            return_sites[3]=site;
-            return_sites_error[3]=err4;
-    }
 
 
-    i=0;
+
+
+	int site = t_length - 1;
+	err1 = _mm256_extract_epi64(Err_4, 0);
+	err2 = _mm256_extract_epi64(Err_4, 1);
+	err3 = _mm256_extract_epi64(Err_4, 2);
+	err4 = _mm256_extract_epi64(Err_4, 3);
+
+	if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
+	{
+		return_sites[0] = site;
+		return_sites_error[0] = err1;
+	}
+	if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
+	{
+		return_sites[1] = site;
+		return_sites_error[1] = err2;
+	}
+	if ((err3 <= errthold) && (err3 <= return_sites_error[2]))
+	{
+		return_sites[2] = site;
+		return_sites_error[2] = err3;
+	}
+	if ((err4 <= errthold) && (err4 <= return_sites_error[3]))
+	{
+		return_sites[3] = site;
+		return_sites_error[3] = err4;
+	}
+
+
+	i = 0;
 
 
 
@@ -2007,47 +2012,47 @@ inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pat
 	ungap_err4 = err4;
 
 
-    while(i<last_high)
-    {
-        ///err = err + ((VP >> i)&(Word)1);
-        tmp_process=_mm256_srli_epi64(VP,i);
-        tmp_process=_mm256_and_si256(tmp_process,err_mask);
-        Err_4=_mm256_add_epi64(Err_4,tmp_process);
+	while (i<last_high)
+	{
+		///err = err + ((VP >> i)&(Word)1);
+		tmp_process = _mm256_srli_epi64(VP, i);
+		tmp_process = _mm256_and_si256(tmp_process, err_mask);
+		Err_4 = _mm256_add_epi64(Err_4, tmp_process);
 
-        ///err = err - ((VN >> i)&(Word)1);
-        tmp_process1=_mm256_srli_epi64(VN,i);
-        tmp_process1=_mm256_and_si256(tmp_process1,err_mask);
-        Err_4=_mm256_sub_epi64(Err_4,tmp_process1);
+		///err = err - ((VN >> i)&(Word)1);
+		tmp_process1 = _mm256_srli_epi64(VN, i);
+		tmp_process1 = _mm256_and_si256(tmp_process1, err_mask);
+		Err_4 = _mm256_sub_epi64(Err_4, tmp_process1);
 
-        ++i;
+		++i;
 
-        err1=_mm256_extract_epi64(Err_4,0);
-        err2=_mm256_extract_epi64(Err_4,1);
-        err3=_mm256_extract_epi64(Err_4,2);
-        err4=_mm256_extract_epi64(Err_4,3);
+		err1 = _mm256_extract_epi64(Err_4, 0);
+		err2 = _mm256_extract_epi64(Err_4, 1);
+		err3 = _mm256_extract_epi64(Err_4, 2);
+		err4 = _mm256_extract_epi64(Err_4, 3);
 
 
-        if((err1<=errthold)&&(err1<=return_sites_error[0]))
-        {
-				return_sites[0] = site + i;
-                return_sites_error[0]=err1;
-        }
-        if((err2<=errthold)&&(err2<=return_sites_error[1]))
-        {
-				return_sites[1] = site + i;
-                return_sites_error[1]=err2;
-        }
-        if((err3<=errthold)&&(err3<=return_sites_error[2]))
-        {
-				return_sites[2] = site + i;
-                return_sites_error[2]=err3;
-        }
-        if((err4<=errthold)&&(err4<=return_sites_error[3]))
-        {
-				return_sites[3] = site + i;
-                return_sites_error[3]=err4;
-        }
-    }
+		if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
+		{
+			return_sites[0] = site + i;
+			return_sites_error[0] = err1;
+		}
+		if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
+		{
+			return_sites[1] = site + i;
+			return_sites_error[1] = err2;
+		}
+		if ((err3 <= errthold) && (err3 <= return_sites_error[2]))
+		{
+			return_sites[2] = site + i;
+			return_sites_error[2] = err3;
+		}
+		if ((err4 <= errthold) && (err4 <= return_sites_error[3]))
+		{
+			return_sites[3] = site + i;
+			return_sites_error[3] = err4;
+		}
+	}
 
 
 
@@ -2382,7 +2387,7 @@ inline int BS_Reserve_Banded_BPM_8_SSE(
 		return_sites[7] = site;
 		return_sites_error[7] = err8;
 	}
-	
+
 
 
 
@@ -2541,7 +2546,7 @@ inline int BS_Reserve_Banded_BPM_8_SSE(
 			return_sites[7] = site + i;
 			return_sites_error[7] = err8;
 		}
-		
+
 	}
 
 
@@ -2600,7 +2605,7 @@ inline int BS_Reserve_Banded_BPM_8_SSE(
 /***************************************************16条比对**************************************************/
 ///这个没做为ungap的路径优化，如果要做可以参考BS_Reserve_Banded_BPM_4_SSE
 inline int BS_Reserve_Banded_BPM_16_SSE(
-	char *pattern1, char *pattern2, char *pattern3, char *pattern4, 
+	char *pattern1, char *pattern2, char *pattern3, char *pattern4,
 	char *pattern5, char *pattern6, char *pattern7, char *pattern8,
 	char *pattern9, char *pattern10, char *pattern11, char *pattern12,
 	char *pattern13, char *pattern14, char *pattern15, char *pattern16,
@@ -2656,14 +2661,14 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 
 
 
-	Peq_SSE['A'] = 
+	Peq_SSE['A'] =
 		_mm256_set_epi16(
 		Peq['A'][15], Peq['A'][14], Peq['A'][13], Peq['A'][12],
 		Peq['A'][11], Peq['A'][10], Peq['A'][9], Peq['A'][8],
 		Peq['A'][7], Peq['A'][6], Peq['A'][5], Peq['A'][4],
 		Peq['A'][3], Peq['A'][2], Peq['A'][1], Peq['A'][0]);
 
-	Peq_SSE['C'] = 
+	Peq_SSE['C'] =
 		_mm256_set_epi16(
 		Peq['C'][15], Peq['C'][14], Peq['C'][13], Peq['C'][12],
 		Peq['C'][11], Peq['C'][10], Peq['C'][9], Peq['C'][8],
@@ -2672,7 +2677,7 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 
 
 
-	Peq_SSE['G'] = 
+	Peq_SSE['G'] =
 		_mm256_set_epi16(
 		Peq['G'][15], Peq['G'][14], Peq['G'][13], Peq['G'][12],
 		Peq['G'][11], Peq['G'][10], Peq['G'][9], Peq['G'][8],
@@ -2681,7 +2686,7 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 
 
 
-	Peq_SSE['T'] = 
+	Peq_SSE['T'] =
 		_mm256_set_epi16(
 		Peq['T'][15], Peq['T'][14], Peq['T'][13], Peq['T'][12],
 		Peq['T'][11], Peq['T'][10], Peq['T'][9], Peq['T'][8],
@@ -2694,19 +2699,19 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 	/**
 	if (strcmp(pattern1, "CTGATTCTTCCTAACCGTGAGCATGGAATATTCTTCCATTGGTTTGTGTCCTCTTTTATTTCGTGGAGCAGTGGTTTGTAGTTCTCCTTGAAGAGGTCCTTCGC") == 0)
 	{
-		fprintf(stderr, "\n\n\n\n\n\nPeq_SSE['A']: %llu\n", _mm256_extract_epi16(Peq_SSE['A'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['A'], 0));
+	fprintf(stderr, "\n\n\n\n\n\nPeq_SSE['A']: %llu\n", _mm256_extract_epi16(Peq_SSE['A'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['A'], 0));
 
-		fprintf(stderr, "Peq_SSE['C']: %llu\n", _mm256_extract_epi16(Peq_SSE['C'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['C'], 0));
+	fprintf(stderr, "Peq_SSE['C']: %llu\n", _mm256_extract_epi16(Peq_SSE['C'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['C'], 0));
 
-		fprintf(stderr, "Peq_SSE['G']: %llu\n", _mm256_extract_epi16(Peq_SSE['G'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['G'], 0));
+	fprintf(stderr, "Peq_SSE['G']: %llu\n", _mm256_extract_epi16(Peq_SSE['G'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['G'], 0));
 
-		fprintf(stderr, "Peq_SSE['T']: %llu\n", _mm256_extract_epi16(Peq_SSE['T'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['T'], 0));
+	fprintf(stderr, "Peq_SSE['T']: %llu\n", _mm256_extract_epi16(Peq_SSE['T'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['T'], 0));
 
-		fprintf(stderr, "#####################\n");
+	fprintf(stderr, "#####################\n");
 	}
 	**/
 
@@ -2773,9 +2778,9 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 	int err16;
 
 	__m256i pre_end = _mm256_set_epi16
-		(last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold, 
-		last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold, 
-		last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold, 
+		(last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold,
+		last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold,
+		last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold,
 		last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold);
 
 	i = 0;
@@ -2864,36 +2869,36 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 	/**
 	if (strcmp(pattern1, "CTGATTCTTCCTAACCGTGAGCATGGAATATTCTTCCATTGGTTTGTGTCCTCTTTTATTTCGTGGAGCAGTGGTTTGTAGTTCTCCTTGAAGAGGTCCTTCGC") == 0)
 	{
-		fprintf(stderr, "Peq_SSE['A']: %llu\n", _mm256_extract_epi16(Peq_SSE['A'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['A'], 0));
+	fprintf(stderr, "Peq_SSE['A']: %llu\n", _mm256_extract_epi16(Peq_SSE['A'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['A'], 0));
 
-		fprintf(stderr, "Peq_SSE['C']: %llu\n", _mm256_extract_epi16(Peq_SSE['C'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['C'], 0));
+	fprintf(stderr, "Peq_SSE['C']: %llu\n", _mm256_extract_epi16(Peq_SSE['C'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['C'], 0));
 
-		fprintf(stderr, "Peq_SSE['G']: %llu\n", _mm256_extract_epi16(Peq_SSE['G'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['G'], 0));
+	fprintf(stderr, "Peq_SSE['G']: %llu\n", _mm256_extract_epi16(Peq_SSE['G'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['G'], 0));
 
-		fprintf(stderr, "Peq_SSE['T']: %llu\n", _mm256_extract_epi16(Peq_SSE['T'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['T'], 0));
+	fprintf(stderr, "Peq_SSE['T']: %llu\n", _mm256_extract_epi16(Peq_SSE['T'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['T'], 0));
 
-		fprintf(stderr, "D0_SSE: %llu\n", _mm256_extract_epi16(D0,0));
-		dec_bit(_mm256_extract_epi16(D0, 0));
+	fprintf(stderr, "D0_SSE: %llu\n", _mm256_extract_epi16(D0,0));
+	dec_bit(_mm256_extract_epi16(D0, 0));
 
-		fprintf(stderr, "HN_SSE: %llu\n", _mm256_extract_epi16(HN, 0));
-		dec_bit(_mm256_extract_epi16(HN,0));
-
-
-		fprintf(stderr, "HP_SSE: %llu\n", _mm256_extract_epi16(HP,0));
-		dec_bit(_mm256_extract_epi16(HP, 0));
-
-		fprintf(stderr, "VN_SSE: %llu\n", _mm256_extract_epi16(VN, 0));
-		dec_bit(_mm256_extract_epi16(VN,0));
-
-		fprintf(stderr, "VP_SSE: %llu\n", _mm256_extract_epi16(VP,0));
-		dec_bit(_mm256_extract_epi16(VP,0));
+	fprintf(stderr, "HN_SSE: %llu\n", _mm256_extract_epi16(HN, 0));
+	dec_bit(_mm256_extract_epi16(HN,0));
 
 
-		fprintf(stderr, "#####################\n");
+	fprintf(stderr, "HP_SSE: %llu\n", _mm256_extract_epi16(HP,0));
+	dec_bit(_mm256_extract_epi16(HP, 0));
+
+	fprintf(stderr, "VN_SSE: %llu\n", _mm256_extract_epi16(VN, 0));
+	dec_bit(_mm256_extract_epi16(VN,0));
+
+	fprintf(stderr, "VP_SSE: %llu\n", _mm256_extract_epi16(VP,0));
+	dec_bit(_mm256_extract_epi16(VP,0));
+
+
+	fprintf(stderr, "#####################\n");
 	}
 	**/
 
@@ -2958,37 +2963,37 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 	/**
 	if (strcmp(pattern1, "CTGATTCTTCCTAACCGTGAGCATGGAATATTCTTCCATTGGTTTGTGTCCTCTTTTATTTCGTGGAGCAGTGGTTTGTAGTTCTCCTTGAAGAGGTCCTTCGC") == 0)
 	{
-		fprintf(stderr, "Peq_SSE['A']: %llu\n", _mm256_extract_epi16(Peq_SSE['A'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['A'], 0));
+	fprintf(stderr, "Peq_SSE['A']: %llu\n", _mm256_extract_epi16(Peq_SSE['A'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['A'], 0));
 
-		fprintf(stderr, "Peq_SSE['C']: %llu\n", _mm256_extract_epi16(Peq_SSE['C'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['C'], 0));
+	fprintf(stderr, "Peq_SSE['C']: %llu\n", _mm256_extract_epi16(Peq_SSE['C'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['C'], 0));
 
-		fprintf(stderr, "Peq_SSE['G']: %llu\n", _mm256_extract_epi16(Peq_SSE['G'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['G'], 0));
+	fprintf(stderr, "Peq_SSE['G']: %llu\n", _mm256_extract_epi16(Peq_SSE['G'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['G'], 0));
 
-		fprintf(stderr, "Peq_SSE['T']: %llu\n", _mm256_extract_epi16(Peq_SSE['T'], 0));
-		dec_bit(_mm256_extract_epi16(Peq_SSE['T'], 0));
+	fprintf(stderr, "Peq_SSE['T']: %llu\n", _mm256_extract_epi16(Peq_SSE['T'], 0));
+	dec_bit(_mm256_extract_epi16(Peq_SSE['T'], 0));
 
-		fprintf(stderr, "D0_SSE: %llu\n", _mm256_extract_epi16(D0, 0));
-		dec_bit(_mm256_extract_epi16(D0, 0));
+	fprintf(stderr, "D0_SSE: %llu\n", _mm256_extract_epi16(D0, 0));
+	dec_bit(_mm256_extract_epi16(D0, 0));
 
-		fprintf(stderr, "HN_SSE: %llu\n", _mm256_extract_epi16(HN, 0));
-		dec_bit(_mm256_extract_epi16(HN, 0));
+	fprintf(stderr, "HN_SSE: %llu\n", _mm256_extract_epi16(HN, 0));
+	dec_bit(_mm256_extract_epi16(HN, 0));
 
 
-		fprintf(stderr, "HP_SSE: %llu\n", _mm256_extract_epi16(HP, 0));
-		dec_bit(_mm256_extract_epi16(HP, 0));
+	fprintf(stderr, "HP_SSE: %llu\n", _mm256_extract_epi16(HP, 0));
+	dec_bit(_mm256_extract_epi16(HP, 0));
 
-		fprintf(stderr, "VN_SSE: %llu\n", _mm256_extract_epi16(VN, 0));
-		dec_bit(_mm256_extract_epi16(VN, 0));
+	fprintf(stderr, "VN_SSE: %llu\n", _mm256_extract_epi16(VN, 0));
+	dec_bit(_mm256_extract_epi16(VN, 0));
 
-		fprintf(stderr, "VP_SSE: %llu\n", _mm256_extract_epi16(VP, 0));
-		dec_bit(_mm256_extract_epi16(VP, 0));
+	fprintf(stderr, "VP_SSE: %llu\n", _mm256_extract_epi16(VP, 0));
+	dec_bit(_mm256_extract_epi16(VP, 0));
 
-		fprintf(stderr, "err: %llu\n", _mm256_extract_epi16(Err_16, 0));
+	fprintf(stderr, "err: %llu\n", _mm256_extract_epi16(Err_16, 0));
 
-		fprintf(stderr, "#####################\n");
+	fprintf(stderr, "#####################\n");
 	}
 	**/
 
@@ -3015,22 +3020,22 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 	err15 = _mm256_extract_epi16(Err_16, 14);
 	err16 = _mm256_extract_epi16(Err_16, 15);
 
-	if ((err1 <= errthold) && (err1<=return_sites_error[0]))
+	if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
 	{
 		return_sites[0] = site;
 		return_sites_error[0] = err1;
 	}
-	if ((err2 <= errthold) && (err2<=return_sites_error[1]))
+	if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
 	{
 		return_sites[1] = site;
 		return_sites_error[1] = err2;
 	}
-	if ((err3 <= errthold) && (err3<=return_sites_error[2]))
+	if ((err3 <= errthold) && (err3 <= return_sites_error[2]))
 	{
 		return_sites[2] = site;
 		return_sites_error[2] = err3;
 	}
-	if ((err4 <= errthold) && (err4<=return_sites_error[3]))
+	if ((err4 <= errthold) && (err4 <= return_sites_error[3]))
 	{
 		return_sites[3] = site;
 		return_sites_error[3] = err4;
@@ -3139,44 +3144,44 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 		/**
 		if ((err1 <= errthold) && (err1<return_sites_error[0]))
 		{
-			return_sites[0] = site + i;
-			return_sites_error[0] = err1;
+		return_sites[0] = site + i;
+		return_sites_error[0] = err1;
 		}
 		if ((err2 <= errthold) && (err2<return_sites_error[1]))
 		{
-			return_sites[1] = site + i;
-			return_sites_error[1] = err2;
+		return_sites[1] = site + i;
+		return_sites_error[1] = err2;
 		}
 		if ((err3 <= errthold) && (err3<return_sites_error[2]))
 		{
-			return_sites[2] = site + i;
-			return_sites_error[2] = err3;
+		return_sites[2] = site + i;
+		return_sites_error[2] = err3;
 		}
 		if ((err4 <= errthold) && (err4<return_sites_error[3]))
 		{
-			return_sites[3] = site + i;
-			return_sites_error[3] = err4;
+		return_sites[3] = site + i;
+		return_sites_error[3] = err4;
 		}
 		**/
 
 
 
-		if ((err1 <= errthold) && (err1<=return_sites_error[0]))
+		if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
 		{
 			return_sites[0] = site + i;
 			return_sites_error[0] = err1;
 		}
-		if ((err2 <= errthold) && (err2<=return_sites_error[1]))
+		if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
 		{
 			return_sites[1] = site + i;
 			return_sites_error[1] = err2;
 		}
-		if ((err3 <= errthold) && (err3<=return_sites_error[2]))
+		if ((err3 <= errthold) && (err3 <= return_sites_error[2]))
 		{
 			return_sites[2] = site + i;
 			return_sites_error[2] = err3;
 		}
-		if ((err4 <= errthold) && (err4<=return_sites_error[3]))
+		if ((err4 <= errthold) && (err4 <= return_sites_error[3]))
 		{
 			return_sites[3] = site + i;
 			return_sites_error[3] = err4;
@@ -3245,13 +3250,13 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 		/**
 		if (strcmp(pattern1, "CTGATTCTTCCTAACCGTGAGCATGGAATATTCTTCCATTGGTTTGTGTCCTCTTTTATTTCGTGGAGCAGTGGTTTGTAGTTCTCCTTGAAGAGGTCCTTCGC") == 0)
 		{
-			fprintf(stderr, "i: %llu\n", i);
-			fprintf(stderr, "err1: %llu\n", err1);
-			
-			fprintf(stderr, "return_sites[0]: %llu\n", return_sites[0]);
-			fprintf(stderr, "return_sites_error[0]: %llu\n", return_sites_error[0]);
+		fprintf(stderr, "i: %llu\n", i);
+		fprintf(stderr, "err1: %llu\n", err1);
 
-			fprintf(stderr, "#####################\n");
+		fprintf(stderr, "return_sites[0]: %llu\n", return_sites[0]);
+		fprintf(stderr, "return_sites_error[0]: %llu\n", return_sites_error[0]);
+
+		fprintf(stderr, "#####################\n");
 		}
 		**/
 
@@ -3265,6 +3270,10 @@ inline int BS_Reserve_Banded_BPM_16_SSE(
 	return 1;
 
 }
+
+
+
+#endif
 
 
 
@@ -5177,6 +5186,823 @@ inline int fast_bs_Calculate_Cigar_score(
 
 
 
+
+
+
+
+
+/***************************************************4条比对純sse**************************************************/
+inline int BS_Reserve_Banded_BPM_4_SSE_only(char *pattern1, char *pattern2, char *pattern3, char *pattern4, int p_length, char *text, int t_length,
+	int* return_sites, unsigned int* return_sites_error, unsigned short errthold, __m128i* Peq_SSE)
+
+{
+
+
+	memset(return_sites, -1, sizeof(int)* 4);
+	memset(return_sites_error, -1, sizeof(unsigned int)* 4);
+
+	Word_32 Peq[256][4];
+	int band_length = (errthold << 1) + 1;
+
+
+	int i;
+
+	Word_32 tmp_Peq_1 = 1;
+
+
+	memset(Peq['A'], 0, sizeof(Word_32)* 4);
+	memset(Peq['C'], 0, sizeof(Word_32)* 4);
+	memset(Peq['G'], 0, sizeof(Word_32)* 4);
+	memset(Peq['T'], 0, sizeof(Word_32)* 4);
+
+	for (i = 0; i<band_length; i++)
+	{
+		Peq[pattern1[i]][0] = Peq[pattern1[i]][0] | tmp_Peq_1;
+		Peq[pattern2[i]][1] = Peq[pattern2[i]][1] | tmp_Peq_1;
+		Peq[pattern3[i]][2] = Peq[pattern3[i]][2] | tmp_Peq_1;
+		Peq[pattern4[i]][3] = Peq[pattern4[i]][3] | tmp_Peq_1;
+
+		tmp_Peq_1 = tmp_Peq_1 << 1;
+	}
+
+	Peq_SSE['A'] = _mm_set_epi32(Peq['A'][3], Peq['A'][2], Peq['A'][1], Peq['A'][0]);
+	Peq_SSE['C'] = _mm_set_epi32(Peq['C'][3], Peq['C'][2], Peq['C'][1], Peq['C'][0]);
+	Peq_SSE['G'] = _mm_set_epi32(Peq['G'][3], Peq['G'][2], Peq['G'][1], Peq['G'][0]);
+	Peq_SSE['T'] = _mm_set_epi32(Peq['T'][3], Peq['T'][2], Peq['T'][1], Peq['T'][0]);
+
+	Peq_SSE['T'] = _mm_or_si128(Peq_SSE['T'], Peq_SSE['C']);
+
+
+
+	Word_32 Mask = ((Word_32)1 << (errthold << 1));
+
+	__m128i Mask1 = _mm_set_epi32(0, 0, 0, Mask);
+	__m128i Mask2 = _mm_set_epi32(0, 0, Mask, 0);
+	__m128i Mask3 = _mm_set_epi32(0, Mask, 0, 0);
+	__m128i Mask4 = _mm_set_epi32(Mask, 0, 0, 0);
+
+
+	__m128i VP = _mm_setzero_si128();
+	__m128i VN = _mm_setzero_si128();
+	__m128i X = _mm_setzero_si128();
+	__m128i D0 = _mm_setzero_si128();
+	__m128i HN = _mm_setzero_si128();
+	__m128i HP = _mm_setzero_si128();
+	__m128i tmp_process;
+	__m128i tmp_process1;
+
+
+
+	__m128i Err_4 = _mm_setzero_si128();
+	__m128i err_mask = _mm_set_epi32(1, 1, 1, 1);
+	///for_not li quan shi 1
+	__m128i for_not = _mm_set1_epi32(-1);
+	__m128i err_arry;
+	__m128i cmp_result;
+
+
+
+
+	int i_bd = (errthold << 1);
+	int last_high = (errthold << 1);
+	int t_length_1 = t_length - 1;
+	int err1;
+	int err2;
+	int err3;
+	int err4;
+
+
+
+	__m128i pre_end = _mm_set_epi32
+		(last_high + errthold, last_high + errthold, last_high + errthold, last_high + errthold);
+
+
+	i = 0;
+	while (i<t_length_1)
+	{
+
+
+		///X = Peq[text[i]] | VN;
+		X = _mm_or_si128(Peq_SSE[text[i]], VN);
+
+
+
+		/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+		///X&VP
+		tmp_process1 = _mm_and_si128(X, VP);
+		///(VP + (X&VP))
+		tmp_process = _mm_add_epi32(tmp_process1, VP);
+		///((VP + (X&VP)) ^ VP)
+		tmp_process = _mm_xor_si128(tmp_process, VP);
+		///((VP + (X&VP)) ^ VP) | X
+		D0 = _mm_or_si128(tmp_process, X);
+		/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+
+		///HN = VP&D0;
+		HN = _mm_and_si128(D0, VP);
+
+		///HP = VN | ~(VP | D0);
+		tmp_process = _mm_or_si128(D0, VP);
+		tmp_process = _mm_andnot_si128(tmp_process, for_not);
+		HP = _mm_or_si128(tmp_process, VN);
+
+
+		///X = D0 >> 1;
+		X = _mm_srli_epi32(D0, 1);
+		///VN = X&HP;
+		VN = _mm_and_si128(X, HP);
+		///VP = HN | ~(X | HP);
+		tmp_process = _mm_or_si128(X, HP);
+		tmp_process = _mm_andnot_si128(tmp_process, for_not);
+		VP = _mm_or_si128(HN, tmp_process);
+
+		///D0&err_mask
+		err_arry = _mm_and_si128(D0, err_mask);
+		Err_4 = _mm_add_epi32(Err_4, err_mask);
+		Err_4 = _mm_sub_epi32(Err_4, err_arry);
+
+
+
+		Peq_SSE['A'] = _mm_srli_epi32(Peq_SSE['A'], 1);
+		Peq_SSE['T'] = _mm_srli_epi32(Peq_SSE['T'], 1);
+		Peq_SSE['G'] = _mm_srli_epi32(Peq_SSE['G'], 1);
+		Peq_SSE['C'] = _mm_srli_epi32(Peq_SSE['C'], 1);
+
+		++i;
+		++i_bd;
+
+		Peq_SSE[pattern1[i_bd]] = _mm_or_si128(Mask1, Peq_SSE[pattern1[i_bd]]);
+		Peq_SSE[pattern2[i_bd]] = _mm_or_si128(Mask2, Peq_SSE[pattern2[i_bd]]);
+		Peq_SSE[pattern3[i_bd]] = _mm_or_si128(Mask3, Peq_SSE[pattern3[i_bd]]);
+		Peq_SSE[pattern4[i_bd]] = _mm_or_si128(Mask4, Peq_SSE[pattern4[i_bd]]);
+
+
+		Peq_SSE['T'] = _mm_or_si128(Peq_SSE['T'], Peq_SSE['C']);
+
+	}
+
+
+
+
+
+
+
+	///X = Peq[text[i]] | VN;
+	X = _mm_or_si128(Peq_SSE[text[i]], VN);
+
+	/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+	///X&VP
+	tmp_process1 = _mm_and_si128(X, VP);
+	///(VP + (X&VP))
+	tmp_process = _mm_add_epi32(tmp_process1, VP);
+	///((VP + (X&VP)) ^ VP)
+	tmp_process = _mm_xor_si128(tmp_process, VP);
+	///((VP + (X&VP)) ^ VP) | X
+	D0 = _mm_or_si128(tmp_process, X);
+	/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+
+	///HN = VP&D0;
+	HN = _mm_and_si128(D0, VP);
+
+	///HP = VN | ~(VP | D0);
+	tmp_process = _mm_or_si128(D0, VP);
+	tmp_process = _mm_andnot_si128(tmp_process, for_not);
+	HP = _mm_or_si128(tmp_process, VN);
+
+
+	///X = D0 >> 1;
+	X = _mm_srli_epi32(D0, 1);
+	///VN = X&HP;
+	VN = _mm_and_si128(X, HP);
+	///VP = HN | ~(X | HP);
+	tmp_process = _mm_or_si128(X, HP);
+	tmp_process = _mm_andnot_si128(tmp_process, for_not);
+	VP = _mm_or_si128(HN, tmp_process);
+
+	///D0&err_mask
+	err_arry = _mm_and_si128(D0, err_mask);
+	Err_4 = _mm_add_epi32(Err_4, err_mask);
+	Err_4 = _mm_sub_epi32(Err_4, err_arry);
+
+	///shi ji shang zhe ge zhi hen xiao d
+	cmp_result = _mm_cmpgt_epi32(Err_4, pre_end);
+
+	///jian zhi
+	if (_mm_extract_epi32(cmp_result, 0) && _mm_extract_epi32(cmp_result, 1)
+		&& _mm_extract_epi32(cmp_result, 2) && _mm_extract_epi32(cmp_result, 3))
+		return 1;
+
+
+
+
+
+
+
+
+	int site = t_length - 1;
+	err1 = _mm_extract_epi32(Err_4, 0);
+	err2 = _mm_extract_epi32(Err_4, 1);
+	err3 = _mm_extract_epi32(Err_4, 2);
+	err4 = _mm_extract_epi32(Err_4, 3);
+
+
+
+
+
+
+
+
+
+	/**
+	if (strcmp(text, "TTTTAGGTTTAAGTAATTTTTTTGTTTTAGTTTTTTAAGTAGTTGGGGTTATAGGTGTATGTTATTATNTTTAGTTAATTTTTT") == 0
+	&&
+	strcmp(pattern1, "TAGCTCACTGAAGCCTCAGATGATCCTCCCACCTCAGCCTCCCAAGTAGCTGGGGCTACAGGTGCATGCTACCACGACTGGCTAATTTTAATATTTTTA") == 0)
+	{
+	fprintf(stderr, "\n\n\n\n*****************************\ntext: %s\n", text);
+	fprintf(stderr, "text: %s\n", pattern1);
+
+
+	fprintf(stderr, "err1: %d\n", err1);
+	fprintf(stderr, "err2: %d\n", err2);
+	fprintf(stderr, "err3: %d\n", err3);
+	fprintf(stderr, "err4: %d\n", err4);
+
+	fprintf(stderr, "return_sites[0]: %d\n", return_sites[0]);
+	fprintf(stderr, "return_sites[1]: %d\n", return_sites[1]);
+	fprintf(stderr, "return_sites[2]: %d\n", return_sites[2]);
+	fprintf(stderr, "return_sites[3]: %d\n", return_sites[3]);
+	fprintf(stderr, "site: %d\n", site);
+
+	fprintf(stderr, "*****************************\n\n\n\n\n");
+	}
+	**/
+
+
+
+
+
+
+	if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
+	{
+		return_sites[0] = site;
+		return_sites_error[0] = err1;
+	}
+	if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
+	{
+		return_sites[1] = site;
+		return_sites_error[1] = err2;
+	}
+	if ((err3 <= errthold) && (err3 <= return_sites_error[2]))
+	{
+		return_sites[2] = site;
+		return_sites_error[2] = err3;
+	}
+	if ((err4 <= errthold) && (err4 <= return_sites_error[3]))
+	{
+		return_sites[3] = site;
+		return_sites_error[3] = err4;
+	}
+
+
+
+
+
+
+	i = 0;
+
+
+
+	while (i<errthold)
+	{
+		///err = err + ((VP >> i)&(Word_32)1);
+		tmp_process = _mm_srli_epi32(VP, i);
+		tmp_process = _mm_and_si128(tmp_process, err_mask);
+		Err_4 = _mm_add_epi32(Err_4, tmp_process);
+
+		///err = err - ((VN >> i)&(Word_32)1);
+		tmp_process1 = _mm_srli_epi32(VN, i);
+		tmp_process1 = _mm_and_si128(tmp_process1, err_mask);
+		Err_4 = _mm_sub_epi32(Err_4, tmp_process1);
+		++i;
+
+		err1 = _mm_extract_epi32(Err_4, 0);
+		err2 = _mm_extract_epi32(Err_4, 1);
+		err3 = _mm_extract_epi32(Err_4, 2);
+		err4 = _mm_extract_epi32(Err_4, 3);
+
+
+		if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
+		{
+			return_sites[0] = site + i;
+			return_sites_error[0] = err1;
+		}
+		if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
+		{
+			return_sites[1] = site + i;
+			return_sites_error[1] = err2;
+		}
+		if ((err3 <= errthold) && (err3 <= return_sites_error[2]))
+		{
+			return_sites[2] = site + i;
+			return_sites_error[2] = err3;
+		}
+		if ((err4 <= errthold) && (err4 <= return_sites_error[3]))
+		{
+			return_sites[3] = site + i;
+			return_sites_error[3] = err4;
+		}
+	}
+
+
+	/**
+	if (strcmp(text, "TTTTAGGTTTAAGTAATTTTTTTGTTTTAGTTTTTTAAGTAGTTGGGGTTATAGGTGTATGTTATTATNTTTAGTTAATTTTTT") == 0
+	&&
+	strcmp(pattern1, "TAGCTCACTGAAGCCTCAGATGATCCTCCCACCTCAGCCTCCCAAGTAGCTGGGGCTACAGGTGCATGCTACCACGACTGGCTAATTTTAATATTTTTA") == 0)
+	{
+	fprintf(stderr, "\n\n\n\n*****************************\ntext: %s\n", text);
+	fprintf(stderr, "text: %s\n", pattern1);
+
+
+	fprintf(stderr, "err1: %d\n", err1);
+	fprintf(stderr, "err2: %d\n", err2);
+	fprintf(stderr, "err3: %d\n", err3);
+	fprintf(stderr, "err4: %d\n", err4);
+
+	fprintf(stderr, "return_sites[0]: %d\n", return_sites[0]);
+	fprintf(stderr, "return_sites[1]: %d\n", return_sites[1]);
+	fprintf(stderr, "return_sites[2]: %d\n", return_sites[2]);
+	fprintf(stderr, "return_sites[3]: %d\n", return_sites[3]);
+
+	fprintf(stderr, "*****************************\n\n\n\n\n");
+	}
+	**/
+
+
+	unsigned int ungap_err1;
+	unsigned int ungap_err2;
+	unsigned int ungap_err3;
+	unsigned int ungap_err4;
+	ungap_err1 = err1;
+	ungap_err2 = err2;
+	ungap_err3 = err3;
+	ungap_err4 = err4;
+
+
+
+
+	while (i<last_high)
+	{
+		///err = err + ((VP >> i)&(Word_32)1);
+		tmp_process = _mm_srli_epi32(VP, i);
+		tmp_process = _mm_and_si128(tmp_process, err_mask);
+		Err_4 = _mm_add_epi32(Err_4, tmp_process);
+
+		///err = err - ((VN >> i)&(Word_32)1);
+		tmp_process1 = _mm_srli_epi32(VN, i);
+		tmp_process1 = _mm_and_si128(tmp_process1, err_mask);
+		Err_4 = _mm_sub_epi32(Err_4, tmp_process1);
+		++i;
+
+		err1 = _mm_extract_epi32(Err_4, 0);
+		err2 = _mm_extract_epi32(Err_4, 1);
+		err3 = _mm_extract_epi32(Err_4, 2);
+		err4 = _mm_extract_epi32(Err_4, 3);
+
+
+		if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
+		{
+			return_sites[0] = site + i;
+			return_sites_error[0] = err1;
+		}
+		if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
+		{
+			return_sites[1] = site + i;
+			return_sites_error[1] = err2;
+		}
+		if ((err3 <= errthold) && (err3 <= return_sites_error[2]))
+		{
+			return_sites[2] = site + i;
+			return_sites_error[2] = err3;
+		}
+		if ((err4 <= errthold) && (err4 <= return_sites_error[3]))
+		{
+			return_sites[3] = site + i;
+			return_sites_error[3] = err4;
+		}
+	}
+
+
+	/**
+	if (strcmp(text, "TTTTAGGTTTAAGTAATTTTTTTGTTTTAGTTTTTTAAGTAGTTGGGGTTATAGGTGTATGTTATTATNTTTAGTTAATTTTTT") == 0
+	&&
+	strcmp(pattern1, "TAGCTCACTGAAGCCTCAGATGATCCTCCCACCTCAGCCTCCCAAGTAGCTGGGGCTACAGGTGCATGCTACCACGACTGGCTAATTTTAATATTTTTA") == 0)
+	{
+	fprintf(stderr, "\n\n\n\n*****************************\ntext: %s\n", text);
+	fprintf(stderr, "text: %s\n", pattern1);
+
+
+	fprintf(stderr, "err1: %d\n", err1);
+	fprintf(stderr, "err2: %d\n", err2);
+	fprintf(stderr, "err3: %d\n", err3);
+	fprintf(stderr, "err4: %d\n", err4);
+
+	fprintf(stderr, "return_sites[0]: %d\n", return_sites[0]);
+	fprintf(stderr, "return_sites[1]: %d\n", return_sites[1]);
+	fprintf(stderr, "return_sites[2]: %d\n", return_sites[2]);
+	fprintf(stderr, "return_sites[3]: %d\n", return_sites[3]);
+
+	fprintf(stderr, "*****************************\n\n\n\n\n");
+	}
+	**/
+
+
+
+	if ((ungap_err1 <= errthold) && ungap_err1 == return_sites_error[0])
+	{
+		return_sites[0] = site + errthold;
+	}
+
+
+	if ((ungap_err2 <= errthold) && ungap_err2 == return_sites_error[1])
+	{
+		return_sites[1] = site + errthold;
+	}
+
+
+	if ((ungap_err3 <= errthold) && ungap_err3 == return_sites_error[2])
+	{
+		return_sites[2] = site + errthold;
+	}
+
+
+	if ((ungap_err4 <= errthold) && ungap_err4 == return_sites_error[3])
+	{
+		return_sites[3] = site + errthold;
+	}
+
+
+	/**
+	if (strcmp(text, "TTTTAGGTTTAAGTAATTTTTTTGTTTTAGTTTTTTAAGTAGTTGGGGTTATAGGTGTATGTTATTATNTTTAGTTAATTTTTT") == 0
+	&&
+	strcmp(pattern1, "TAGCTCACTGAAGCCTCAGATGATCCTCCCACCTCAGCCTCCCAAGTAGCTGGGGCTACAGGTGCATGCTACCACGACTGGCTAATTTTAATATTTTTA") == 0)
+	{
+	fprintf(stderr, "\n\n\n\n*****************************\ntext: %s\n", text);
+	fprintf(stderr, "text: %s\n", pattern1);
+
+
+	fprintf(stderr, "err1: %d\n", err1);
+	fprintf(stderr, "err2: %d\n", err2);
+	fprintf(stderr, "err3: %d\n", err3);
+	fprintf(stderr, "err4: %d\n", err4);
+
+	fprintf(stderr, "return_sites[0]: %d\n", return_sites[0]);
+	fprintf(stderr, "return_sites[1]: %d\n", return_sites[1]);
+	fprintf(stderr, "return_sites[2]: %d\n", return_sites[2]);
+	fprintf(stderr, "return_sites[3]: %d\n", return_sites[3]);
+
+	fprintf(stderr, "*****************************\n\n\n\n\n");
+	}
+	**/
+
+
+
+
+	return 1;
+
+}
+
+
+
+/*************************************************************************************************************************************************************************/
+
+
+
+
+/***************************************************2条比对純sse**************************************************/
+inline int BS_Reserve_Banded_BPM_2_SSE_only(char *pattern1, char *pattern2, int p_length, char *text, int t_length,
+	int* return_sites, unsigned int* return_sites_error, unsigned short errthold, __m128i* Peq_SSE)
+
+{
+
+	memset(return_sites, -1, sizeof(int)* 2);
+	memset(return_sites_error, -1, sizeof(unsigned int)* 2);
+
+	Word Peq[256][2];
+	int band_length = (errthold << 1) + 1;
+
+
+	int i;
+
+	Word tmp_Peq_1 = 1;
+
+
+	memset(Peq['A'], 0, sizeof(Word)* 2);
+	memset(Peq['C'], 0, sizeof(Word)* 2);
+	memset(Peq['G'], 0, sizeof(Word)* 2);
+	memset(Peq['T'], 0, sizeof(Word)* 2);
+
+	for (i = 0; i<band_length; i++)
+	{
+		Peq[pattern1[i]][0] = Peq[pattern1[i]][0] | tmp_Peq_1;
+		Peq[pattern2[i]][1] = Peq[pattern2[i]][1] | tmp_Peq_1;
+
+		tmp_Peq_1 = tmp_Peq_1 << 1;
+	}
+
+	Peq_SSE['A'] = _mm_set_epi64x(Peq['A'][1], Peq['A'][0]);
+	Peq_SSE['C'] = _mm_set_epi64x(Peq['C'][1], Peq['C'][0]);
+	Peq_SSE['G'] = _mm_set_epi64x(Peq['G'][1], Peq['G'][0]);
+	Peq_SSE['T'] = _mm_set_epi64x(Peq['T'][1], Peq['T'][0]);
+
+	Peq_SSE['T'] = _mm_or_si128(Peq_SSE['T'], Peq_SSE['C']);
+
+
+
+	Word Mask = ((Word)1 << (errthold << 1));
+
+	__m128i Mask1 = _mm_set_epi64x(0, Mask);
+	__m128i Mask2 = _mm_set_epi64x(Mask, 0);
+
+
+
+	__m128i VP = _mm_setzero_si128();
+	__m128i VN = _mm_setzero_si128();
+	__m128i X = _mm_setzero_si128();
+	__m128i D0 = _mm_setzero_si128();
+	__m128i HN = _mm_setzero_si128();
+	__m128i HP = _mm_setzero_si128();
+	__m128i tmp_process;
+	__m128i tmp_process1;
+
+
+
+	__m128i Err_2 = _mm_setzero_si128();
+	__m128i err_mask = _mm_set_epi64x(1, 1);
+	///for_not li quan shi 1
+	__m128i for_not = _mm_set1_epi32(-1);
+	__m128i err_arry;
+	__m128i cmp_result;
+
+
+
+
+	int i_bd = (errthold << 1);
+	int last_high = (errthold << 1);
+	int t_length_1 = t_length - 1;
+	int err1;
+	int err2;
+
+
+
+
+	__m128i pre_end = _mm_set_epi64x(last_high + errthold, last_high + errthold);
+
+
+	i = 0;
+	while (i<t_length_1)
+	{
+
+
+		///X = Peq[text[i]] | VN;
+		X = _mm_or_si128(Peq_SSE[text[i]], VN);
+
+
+
+		/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+		///X&VP
+		tmp_process1 = _mm_and_si128(X, VP);
+		///(VP + (X&VP))
+		tmp_process = _mm_add_epi64(tmp_process1, VP);
+		///((VP + (X&VP)) ^ VP)
+		tmp_process = _mm_xor_si128(tmp_process, VP);
+		///((VP + (X&VP)) ^ VP) | X
+		D0 = _mm_or_si128(tmp_process, X);
+		/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+
+		///HN = VP&D0;
+		HN = _mm_and_si128(D0, VP);
+
+		///HP = VN | ~(VP | D0);
+		tmp_process = _mm_or_si128(D0, VP);
+		tmp_process = _mm_andnot_si128(tmp_process, for_not);
+		HP = _mm_or_si128(tmp_process, VN);
+
+
+		///X = D0 >> 1;
+		X = _mm_srli_epi64(D0, 1);
+		///VN = X&HP;
+		VN = _mm_and_si128(X, HP);
+		///VP = HN | ~(X | HP);
+		tmp_process = _mm_or_si128(X, HP);
+		tmp_process = _mm_andnot_si128(tmp_process, for_not);
+		VP = _mm_or_si128(HN, tmp_process);
+
+		///D0&err_mask
+		err_arry = _mm_and_si128(D0, err_mask);
+		Err_2 = _mm_add_epi64(Err_2, err_mask);
+		Err_2 = _mm_sub_epi64(Err_2, err_arry);
+
+
+
+		Peq_SSE['A'] = _mm_srli_epi64(Peq_SSE['A'], 1);
+		Peq_SSE['T'] = _mm_srli_epi64(Peq_SSE['T'], 1);
+		Peq_SSE['G'] = _mm_srli_epi64(Peq_SSE['G'], 1);
+		Peq_SSE['C'] = _mm_srli_epi64(Peq_SSE['C'], 1);
+
+		++i;
+		++i_bd;
+
+		Peq_SSE[pattern1[i_bd]] = _mm_or_si128(Mask1, Peq_SSE[pattern1[i_bd]]);
+		Peq_SSE[pattern2[i_bd]] = _mm_or_si128(Mask2, Peq_SSE[pattern2[i_bd]]);
+
+
+
+		Peq_SSE['T'] = _mm_or_si128(Peq_SSE['T'], Peq_SSE['C']);
+
+	}
+
+
+
+
+
+
+
+	///X = Peq[text[i]] | VN;
+	X = _mm_or_si128(Peq_SSE[text[i]], VN);
+
+	/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+	///X&VP
+	tmp_process1 = _mm_and_si128(X, VP);
+	///(VP + (X&VP))
+	tmp_process = _mm_add_epi64(tmp_process1, VP);
+	///((VP + (X&VP)) ^ VP)
+	tmp_process = _mm_xor_si128(tmp_process, VP);
+	///((VP + (X&VP)) ^ VP) | X
+	D0 = _mm_or_si128(tmp_process, X);
+	/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
+
+	///HN = VP&D0;
+	HN = _mm_and_si128(D0, VP);
+
+	///HP = VN | ~(VP | D0);
+	tmp_process = _mm_or_si128(D0, VP);
+	tmp_process = _mm_andnot_si128(tmp_process, for_not);
+	HP = _mm_or_si128(tmp_process, VN);
+
+
+	///X = D0 >> 1;
+	X = _mm_srli_epi64(D0, 1);
+	///VN = X&HP;
+	VN = _mm_and_si128(X, HP);
+	///VP = HN | ~(X | HP);
+	tmp_process = _mm_or_si128(X, HP);
+	tmp_process = _mm_andnot_si128(tmp_process, for_not);
+	VP = _mm_or_si128(HN, tmp_process);
+
+	///D0&err_mask
+	err_arry = _mm_and_si128(D0, err_mask);
+	Err_2 = _mm_add_epi64(Err_2, err_mask);
+	Err_2 = _mm_sub_epi64(Err_2, err_arry);
+
+	///shi ji shang zhe ge zhi hen xiao d
+	cmp_result = _mm_cmpgt_epi64(Err_2, pre_end);
+
+	///jian zhi
+	if (_mm_extract_epi64(cmp_result, 0) && _mm_extract_epi64(cmp_result, 1))
+		return 1;
+
+
+
+
+
+
+
+
+	int site = t_length - 1;
+	err1 = _mm_extract_epi64(Err_2, 0);
+	err2 = _mm_extract_epi64(Err_2, 1);
+
+
+
+
+	if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
+	{
+		return_sites[0] = site;
+		return_sites_error[0] = err1;
+	}
+	if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
+	{
+		return_sites[1] = site;
+		return_sites_error[1] = err2;
+	}
+
+
+
+
+
+
+	i = 0;
+
+
+
+	while (i<errthold)
+	{
+		///err = err + ((VP >> i)&(Word)1);
+		tmp_process = _mm_srli_epi64(VP, i);
+		tmp_process = _mm_and_si128(tmp_process, err_mask);
+		Err_2 = _mm_add_epi64(Err_2, tmp_process);
+
+		///err = err - ((VN >> i)&(Word)1);
+		tmp_process1 = _mm_srli_epi64(VN, i);
+		tmp_process1 = _mm_and_si128(tmp_process1, err_mask);
+		Err_2 = _mm_sub_epi64(Err_2, tmp_process1);
+		++i;
+
+		err1 = _mm_extract_epi64(Err_2, 0);
+		err2 = _mm_extract_epi64(Err_2, 1);
+
+
+		if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
+		{
+			return_sites[0] = site + i;
+			return_sites_error[0] = err1;
+		}
+		if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
+		{
+			return_sites[1] = site + i;
+			return_sites_error[1] = err2;
+		}
+
+	}
+
+
+
+
+
+	unsigned int ungap_err1;
+	unsigned int ungap_err2;
+
+	ungap_err1 = err1;
+	ungap_err2 = err2;
+
+
+
+
+
+	while (i<last_high)
+	{
+		///err = err + ((VP >> i)&(Word)1);
+		tmp_process = _mm_srli_epi64(VP, i);
+		tmp_process = _mm_and_si128(tmp_process, err_mask);
+		Err_2 = _mm_add_epi64(Err_2, tmp_process);
+
+		///err = err - ((VN >> i)&(Word)1);
+		tmp_process1 = _mm_srli_epi64(VN, i);
+		tmp_process1 = _mm_and_si128(tmp_process1, err_mask);
+		Err_2 = _mm_sub_epi64(Err_2, tmp_process1);
+		++i;
+
+		err1 = _mm_extract_epi64(Err_2, 0);
+		err2 = _mm_extract_epi64(Err_2, 1);
+
+
+		if ((err1 <= errthold) && (err1 <= return_sites_error[0]))
+		{
+			return_sites[0] = site + i;
+			return_sites_error[0] = err1;
+		}
+		if ((err2 <= errthold) && (err2 <= return_sites_error[1]))
+		{
+			return_sites[1] = site + i;
+			return_sites_error[1] = err2;
+		}
+	}
+
+
+
+
+
+
+	if ((ungap_err1 <= errthold) && ungap_err1 == return_sites_error[0])
+	{
+		return_sites[0] = site + errthold;
+	}
+
+
+	if ((ungap_err2 <= errthold) && ungap_err2 == return_sites_error[1])
+	{
+		return_sites[1] = site + errthold;
+	}
+
+
+
+	return 1;
+
+}
+
+
+
+/*************************************************************************************************************************************************************************/
 
 
 
