@@ -49,7 +49,7 @@ int methylation_size = 100000;
 ///double methylation_buffer_times = 2.5;
 double methylation_buffer_times = 2.5;
 int output_methy = 0;
-bitmapper_bs_iter genome_cuts = 32;
+bitmapper_bs_iter genome_cuts = 64;
 bitmapper_bs_iter cut_length;
 
 
@@ -295,9 +295,9 @@ void Print_H()
   fprintf(stdout," --fast \t\tSet bitmapperBS in fast mode (default). This option is only available in paired-end mode.\n");
   fprintf(stdout," --sensitive \t\tSet bitmapperBS in sensitive mode. This option is only available in paired-end mode.\n");
   fprintf(stdout," --pe \t\t\tSearch will be done in paired-end mode.\n");
-  fprintf(stdout," --seq [file]\t\tInput sequences in fastq format [file]. This option is used  \n\t\t\tfor single-end reads.\n");
-  fprintf(stdout," --seq1 [file]\t\tInput sequences in fastq format [file] (First file). \n\t\t\tUse this option to indicate the first file of \n\t\t\tpaired-end reads. \n");
-  fprintf(stdout," --seq2 [file]\t\tInput sequences in fastq format [file] (Second file). \n\t\t\tUse this option to indicate the second file of \n\t\t\tpaired-end reads.  \n");
+  fprintf(stdout," --seq [file]\t\tInput sequences in fastq/fastq.gz format [file]. This option is used  \n\t\t\tfor single-end reads.\n");
+  fprintf(stdout," --seq1 [file]\t\tInput sequences in fastq/fastq.gz format [file] (First file). \n\t\t\tUse this option to indicate the first file of \n\t\t\tpaired-end reads. \n");
+  fprintf(stdout," --seq2 [file]\t\tInput sequences in fastq/fastq.gz format [file] (Second file). \n\t\t\tUse this option to indicate the second file of \n\t\t\tpaired-end reads.  \n");
   fprintf(stdout," -o [file]\t\tOutput of the mapped sequences. The default is \"output\".\n");
   ///fprintf(stdout," -u [file]\t\tSave unmapped sequences in fasta/fastq format.\n");
   ///fprintf(stdout," --seqcomp \t\tIndicates that the input sequences are compressed (gz).\n");

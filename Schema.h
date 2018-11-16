@@ -26,9 +26,30 @@
 
 #define Get_Count(arr, i) (arr[i+1]-arr[i])
 
+/**
+A->0
+C->1
+G->2
+T->3
+N-4
+**/
+#define Get_BS_conversion(C_or_G)    if (C_or_G == 1)/*C methylation*/\
+									{\
+										match = 1;/* 'C';*/\
+										convert = 3;/* 'T';*/\
+										rc_match = 2;/* 'G';*/\
+										rc_convert = 0;/* 'A';*/\
+									}\
+									else  /*G methylation*/\
+									{\
+										match = 2;/* 'G';*/\
+										convert = 0;/* 'A';*/\
+										rc_match = 1;/* 'C';*/\
+										rc_convert = 3;/* 'T';*/\
+									}
 
 
-
+#define POS_MASK 15
 
 
 
@@ -92,6 +113,33 @@ typedef struct
 } map_result;
 
 
+
+typedef struct
+{
+	bitmapper_bs_iter minDistance_pair;
+	bitmapper_bs_iter maxDistance_pair;
+	bitmapper_bs_iter length;
+	bitmapper_bs_iter genome_cuts;
+	bitmapper_bs_iter** count;
+} pair_distance_count;
+
+
+inline void init_pe_distance(pair_distance_count* distances, bitmapper_bs_iter minDistance_pair, bitmapper_bs_iter maxDistance_pair)
+{
+	distances->genome_cuts = genome_cuts;
+	distances->minDistance_pair = minDistance_pair;
+	distances->maxDistance_pair = maxDistance_pair;
+	distances->length = distances->maxDistance_pair - distances->minDistance_pair + 1;
+	distances->count = (bitmapper_bs_iter**)malloc(sizeof(bitmapper_bs_iter*)*distances->genome_cuts);
+	int i;
+	for (i = 0; i < distances->genome_cuts; i++)
+	{
+		distances->count[i] = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*distances->length);
+		memset(distances->count[i], 0, sizeof(bitmapper_bs_iter)*(distances->length));
+	}
+
+}
+
 typedef struct
 {
 	///这个空间应该是genome_cut+1
@@ -117,6 +165,38 @@ typedef struct
 
 
 }Methylation;
+
+
+typedef struct
+{
+	///这四个数组构成一个完整的元素
+	bitmapper_bs_iter* sites;
+	uint16_t* r_length;
+	uint16_t* r_size;
+	char** reads;
+
+	///下面这四个元素纯粹是用来做swap的暂存变量
+	bitmapper_bs_iter k_sites;
+	uint16_t k_r_length;
+	uint16_t k_r_size;
+	char* k_reads;
+
+}Single_Methylation;
+
+typedef struct
+{
+	int total_size;
+	int current_size;
+	Single_Methylation R[2];
+
+
+	///这个空间应该是genome_cut+1
+	bitmapper_bs_iter* cut_index;
+	bitmapper_bs_iter genome_cut;
+	bitmapper_bs_iter cut_length;
+	bitmapper_bs_iter* tmp_index; ///这个就是移位用的
+
+}Pair_Methylation;
 
 
 typedef struct
@@ -246,15 +326,76 @@ inline void init_methylation(Methylation* methy, int size)
 		(*methy).r_length[i] = 0;
 	}
 
-	/**
-	for (i = 0; i <= (*methy).genome_cut; i++)
-	{
-		(*methy).cut_index[i] = 0;
-	}
-	**/
 
 	memset((*methy).cut_index, 0, sizeof(bitmapper_bs_iter)*((*methy).genome_cut + 1));
 }
+
+
+inline bitmapper_bs_iter get_key_pair_methylation(Pair_Methylation* methy, int i)
+{
+	if ((*methy).R[1].sites[i] < (*methy).R[0].sites[i])
+	{
+		return (*methy).R[1].sites[i];
+	}
+	else
+	{
+		return (*methy).R[0].sites[i];
+	}
+}
+
+inline void init_pair_methylation(Pair_Methylation* methy, int size)
+{
+	methy->total_size = size;
+	methy->current_size = 0;
+	(*methy).genome_cut = genome_cuts;
+	(*methy).cut_length = cut_length;
+	(*methy).cut_index = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*(genome_cuts + 1));
+	(*methy).tmp_index = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*(genome_cuts + 1));
+
+
+	memset((*methy).cut_index, 0, sizeof(bitmapper_bs_iter)*((*methy).genome_cut + 1));
+
+
+
+
+
+	/**read1**/
+	(*methy).R[0].r_length = (uint16_t*)malloc(sizeof(uint16_t)*size);
+	(*methy).R[0].r_size = (uint16_t*)malloc(sizeof(uint16_t)*size);
+	(*methy).R[0].sites = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*size);
+	(*methy).R[0].reads = (char**)malloc(sizeof(char*)*size);
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		(*methy).R[0].reads[i] = (char*)malloc(sizeof(char)*INIT_READ_LENGTH);
+		(*methy).R[0].r_size[i] = INIT_READ_LENGTH;
+		(*methy).R[0].r_length[i] = 0;
+	}
+	/**read1**/
+
+
+
+
+
+	/**read2**/
+	(*methy).R[1].r_length = (uint16_t*)malloc(sizeof(uint16_t)*size);
+	(*methy).R[1].r_size = (uint16_t*)malloc(sizeof(uint16_t)*size);
+	(*methy).R[1].sites = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*size);
+	(*methy).R[1].reads = (char**)malloc(sizeof(char*)*size);
+		for (i = 0; i < size; i++)
+	{
+		(*methy).R[1].reads[i] = (char*)malloc(sizeof(char)*INIT_READ_LENGTH);
+		(*methy).R[1].r_size[i] = INIT_READ_LENGTH;
+		(*methy).R[1].r_length[i] = 0;
+	}
+	/**read2**/
+
+
+
+}
+
+
+
 
 /**
 inline void output_methylation(Methylation* methy, FILE *schema_out_fp)
@@ -308,11 +449,48 @@ inline void output_methylation(Methylation* methy)
 }
 
 
+inline void output_methylation_pair(Pair_Methylation* methy)
+{
+	bitmapper_bs_iter i;
+	for (i = 0; i <= (*methy).genome_cut; i++)
+	{
+		methy_out.cut_index[i] += Get_Count((*methy).cut_index, i);
+	}
+
+	bitmapper_bs_iter index;
+	bitmapper_bs_iter end_i;
+	FILE* file;
+
+	///外层循环是每个cut
+	for (index = 0; index < (*methy).genome_cut; index++)
+	{
+		i = (*methy).cut_index[index];
+		end_i = (*methy).cut_index[index + 1];
+		file = methy_out.files[index];
+
+		for (; i < end_i; i++)
+		{
+			fprintf(file, "%llu\t%llu\t%s\t%llu\t%llu\t%s\n", 
+				(*methy).R[0].r_length[i], (*methy).R[0].sites[i], (*methy).R[0].reads[i],
+				(*methy).R[1].r_length[i], (*methy).R[1].sites[i], (*methy).R[1].reads[i]);
+		}
+	}
+
+}
+
+
 
 inline int get_cut_id(Methylation* methy, bitmapper_bs_iter site)
 {
 	return site / (*methy).cut_length;
 }
+
+
+inline int get_cut_id_pair(Pair_Methylation* methy, bitmapper_bs_iter site)
+{
+	return site / (*methy).cut_length;
+}
+
 
 inline void swap(Methylation* methy, bitmapper_bs_iter i, bitmapper_bs_iter j)
 {
@@ -334,6 +512,107 @@ inline void swap(Methylation* methy, bitmapper_bs_iter i, bitmapper_bs_iter j)
 
 
 }
+
+
+inline void swap_pair(Pair_Methylation* methy, bitmapper_bs_iter i, bitmapper_bs_iter j)
+{
+
+	(*methy).R[0].k_sites = (*methy).R[0].sites[i];
+	(*methy).R[0].k_r_length = (*methy).R[0].r_length[i];
+	(*methy).R[0].k_r_size = (*methy).R[0].r_size[i];
+	(*methy).R[0].k_reads = (*methy).R[0].reads[i];
+
+	(*methy).R[0].sites[i] = (*methy).R[0].sites[j];
+	(*methy).R[0].r_length[i] = (*methy).R[0].r_length[j];
+	(*methy).R[0].r_size[i] = (*methy).R[0].r_size[j];
+	(*methy).R[0].reads[i] = (*methy).R[0].reads[j];
+
+	(*methy).R[0].sites[j] = (*methy).R[0].k_sites;
+	(*methy).R[0].r_length[j] = (*methy).R[0].k_r_length;
+	(*methy).R[0].r_size[j] = (*methy).R[0].k_r_size;
+	(*methy).R[0].reads[j] = (*methy).R[0].k_reads;
+
+
+
+
+
+
+	(*methy).R[1].k_sites = (*methy).R[1].sites[i];
+	(*methy).R[1].k_r_length = (*methy).R[1].r_length[i];
+	(*methy).R[1].k_r_size = (*methy).R[1].r_size[i];
+	(*methy).R[1].k_reads = (*methy).R[1].reads[i];
+
+	(*methy).R[1].sites[i] = (*methy).R[1].sites[j];
+	(*methy).R[1].r_length[i] = (*methy).R[1].r_length[j];
+	(*methy).R[1].r_size[i] = (*methy).R[1].r_size[j];
+	(*methy).R[1].reads[i] = (*methy).R[1].reads[j];
+
+	(*methy).R[1].sites[j] = (*methy).R[1].k_sites;
+	(*methy).R[1].r_length[j] = (*methy).R[1].k_r_length;
+	(*methy).R[1].r_size[j] = (*methy).R[1].k_r_size;
+	(*methy).R[1].reads[j] = (*methy).R[1].k_reads;
+
+
+}
+
+
+
+
+
+
+
+inline void assign_cuts_pair(Pair_Methylation* methy)
+{
+	bitmapper_bs_iter i = 0;
+
+
+	(*methy).tmp_index[0] = 0;
+
+	for (i = 0; i < (*methy).genome_cut; i++)
+	{
+		(*methy).tmp_index[i + 1] = (*methy).tmp_index[i] + (*methy).cut_index[i];
+	}
+
+	memcpy((*methy).cut_index, (*methy).tmp_index, sizeof(bitmapper_bs_iter)*((*methy).genome_cut + 1));
+
+
+	bitmapper_bs_iter index;
+	bitmapper_bs_iter end_i;
+	bitmapper_bs_iter tmp_index;
+
+	///外层循环是循环每个桶的
+	for (index = 0; index < (*methy).genome_cut; index++)
+	{
+		i = (*methy).tmp_index[index];
+		end_i = (*methy).cut_index[index + 1];
+		///内层是循环每个桶
+		while (i< end_i)
+		{
+
+
+			///tmp_index = get_cut_id_pair(methy, (*methy).sites[i]);
+			tmp_index = get_cut_id_pair(methy, get_key_pair_methylation(methy, i));
+
+			if (tmp_index == index)
+			{
+				i++;
+				(*methy).tmp_index[index]++; ///这个可以不加
+			}
+			else
+			{
+				swap_pair(methy, i, (*methy).tmp_index[tmp_index]);
+				(*methy).tmp_index[tmp_index]++;
+			}
+		}
+
+	}
+
+}
+
+
+
+
+
 
 inline void assign_cuts(Methylation* methy)
 {
@@ -503,6 +782,16 @@ inline void clear_methylation(Methylation* methy)
 
 
 
+inline void clear_methylation_pair(Pair_Methylation* methy)
+{
+	(*methy).current_size = 0;
+
+
+	memset((*methy).cut_index, 0, sizeof(bitmapper_bs_iter)*((*methy).genome_cut + 1));
+}
+
+
+
 inline void C_to_T(char *Seq, char *bsSeq, int length, int* C_site)
 {
 	int i;
@@ -576,5 +865,83 @@ inline void C_to_T_forward_array(char *Seq, char *bsSeq, int length, int* C_site
 
 void methy_extract(int thread_id, char* file_name);
 
+
+///min一定是个坐标, max一定是个坐标+长度
+inline long long calculate_TLEN(long long min1, long long len1, long long min2, long long len2)
+{
+
+	long long min = min1;
+	long long max = min1 + len1 - 1;
+
+	if (min1 > min2)
+		min = min2;
+
+	if (max < min2 + len2 - 1)
+		max = min2 + len2 - 1;
+
+	return max - min + 1;
+}
+
+
+///min一定是个坐标, max一定是个坐标+长度
+inline int over_lap_length(long long min1, long long len1, long long min2, long long len2,char* read2)
+{
+
+	long long min = min1;
+	long long max = min1 + len1;
+
+	if (min1 > min2)
+		min = min2;
+
+	if (min1 + len1 < min2 + len2)
+		max = min2 + len2;
+
+	long long overlap_length = max - min - len1 - len2;
+
+	long long region_start2;
+	int region_length2;
+	///如果不重叠是正值或者0, 重叠是负值
+	if (overlap_length < 0)
+	{
+		overlap_length = overlap_length*-1;
+
+		if (min1<=min2)
+		{
+			region_start2 = 0;
+			region_length2 = overlap_length;
+		}
+		else if (min1>min2)
+		{
+			region_start2 = min1 - min2;
+			region_length2 = overlap_length;
+		}
+
+		/**
+		if (region_length2 + region_start2 > len2)
+		{
+			fprintf(stderr, "region_start2: %lld\n", region_start2);
+			fprintf(stderr, "region_length2: %lld\n", region_length2);
+			
+		}
+
+		fprintf(stderr, "min1: %lld\n", min1);
+		fprintf(stderr, "len1: %lld\n", len1);
+		fprintf(stderr, "min2: %lld\n", min2);
+		fprintf(stderr, "len2: %lld\n", len2);
+		fprintf(stderr, "region_start2: %lld\n", region_start2);
+		fprintf(stderr, "region_length2: %lld\n\n", region_length2);
+		**/
+
+		memset(read2 + region_start2, 'N', region_length2);
+
+		return 1;
+	}
+
+	return 0;
+
+}
+
+
+void out_paired_distance_statistic();
 
 #endif

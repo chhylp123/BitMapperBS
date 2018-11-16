@@ -166,6 +166,7 @@ int main(int argc, char *argv[])
             minDistance_pair = minDistance_pair - SEQ_LENGTH;
             maxDistance_pair = maxDistance_pair - SEQ_LENGTH;
 
+
             if (!Start_Load_Index(fileName[1]))
             {
                 fprintf(stderr, "Load hash table index failed!\n");
@@ -224,6 +225,12 @@ int main(int argc, char *argv[])
 
 
 
+			 if (output_methy == 1)
+			 {
+				 ///out_paired_distance_statistic();
+			 }
+
+
             totalMappingTime += Get_T()-startTime;
             fprintf(stdout, "sucess!\n");
 
@@ -264,6 +271,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
+		init_output_methy(Read_File1);
 
 		Prepare_methy(fileName[0], chhy_ih_refGenName, refChromeCont);
 

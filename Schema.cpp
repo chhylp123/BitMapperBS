@@ -32,14 +32,17 @@
 #include "Ref_Genome.h"
 
 
+char methy_hash[5] = { 'A', 'C', 'G', 'T', 'N' };
+
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.0.1";
+char *versionN = "1.0.0.2";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
 long long completedSeqCnt[MAX_Thread];
+pair_distance_count PE_distance[MAX_Thread];
 ///char *Mapped_File;
 char *_msf_refGen = NULL;
 unsigned char *_BS_refGen = NULL;
@@ -173,6 +176,57 @@ long long* number_of_ambiguous_mapped_read, long long* number_of_unmapped_read)
 	}
 
 	*number_of_unmapped_read = *number_of_read - *number_of_unique_mapped_read - *number_of_ambiguous_mapped_read;
+}
+
+
+void out_paired_distance_statistic()
+{
+	int i = 0;
+	int length = maxDistance_pair - minDistance_pair + 1;
+	
+	
+	fprintf(stderr, "@%llu\t%llu\n", maxDistance_pair, minDistance_pair);
+
+
+	/**
+	int j;
+	long long tmp = 0;
+	for (j = 0; j < genome_cuts; j++)
+	{
+		int k = 0;
+
+		for (k = 0; k < length; k++)
+		{
+			fprintf(stderr, "%llu\t", PE_distance[0].count[j][k]);
+		}
+
+		fprintf(stderr, "\n\n");
+	}
+	**/
+
+	
+	int j;
+	
+	for (j = 0; j < genome_cuts; j++)
+	{
+		int k = 0;
+
+		for (k = 0; k < length; k++)
+		{
+			long long tmp = 0;
+			for (i = 0; i < THREAD_COUNT; i++)
+			{
+				tmp = tmp + PE_distance[i].count[j][k];
+			}
+
+			fprintf(stderr, "%llu\t", tmp);
+		}
+
+		fprintf(stderr, "\n\n");
+	}
+	
+
+	
 }
 
 
@@ -429,30 +483,45 @@ int get_single_result(int* flag, bitmapper_bs_iter pos, char* buffer)
 
 }
 
-int init_genome_cut(uint16_t* C_methy, uint16_t* total, uint16_t* G_methy, char* ref_genome, bitmapper_bs_iter length,
-	bitmapper_bs_iter index, bitmapper_bs_iter extra_length)
+int init_genome_cut(uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+	char* ref_genome, bitmapper_bs_iter length,
+	bitmapper_bs_iter index, bitmapper_bs_iter extra_length,
+	char* last_two_bases)
 {
 	if (index == 0)
 	{
-		length = length + extra_length;
-		memset(C_methy, 0, sizeof(uint16_t)*length);
-		memset(total, 0, sizeof(uint16_t)*length);
-		memset(G_methy, 0, sizeof(uint16_t)*length);
+		memset(methy, 0, sizeof(uint16_t)*(length + extra_length));
+		memset(total, 0, sizeof(uint16_t)*(length + extra_length));
+		memset(correct_methy, 0, sizeof(uint16_t)*(length + extra_length));
+		memset(correct_total, 0, sizeof(uint16_t)*(length + extra_length));
+
+
+		///如果第一个block也是最后一个
+		///那么读参考基因组的时候不应该+extra_length
+		if (index != genome_cuts - 1)
+		{
+			length = length + extra_length;
+		}
+
+		
 	}
 	else if (index == genome_cuts - 1)
 	{
-		memset(C_methy, 0, sizeof(uint16_t)*length);
+		memset(methy, 0, sizeof(uint16_t)*length);
 		memset(total, 0, sizeof(uint16_t)*length);
-		memset(G_methy, 0, sizeof(uint16_t)*length);
+		memset(correct_methy, 0, sizeof(uint16_t)*length);
+		memset(correct_total, 0, sizeof(uint16_t)*length);
 
 
-		memcpy(C_methy, C_methy + length, extra_length*sizeof(uint16_t));
+		memcpy(methy, methy + length, extra_length*sizeof(uint16_t));
 		memcpy(total, total + length, extra_length*sizeof(uint16_t));
-		memcpy(G_methy, G_methy + length, extra_length*sizeof(uint16_t));
+		memcpy(correct_methy, correct_methy + length, extra_length*sizeof(uint16_t));
+		memcpy(correct_total, correct_total + length, extra_length*sizeof(uint16_t));
 
-		memset(C_methy + length, 0, sizeof(uint16_t)*extra_length);
+		memset(methy + length, 0, sizeof(uint16_t)*extra_length);
 		memset(total + length, 0, sizeof(uint16_t)*extra_length);
-		memset(G_methy + length, 0, sizeof(uint16_t)*extra_length);
+		memset(correct_methy + length, 0, sizeof(uint16_t)*extra_length);
+		memset(correct_total + length, 0, sizeof(uint16_t)*extra_length);
 
 		///注意对最后一个元素,这东西不能要
 		///length = length + extra_length;
@@ -462,18 +531,21 @@ int init_genome_cut(uint16_t* C_methy, uint16_t* total, uint16_t* G_methy, char*
 	else
 	{
 		
-		memset(C_methy, 0, sizeof(uint16_t)*length);
+		memset(methy, 0, sizeof(uint16_t)*length);
 		memset(total, 0, sizeof(uint16_t)*length);
-		memset(G_methy, 0, sizeof(uint16_t)*length);
+		memset(correct_methy, 0, sizeof(uint16_t)*length);
+		memset(correct_total, 0, sizeof(uint16_t)*length);
 		
 
-		memcpy(C_methy, C_methy + length, extra_length*sizeof(uint16_t));
+		memcpy(methy, methy + length, extra_length*sizeof(uint16_t));
 		memcpy(total, total + length, extra_length*sizeof(uint16_t));
-		memcpy(G_methy, G_methy + length, extra_length*sizeof(uint16_t));
+		memcpy(correct_methy, correct_methy + length, extra_length*sizeof(uint16_t));
+		memcpy(correct_total, correct_total + length, extra_length*sizeof(uint16_t));
 
-		memset(C_methy + length, 0, sizeof(uint16_t)*extra_length);
+		memset(methy + length, 0, sizeof(uint16_t)*extra_length);
 		memset(total + length, 0, sizeof(uint16_t)*extra_length);
-		memset(G_methy + length, 0, sizeof(uint16_t)*extra_length);
+		memset(correct_methy + length, 0, sizeof(uint16_t)*extra_length);
+		memset(correct_total + length, 0, sizeof(uint16_t)*extra_length);
 
 		length = length + extra_length;
 
@@ -493,23 +565,403 @@ int init_genome_cut(uint16_t* C_methy, uint16_t* total, uint16_t* G_methy, char*
 	}
 		
 }
-
-inline int get_direction(uint16_t flag)
+//C_or_G， 1代表C, 2代表G
+//direction, 1代表forward, 2代表reverse comp
+inline void get_direction(uint16_t flag, int* C_or_G, int* direction)
 {
 	if (flag&IS_PAIRED) ///双端
 	{
-		if ((flag & 0x50) == 0x50) return 2; //Read1, reverse comp. == OB, flag是83
-		else if (flag & 0x40) return 1; //Read1, forward == OT, flag是99
-		else if ((flag & 0x90) == 0x90) return 1; //Read2, reverse comp. == OT, flag是147
-		else if (flag & 0x80) return 2; //Read2, forward == OB, flag是163
-		return 0; //One of the above should be set!
+		if ((flag & 0x50) == 0x50)//Read1, reverse comp. == OB, flag是83
+		{
+			(*C_or_G) = 2;
+			(*direction) = 2;
+		}
+		else if (flag & 0x40)//Read1, forward == OT, flag是99
+		{
+			(*C_or_G) = 1;
+			(*direction) = 1;
+		}
+		else if ((flag & 0x90) == 0x90)//Read2, reverse comp. == OT, flag是147
+		{
+			(*C_or_G) = 1;
+			(*direction) = 2;
+		}
+		else if (flag & 0x80)//Read2, forward == OB, flag是163
+		{
+			(*C_or_G) = 2;
+			(*direction) = 1;
+		}
+		else
+		{
+			(*C_or_G) = 0;
+			(*direction) = 0;
+		}
 	}
 	else   ///单端
 	{
-		if (flag & 0x10) return 2; //Reverse comp. == OB
-		return 1; //OT
+		if (flag & 0x10)//Reverse comp. == OB
+		{
+			(*C_or_G) = 2;
+			(*direction) = 2;
+		}
+		else  //OT
+		{
+			(*C_or_G) = 1;
+			(*direction) = 1;
+		}
+		
 	}
 
+}
+///0就是重复了, 1就是没重复
+inline int remove_dup(char* ref_genome, int direction, bitmapper_bs_iter pos, int seq_length)
+{
+
+	///return 1;
+
+#define FORWARD_DUP_MASK 128
+#define RC_DUP_MASK 64
+
+	bitmapper_bs_iter dup_pos;
+
+	///说明这是rc链
+	if (direction == 2)
+	{
+		dup_pos = pos + seq_length - 1;
+		///这就说明这个是重复
+		if (ref_genome[dup_pos] & RC_DUP_MASK)
+		{
+			return 0;
+		}
+
+		ref_genome[dup_pos] = ref_genome[dup_pos] | RC_DUP_MASK;
+
+		return 1;
+
+	}
+	else   ///正向链
+	{
+		dup_pos = pos;
+		///这就说明这个是重复
+		if (ref_genome[dup_pos] & FORWARD_DUP_MASK)
+		{
+			return 0;
+		}
+
+		ref_genome[dup_pos] = ref_genome[dup_pos] | FORWARD_DUP_MASK;
+
+		return 1;
+	}
+
+	return 1;
+}
+
+///1是拿到一个有效的alignment
+///0是读到文件末尾了
+///-1是这个alignment重复了, 拿到了一个空的alignment
+inline int get_alignment(FILE* read_file, char* ref_genome, bitmapper_bs_iter start_pos, char* read, 
+	int* g_seq_length, int* g_C_or_G, int* g_direction, bitmapper_bs_iter* g_pos)
+{
+
+
+	bitmapper_bs_iter flag;
+	bitmapper_bs_iter pos;
+	
+	int C_or_G;
+	int direction;
+	int seq_length;
+
+	if (fscanf(read_file, "%llu\t%llu\t%s\n", &flag, &pos, read) != EOF)
+	{
+		get_direction(flag, &C_or_G, &direction);
+		seq_length = strlen(read);
+		///如果重复了
+		if (!remove_dup(ref_genome, direction, pos - start_pos, seq_length))
+		{
+			return -1;
+		}
+		
+		(*g_C_or_G) = C_or_G;
+		(*g_direction) = direction;
+		(*g_seq_length) = seq_length;
+		(*g_pos) = pos;
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+
+}
+
+inline void update_methylation(int C_or_G, char* ref_genome, char* read, int read_length, 
+	uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total)
+{
+
+
+	char match, convert, rc_match, rc_convert;
+	Get_BS_conversion(C_or_G);
+	bitmapper_bs_iter i;
+	char tmp;
+
+	for (i = 0; i < read_length; i++)
+	{
+		tmp = ref_genome[i] & POS_MASK;
+
+		
+
+		if (tmp == match)
+		{
+
+			if (read[i] == methy_hash[convert] && total[i] < 65535)
+			{
+				total[i]++;
+			}
+			else if (read[i] == methy_hash[match] && total[i] < 65535)
+			{
+				
+
+				total[i]++;
+				methy[i]++;
+			}
+
+		}
+		else if (tmp == rc_match)
+		{
+			if (read[i] == methy_hash[rc_convert] && total[i] < 65535)
+			{
+				correct_total[i]++;
+			}
+			else if (read[i] == methy_hash[rc_match] && total[i] < 65535)
+			{
+				correct_total[i]++;
+				correct_methy[i]++;
+			}
+		}
+	}
+}
+
+
+
+
+
+
+inline void get_chrome_position(bitmapper_bs_iter* position, char** chrome_name, int* chrome_id)
+{
+	bitmapper_bs_iter map_location = *position;
+
+	int now_ref_name = 0;
+
+
+	for (now_ref_name = 0; now_ref_name < refChromeCont; ++now_ref_name)
+	{
+		if ((map_location >= _ih_refGenName[now_ref_name].start_location) && (map_location <= _ih_refGenName[now_ref_name].end_location))
+			break;
+	}
+
+
+	///map_location = map_location + 1 - _ih_refGenName[now_ref_name].start_location;
+	///bed_Graph是0-based
+	map_location = map_location - _ih_refGenName[now_ref_name].start_location;
+
+
+	(*position) = map_location;
+	(*chrome_name) = _ih_refGenName[now_ref_name]._rg_chrome_name;
+	(*chrome_id) = now_ref_name;
+	///fprintf(stderr, "%s\t%llu\n", chrome_name, (*position));
+
+}
+
+
+
+inline int check_CpG(long long ref_pos, long long part_pos,
+	int chrome_id, char* ref_genome, char direction, char* last_two_bases)
+{
+
+	if (direction == 1) ///C
+	{
+		///第一个判断条件是不能跨染色体
+		///第二个是判断是不是CpG
+		///不用担心左边会不会超过当前block的长度, 因为后面会多取一点出来(注意反方向需要考虑这个问题)
+		///即使是最后一个block, 也受第一个条件限制
+		if ((ref_pos + 1 <= _ih_refGenName[chrome_id].end_location)
+			&&
+			((ref_genome[part_pos + 1] & POS_MASK) == 2))  ///G
+		{
+			return 1;
+		}
+	}
+	else if (direction == 2) ///G
+	{
+		///这个是防止溢出
+		if (part_pos > 0)
+		{
+			///第一个判断条件是不能跨染色体
+			///第二个是判断是不是CpG
+			if ((ref_pos - 1 >= _ih_refGenName[chrome_id].start_location)
+				&&
+				((ref_genome[part_pos - 1] & POS_MASK) == 1)) //C
+			{
+				return 1;
+			}
+		}
+		else   ///这个是为了处理part_pos = 0的情况
+		{
+			///第一个判断条件是不能跨染色体
+			///第二个是判断是不是CpG
+			if ((ref_pos - 1 >= _ih_refGenName[chrome_id].start_location)
+				&&
+				((last_two_bases[1] & POS_MASK) == 1)) //C
+			{
+				return 1;
+			}
+		}
+
+		
+	}
+
+	return 0;
+	
+}
+
+
+
+
+////这个必须和check_CpG连在一起用才正确
+inline int check_CHG(long long ref_pos, long long part_pos,
+	int chrome_id, char* ref_genome, char direction, char* last_two_bases)
+{
+
+	if (direction == 1) ///C
+	{
+		///第一个判断条件是不能跨染色体
+		///第二个是判断是不是CpG
+		///不用担心左边会不会超过当前block的长度, 因为后面会多取一点出来(注意反方向需要考虑这个问题)
+		///即使是最后一个block, 也受第一个条件限制
+		if ((ref_pos + 2 <= _ih_refGenName[chrome_id].end_location)
+			&&
+			((ref_genome[part_pos + 2] & POS_MASK) == 2))  ///G
+		{
+			return 1;
+		}
+	}
+	else if (direction == 2) ///G
+	{
+		///这个是防止溢出
+		if (part_pos > 0)
+		{
+			///第一个判断条件是不能跨染色体
+			///第二个是判断是不是CpG
+			if ((ref_pos - 2 >= _ih_refGenName[chrome_id].start_location)
+				&&
+				((ref_genome[part_pos - 2] & POS_MASK) == 1)) //C
+			{
+				return 1;
+			}
+		}
+		else   ///这个是为了处理part_pos = 0的情况
+		{
+			///第一个判断条件是不能跨染色体
+			///第二个是判断是不是CpG
+			if ((ref_pos - 2 >= _ih_refGenName[chrome_id].start_location)
+				&&
+				((last_two_bases[0] & POS_MASK) == 1)) //C
+			{
+				return 1;
+			}
+		}
+
+
+	}
+
+	return 0;
+
+}
+
+
+inline int get_context(long long ref_pos, long long part_pos,
+	int chrome_id, char* ref_genome, char direction, char* last_two_bases)
+{
+	if (check_CpG(ref_pos, part_pos, chrome_id, ref_genome, direction, last_two_bases))
+	{
+		return 0;
+	}
+	else if (check_CHG(ref_pos, part_pos, chrome_id, ref_genome, direction, last_two_bases))
+	{
+		return 1;
+	}
+	else
+	{
+		return 2;
+	}
+}
+
+
+
+inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+	bitmapper_bs_iter start_pos, bitmapper_bs_iter end_pos, char* ref_genome, 
+	char* last_two_bases, int* need_context)
+{
+	bitmapper_bs_iter length = end_pos - start_pos + 1;
+
+	bitmapper_bs_iter i;
+	bitmapper_bs_iter tmp_pos;
+	char* chrome_name;
+	int chrome_id;
+
+	char tmp;
+
+	int current_context;
+
+	for (i = 0; i < length; i++, start_pos++)
+	{
+
+
+		tmp = ref_genome[i] & POS_MASK;
+
+		if (tmp == 1 || tmp == 2) //C或者G
+		{
+			if (correct_methy[i] != correct_total[i])
+			{
+				continue;
+			}
+
+			if (total[i]==0)
+			{
+				continue;
+			}
+
+			tmp_pos = start_pos;
+			get_chrome_position(&tmp_pos, &chrome_name, &chrome_id);
+
+
+			current_context = 
+				get_context(start_pos, i, chrome_id, ref_genome, tmp, last_two_bases);
+
+			if (need_context[current_context])
+			{
+				if (current_context == 0)
+				{
+					output_single_methy_CpG(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+
+				if (current_context == 1)
+				{
+					output_single_methy_CHG(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+
+				if (current_context == 2)
+				{
+					output_single_methy_CHH(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+			}
+		}
+		
+
+
+		
+
+	}
 }
 
 void methy_extract(int thread_id, char* file_name)
@@ -526,19 +978,31 @@ void methy_extract(int thread_id, char* file_name)
 	FILE* read_file;
 	int i = 0;
 	char tmp_file_name[SEQ_MAX_LENGTH];
-	char buffer[SEQ_MAX_LENGTH];
+	char read[SEQ_MAX_LENGTH];
 	bitmapper_bs_iter start_pos, end_pos;
 	bitmapper_bs_iter length;
-	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH; ///这个是为了处理边界情况
-	uint16_t* C_methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2 + maxDistance_pair; ///这个是为了处理边界情况
+	uint16_t* methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
 	uint16_t* total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
-	uint16_t* G_methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	uint16_t* correct_methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	uint16_t* correct_total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
 	char* ref_genome = (char*)malloc(sizeof(char)*(cut_length + extra_length));
 	bitmapper_bs_iter flag;
 	bitmapper_bs_iter pos;
+	int C_or_G;
 	int direction;
 	bitmapper_bs_iter inner_i;
+	int return_value;
 	
+	bitmapper_bs_iter inner_start_pos;
+	int read_length;
+	char last_two_bases[2];
+
+	///need_context[0]是CpG
+	///need_context[1]是CHG
+	///need_context[2]是CHH
+	int need_context[3] = { 1, 0, 0 };
+
 
 	for (i = 0; i < genome_cuts; i++)
 	{
@@ -549,66 +1013,46 @@ void methy_extract(int thread_id, char* file_name)
 
 		length = end_pos - start_pos + 1;
 
-		if (!init_genome_cut(C_methy, total, G_methy, ref_genome, length, i, extra_length))
+		if (!init_genome_cut(methy, total, correct_methy, correct_total, ref_genome, length, i, extra_length, last_two_bases))
 		{
 			fprintf(stderr, "ERROR when reading genome!\n");
 			exit(0);
 		}
 
-		
-		///while (fscanf(read_file, "%u\t%llu\t%s\n", &flag, &pos, buffer) != EOF) ///如果flag是uin16_t,再这样读，就会出错，我擦
-		while (fscanf(read_file, "%llu\t%llu\t%s\n", &flag, &pos, buffer) != EOF)
+
+		///return_value=0则读到文件末尾
+		///return_value = -1读到了一个重复的alignment
+		while (return_value = get_alignment(read_file, ref_genome, start_pos, read, 
+			&read_length, &C_or_G, &direction, &pos))
 		{
-
-
-
-
-			direction = get_direction(flag);
-
-			if (direction == 1)
+			if (return_value == -1)
 			{
-				inner_i = 0;
-				while (buffer[inner_i]!='\0')
-				{
-					
-					if (buffer[inner_i] == 'C')
-					{
-						C_methy[inner_i + pos - start_pos]++;
-						total[inner_i + pos - start_pos]++;
-					}
-					
-
-					inner_i++;
-				}
+				continue;
 			}
-			else if (direction == 2)
-			{
-				inner_i = 0;
-				while (buffer[inner_i] != '\0')
-				{
-
-					if (buffer[inner_i] == 'G')
-					{
-						G_methy[inner_i + pos - start_pos]++;
-						total[inner_i + pos - start_pos]++;
-					}
 
 
-					inner_i++;
-				}
-			}
-			else
-			{
-				fprintf(stderr, "ERROR flag!\n");
-				exit(0);
-			}
+			///fprintf(stderr, "C_or_G: %d, pos: %llu, read:%s\n", C_or_G, pos, read);
+
 
 			
+			update_methylation(C_or_G, ref_genome + pos - start_pos, read, read_length, 
+				methy + pos - start_pos, total + pos - start_pos, 
+				correct_methy + pos - start_pos, correct_total + pos - start_pos);
 			
+
+
+
 		}
+
+		print_methylation(methy, total, correct_methy, correct_total,
+			start_pos, end_pos, ref_genome, last_two_bases, need_context);
 
 
 		fclose(read_file);
+
+
+		last_two_bases[0] = ref_genome[length - 2];
+		last_two_bases[1] = ref_genome[length - 1];
 
 	}
 
@@ -4794,7 +5238,7 @@ inline void output_sam_end_to_end_return(
 
 inline void directly_output_read1_return_buffer(char* name, char* read, char* r_read, char* qulity,
 	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length,
-	Output_buffer_sub_block* sub_block)
+	Output_buffer_sub_block* sub_block, int paired_end_distance)
 {
 
 
@@ -4886,7 +5330,8 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 		sub_block->length++;
 
 
-		output_to_buffer_int(sub_block, another_result->site - result->site + another_matched_length);
+		///output_to_buffer_int(sub_block, another_result->site - result->site + another_matched_length);
+		output_to_buffer_int(sub_block, paired_end_distance);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
 		sub_block->buffer[sub_block->length] = '\t';
 		sub_block->length++;
@@ -4912,8 +5357,9 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 
 		sub_block->buffer[sub_block->length] = '-';
 		sub_block->length++;
-
-		output_to_buffer_int(sub_block, result->site - another_result->site + matched_length);
+		
+		///output_to_buffer_int(sub_block, result->site - another_result->site + matched_length);
+		output_to_buffer_int(sub_block, paired_end_distance);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
 		sub_block->buffer[sub_block->length] = '\t';
 		sub_block->length++;
@@ -4937,8 +5383,9 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 			//上面扩容时有32的余量，所以下面\t不需要检查了
 			sub_block->buffer[sub_block->length] = '\t';
 			sub_block->length++;
-
-			output_to_buffer_int(sub_block, matched_length);
+			
+			///output_to_buffer_int(sub_block, matched_length);
+			output_to_buffer_int(sub_block, paired_end_distance);
 			//上面扩容时有32的余量，所以下面\t不需要检查了
 			sub_block->buffer[sub_block->length] = '\t';
 			sub_block->length++;
@@ -4962,7 +5409,8 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 			sub_block->length++;
 
 
-			output_to_buffer_int(sub_block, another_matched_length);
+			///output_to_buffer_int(sub_block, another_matched_length);
+			output_to_buffer_int(sub_block, paired_end_distance);
 			//上面扩容时有32的余量，所以下面\t不需要检查了
 			sub_block->buffer[sub_block->length] = '\t';
 			sub_block->length++;
@@ -5060,8 +5508,158 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 
 
 
+
+inline void output_paired_methy_buffer(
+	char* read1, char* r_read1, map_result* result1, bitmapper_bs_iter r_length1,
+	char* read2, char* r_read2, map_result* result2, bitmapper_bs_iter r_length2,
+	Pair_Methylation* methy, pair_distance_count* distances, int paired_end_distance)
+{
+	if ((*methy).current_size < (*methy).total_size)
+	{
+
+		long long end_5_pos1, end_5_pos2;
+
+		/**read1的信息**/
+		///注意r_length一定要+1, 这个是为了放/0的
+		Check_Space((*methy).R[0].reads[(*methy).current_size], (*methy).R[0].r_size[(*methy).current_size], r_length1 + 1);
+
+		(*methy).R[0].r_length[(*methy).current_size] = r_length1;
+
+
+		result1->site = result1->site + _ih_refGenName[result1->chrome_id].start_location - 1;
+
+
+
+		if (result1->flag == 16)   ///read1比到反向互补链上了
+		{
+			result1->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
+
+			correct_read_using_cigar(result1->cigar, r_read1, (*methy).R[0].reads[(*methy).current_size]);
+
+
+			end_5_pos1 = result1->site + r_length1;
+		}
+		else  ///正向链
+		{
+
+			result1->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ1;
+
+			correct_read_using_cigar(result1->cigar, read1, (*methy).R[0].reads[(*methy).current_size]);
+
+
+			end_5_pos1 = result1->site;
+		}
+
+
+		(*methy).R[0].r_length[(*methy).current_size] = result1->flag;
+
+		(*methy).R[0].sites[(*methy).current_size] = result1->site;
+
+		///(*methy).R1.cut_index[get_cut_id(&(methy->R1), result1->site)]++;
+
+
+		/**read1的信息**/
+
+
+
+
+		/**read2的信息**/
+
+		///注意r_length一定要+1, 这个是为了放/0的
+		Check_Space((*methy).R[1].reads[(*methy).current_size], (*methy).R[1].r_size[(*methy).current_size], r_length2 + 1);
+
+		(*methy).R[1].r_length[(*methy).current_size] = r_length2;
+
+
+		result2->site = result2->site + _ih_refGenName[result2->chrome_id].start_location - 1;
+
+		if (result2->flag == 16)   ///代表read2的反向互补链比对到了参考组的正向上, read2本身实际上比到了参考组反向互补链上
+		{
+			result2->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
+
+			correct_read_using_cigar(result2->cigar, r_read2, (*methy).R[1].reads[(*methy).current_size]);
+
+			
+			end_5_pos2 = result2->site + r_length2;
+		}
+		else
+		{
+			result2->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ2;
+
+			correct_read_using_cigar(result2->cigar, read2, (*methy).R[1].reads[(*methy).current_size]);
+
+
+			end_5_pos2 = result2->site;
+		}
+
+
+
+		over_lap_length(result1->site, r_length1, result2->site, r_length2, (*methy).R[1].reads[(*methy).current_size]);
+
+
+		(*methy).R[1].r_length[(*methy).current_size] = result2->flag;
+
+		(*methy).R[1].sites[(*methy).current_size] = result2->site;
+
+		///(*methy).R2.cut_index[get_cut_id(&(methy->R2), result2->site)]++;
+
+		/**read2的信息**/
+
+		int block_ID = get_cut_id_pair(methy, get_key_pair_methylation(methy, (*methy).current_size));
+
+		///把小的那个当做key
+		(*methy).cut_index[block_ID]++;
+
+		(*methy).current_size++;
+
+		if (paired_end_distance < 0)
+		{
+			paired_end_distance = paired_end_distance * -1;
+		}
+
+
+		long long end5_distance = end_5_pos2 - end_5_pos1;
+
+
+		if (end5_distance < 0)
+		{
+			end5_distance = end5_distance * -1;
+		}
+
+		if (end5_distance > paired_end_distance)
+		{
+			fprintf(stderr, "ERROR\n");
+			fprintf(stderr, "end5_distance: %lld, paired_end_distance: %lld\n", 
+				end5_distance, paired_end_distance);
+			fprintf(stderr, "flag1: %lld, flag2: %lld\n",
+				result1->flag, result2->flag);
+			fprintf(stderr, "r_length1: %lld, r_length2: %lld\n",
+				r_length1, r_length2);
+			fprintf(stderr, "site1: %lld, site2: %lld\n\n", result1->site, result2->site);
+		}
+
+		distances->count[block_ID][paired_end_distance - distances->minDistance_pair]++;
+
+
+	}
+
+
+	if ((*methy).current_size == (*methy).total_size)
+	{
+		assign_cuts_pair(methy);
+
+		output_methylation_pair(methy);
+
+		clear_methylation_pair(methy);
+	}
+
+}
+
+
+
+
 inline void output_paired_methy_buffer_1(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
-	Methylation* methy)
+	Methylation* methy, bitmapper_bs_iter* read1_site, bitmapper_bs_iter* read1_length)
 {
 	if ((*methy).current_size < (*methy).total_size)
 	{
@@ -5092,6 +5690,20 @@ inline void output_paired_methy_buffer_1(char* read, char* r_read, map_result* r
 			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
 		}
 
+		/**
+		if (r_length != strlen((*methy).reads[(*methy).current_size]))
+		{
+			fprintf(stderr, "ERRORE\n");
+		}
+		else
+		{
+			///fprintf(stderr, "SUCESS\n");
+		}
+		**/
+
+		(*read1_site) = result->site;
+		(*read1_length) = r_length;
+
 		(*methy).r_length[(*methy).current_size] = result->flag;
 
 		(*methy).sites[(*methy).current_size] = result->site;
@@ -5117,7 +5729,7 @@ inline void output_paired_methy_buffer_1(char* read, char* r_read, map_result* r
 
 
 inline void output_paired_methy_buffer_2(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
-	Methylation* methy)
+	Methylation* methy, bitmapper_bs_iter read1_site, bitmapper_bs_iter read1_length)
 {
 	if ((*methy).current_size < (*methy).total_size)
 	{
@@ -5146,13 +5758,36 @@ inline void output_paired_methy_buffer_2(char* read, char* r_read, map_result* r
 			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
 		}
 
+
+		/**
+		if (r_length != strlen((*methy).reads[(*methy).current_size]))
+		{
+			fprintf(stderr, "ERRORE\n");
+		}
+		else
+		{
+			///fprintf(stderr, "SUCESS\n");
+		}
+		**/
+
+
+		over_lap_length(read1_site, read1_length, result->site, r_length, (*methy).reads[(*methy).current_size]);
+
+
+
+
+		///如果完全重叠就不用输出了
 		(*methy).r_length[(*methy).current_size] = result->flag;
 
 		(*methy).sites[(*methy).current_size] = result->site;
 
 		(*methy).cut_index[get_cut_id(methy, result->site)]++;
 
+
 		(*methy).current_size++;
+		
+
+		
 	}
 
 
@@ -5172,7 +5807,7 @@ inline void output_paired_methy_buffer_2(char* read, char* r_read, map_result* r
 
 
 inline void output_paired_methy_buffer_mutiple_threads_1(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
-	Methylation* methy)
+	Methylation* methy, bitmapper_bs_iter* read1_site, bitmapper_bs_iter* read1_length)
 {
 	if ((*methy).current_size < (*methy).total_size)
 	{
@@ -5200,6 +5835,10 @@ inline void output_paired_methy_buffer_mutiple_threads_1(char* read, char* r_rea
 
 			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
 		}
+
+
+		(*read1_site) = result->site;
+		(*read1_length) = r_length;
 
 		(*methy).r_length[(*methy).current_size] = result->flag;
 
@@ -5230,7 +5869,7 @@ inline void output_paired_methy_buffer_mutiple_threads_1(char* read, char* r_rea
 
 
 inline void output_paired_methy_buffer_mutiple_threads_2(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
-	Methylation* methy)
+	Methylation* methy, bitmapper_bs_iter read1_site, bitmapper_bs_iter read1_length)
 {
 	if ((*methy).current_size < (*methy).total_size)
 	{
@@ -5258,6 +5897,9 @@ inline void output_paired_methy_buffer_mutiple_threads_2(char* read, char* r_rea
 
 			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
 		}
+
+
+		over_lap_length(read1_site, read1_length, result->site, r_length, (*methy).reads[(*methy).current_size]);
 
 		(*methy).r_length[(*methy).current_size] = result->flag;
 
@@ -5290,7 +5932,8 @@ inline void output_paired_methy_buffer_mutiple_threads_2(char* read, char* r_rea
 
 
 inline void directly_output_read1(char* name, char* read, char* r_read, char* qulity,
-	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length)
+	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length,
+	int paired_end_distance)
 {
 
 
@@ -5325,15 +5968,20 @@ inline void directly_output_read1(char* name, char* read, char* r_read, char* qu
 
 	fprintf(schema_out_fp, "%s\t", result->cigar);
 
+
+
+
+
 	if (another_result->site > result->site)
 	{
-		fprintf(schema_out_fp, "=\t%llu\t%llu\t", 
-			another_result->site, another_result->site - result->site + another_matched_length);
+		fprintf(schema_out_fp, "=\t%llu\t%llu\t",
+			another_result->site, paired_end_distance);
+		
 	}
 	else if (another_result->site < result->site)
 	{
-		fprintf(schema_out_fp, "=\t%llu\t-%llu\t", 
-			another_result->site, result->site - another_result->site + matched_length);
+		fprintf(schema_out_fp, "=\t%llu\t-%llu\t",
+			another_result->site, paired_end_distance);
 
 
 	}
@@ -5342,12 +5990,12 @@ inline void directly_output_read1(char* name, char* read, char* r_read, char* qu
 		if (matched_length >= another_matched_length)
 		{
 			fprintf(schema_out_fp, "=\t%llu\t%llu\t",
-				another_result->site, matched_length);
+				another_result->site, paired_end_distance);
 		}
 		else
 		{
 			fprintf(schema_out_fp, "=\t%llu\t%llu\t",
-				another_result->site, another_matched_length);
+				another_result->site, paired_end_distance);
 		}
 		
 	}
@@ -5406,7 +6054,7 @@ inline void directly_output_read1(char* name, char* read, char* r_read, char* qu
 
 inline void directly_output_read2_return_buffer(char* name, char* read, char* r_read, char* qulity,
 	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length,
-	Output_buffer_sub_block* sub_block)
+	Output_buffer_sub_block* sub_block, int paired_end_distance)
 {
 
 
@@ -5499,7 +6147,8 @@ inline void directly_output_read2_return_buffer(char* name, char* read, char* r_
 		sub_block->length++;
 
 
-		output_to_buffer_int(sub_block, another_result->site - result->site + another_matched_length);
+		///output_to_buffer_int(sub_block, another_result->site - result->site + another_matched_length);
+		output_to_buffer_int(sub_block, paired_end_distance);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
 		sub_block->buffer[sub_block->length] = '\t';
 		sub_block->length++;
@@ -5528,7 +6177,8 @@ inline void directly_output_read2_return_buffer(char* name, char* read, char* r_
 		sub_block->buffer[sub_block->length] = '-';
 		sub_block->length++;
 
-		output_to_buffer_int(sub_block, result->site - another_result->site + matched_length);
+		///output_to_buffer_int(sub_block, result->site - another_result->site + matched_length);
+		output_to_buffer_int(sub_block, paired_end_distance);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
 		sub_block->buffer[sub_block->length] = '\t';
 		sub_block->length++;
@@ -5557,7 +6207,8 @@ inline void directly_output_read2_return_buffer(char* name, char* read, char* r_
 			sub_block->buffer[sub_block->length] = '-';
 			sub_block->length++;
 
-			output_to_buffer_int(sub_block, matched_length);
+			///output_to_buffer_int(sub_block, matched_length);
+			output_to_buffer_int(sub_block, paired_end_distance);
 			//上面扩容时有32的余量，所以下面\t不需要检查了
 			sub_block->buffer[sub_block->length] = '\t';
 			sub_block->length++;
@@ -5585,7 +6236,8 @@ inline void directly_output_read2_return_buffer(char* name, char* read, char* r_
 			sub_block->length++;
 
 
-			output_to_buffer_int(sub_block, another_matched_length);
+			///output_to_buffer_int(sub_block, another_matched_length);
+			output_to_buffer_int(sub_block, paired_end_distance);
 			//上面扩容时有32的余量，所以下面\t不需要检查了
 			sub_block->buffer[sub_block->length] = '\t';
 			sub_block->length++;
@@ -5682,7 +6334,8 @@ inline void directly_output_read2_return_buffer(char* name, char* read, char* r_
 
 
 inline void directly_output_read2(char* name, char* read, char* r_read, char* qulity,
-	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length)
+	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length,
+	int paired_end_distance)
 {
 
 
@@ -5731,24 +6384,25 @@ inline void directly_output_read2(char* name, char* read, char* r_read, char* qu
 	if (another_result->site > result->site)
 	{
 		fprintf(schema_out_fp, "=\t%llu\t%llu\t",
-			another_result->site, another_result->site - result->site + another_matched_length);
+			another_result->site, paired_end_distance);
+
 	}
 	else if (another_result->site < result->site)
 	{
 		fprintf(schema_out_fp, "=\t%llu\t-%llu\t",
-			another_result->site, result->site - another_result->site + matched_length);
+			another_result->site, paired_end_distance);
 	}
 	else
 	{
 		if (matched_length >= another_matched_length)
 		{
 			fprintf(schema_out_fp, "=\t%llu\t-%llu\t",
-				another_result->site, matched_length);
+				another_result->site, paired_end_distance);
 		}
 		else
 		{
 			fprintf(schema_out_fp, "=\t%llu\t-%llu\t",
-				another_result->site, another_matched_length);
+				another_result->site, paired_end_distance);
 		}
 
 	}
@@ -10639,14 +11293,16 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 	int my_methylation_size = methylation_size;
 
-	Methylation methy;
-
+	Pair_Methylation methy;
 
 	if (output_methy == 1)
 	{
-		init_methylation(&methy, my_methylation_size);
+		init_pair_methylation(&methy, my_methylation_size / 2);
 	}
 
+
+
+	init_pe_distance(&PE_distance[thread_id], minDistance_pair, maxDistance_pair);
 
 
 	long long enq_i = 0;
@@ -10908,6 +11564,8 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 	long long unique_best_read2;
 	map_result result1, result2;
 
+	bitmapper_bs_iter read1_site;
+	bitmapper_bs_iter read1_length;
 
 	int max_candidates_occ = max_seed_number1 * max_seed_matches;
 
@@ -11395,17 +12053,7 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 			}
 			//****************第二个read的后处理
 
-
-
-			if (result2.site >= result1.site)
-			{
-				paired_end_distance = result2.site - result1.site + matched_length2;
-
-			}
-			else
-			{
-				paired_end_distance = result1.site - result2.site + matched_length1;
-			}
+			paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
 
 			if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
 			{
@@ -11418,22 +12066,29 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 				if (output_methy == 1)
 				{
+					/**
 					output_paired_methy_buffer_1(current_read1.seq, current_read1.rseq, &result1, matched_length1,
-						&methy);
+						&methy, &read1_site, &read1_length);
 
 					output_paired_methy_buffer_2(current_read2.seq, current_read2.rseq, &result2, matched_length2,
-						&methy);
+						&methy, read1_site, read1_length);
+					**/
+
+					output_paired_methy_buffer(
+						current_read1.seq, current_read1.rseq, &result1, matched_length1,
+						current_read2.seq, current_read2.rseq, &result2, matched_length2,
+						&methy, &PE_distance[thread_id], paired_end_distance);
 				
 				}
 				else
 				{
 					directly_output_read1(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
 						&result1, &result2, current_read1.length,
-						matched_length1, matched_length2);
+						matched_length1, matched_length2, paired_end_distance);
 
 					directly_output_read2(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
 						&result2, &result1, current_read2.length,
-						matched_length2, matched_length1);
+						matched_length2, matched_length1, paired_end_distance);
 
 				}
 
@@ -11454,9 +12109,14 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 	if (methy.current_size != 0)
 	{
+		/**
 		assign_cuts(&methy);
 		output_methylation(&methy);
 		clear_methylation(&methy);
+		**/
+		assign_cuts_pair(&methy);
+		output_methylation_pair(&methy);
+		clear_methylation_pair(&methy);
 
 	}
 
@@ -11891,7 +12551,8 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 
 
 
-
+	bitmapper_bs_iter read1_site;
+	bitmapper_bs_iter read1_length;
 
 
 	long long enq_i = 0;
@@ -13136,17 +13797,8 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 			}
 			//****************第二个read的后处理
 
-			
+			paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
 
-			if (result2.site >= result1.site)
-			{
-				paired_end_distance = result2.site - result1.site + matched_length2;
-
-			}
-			else
-			{
-				paired_end_distance = result1.site - result2.site + matched_length1;
-			}
 
 			if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
 			{
@@ -13154,29 +13806,22 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 
 				if (output_methy == 1)
 				{
-					/**
-					if (strcmp("@SRR6804872.31961", current_read1.name)==0)
-					{
-						fprintf(stderr, "result1.flag: %llu\n", result1.flag);
-						fprintf(stderr, "result2.flag: %llu\n", result2.flag);
-					}
-					**/
 
 					output_paired_methy_buffer_1(current_read1.seq, current_read1.rseq, &result1, matched_length1,
-						&methy);
+						&methy, &read1_site, &read1_length);
 
 					output_paired_methy_buffer_2(current_read2.seq, current_read2.rseq, &result2, matched_length2,
-						&methy);
+						&methy, read1_site, read1_length);
 				}
 				else
 				{
 					directly_output_read1(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
 						&result1, &result2, current_read1.length,
-						matched_length1, matched_length2);
+						matched_length1, matched_length2, paired_end_distance);
 
 					directly_output_read2(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
 						&result2, &result1, current_read2.length,
-						matched_length2, matched_length1);
+						matched_length2, matched_length1, paired_end_distance);
 				}
 				
 				
@@ -13267,6 +13912,9 @@ void* Map_Pair_Seq_split_fast(void* arg)
 	unsigned int N_site;
 	int anti_1 = 1;
 	int candidates_length;
+
+	bitmapper_bs_iter read1_site;
+	bitmapper_bs_iter read1_length;
 
 
 	char** ref = (char**)malloc(sizeof(char*)* 8);
@@ -13952,7 +14600,7 @@ void* Map_Pair_Seq_split_fast(void* arg)
 				//****************第二个read的后处理
 
 
-
+				/**
 				if (result2.site >= result1.site)
 				{
 					paired_end_distance = result2.site - result1.site + matched_length2;
@@ -13962,6 +14610,10 @@ void* Map_Pair_Seq_split_fast(void* arg)
 				{
 					paired_end_distance = result1.site - result2.site + matched_length1;
 				}
+				**/
+
+				paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
+
 
 				if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
 				{
@@ -13971,20 +14623,22 @@ void* Map_Pair_Seq_split_fast(void* arg)
 					{
 
 						output_paired_methy_buffer_mutiple_threads_1(read_batch1[i].seq, read_batch1[i].rseq, &result1, matched_length1,
-							&methy);
+							&methy, &read1_site, &read1_length);
+
+
 
 						output_paired_methy_buffer_mutiple_threads_2(read_batch2[i].seq, read_batch2[i].rseq, &result2, matched_length2,
-							&methy);
+							&methy, read1_site, read1_length);
 					}
 					else
 					{
 						directly_output_read1_return_buffer(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
 							&result1, &result2, read_batch1[i].length,
-							matched_length1, matched_length2, &current_sub_buffer);
+							matched_length1, matched_length2, &current_sub_buffer, paired_end_distance);
 
 						directly_output_read2_return_buffer(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
 							&result2, &result1, read_batch2[i].length,
-							matched_length2, matched_length1, &current_sub_buffer);
+							matched_length2, matched_length1, &current_sub_buffer, paired_end_distance);
 					}
 
 					
@@ -14059,6 +14713,10 @@ void* Map_Pair_Seq_split(void* arg)
 
 	init_locate_queue_muti_thread(&get_queue);
 
+
+
+	bitmapper_bs_iter read1_site;
+	bitmapper_bs_iter read1_length;
 
 
 	long long enq_i = 0;
@@ -15282,7 +15940,7 @@ void* Map_Pair_Seq_split(void* arg)
 				//****************第二个read的后处理
 
 
-
+				/**
 				if (result2.site >= result1.site)
 				{
 					paired_end_distance = result2.site - result1.site + matched_length2;
@@ -15292,6 +15950,10 @@ void* Map_Pair_Seq_split(void* arg)
 				{
 					paired_end_distance = result1.site - result2.site + matched_length1;
 				}
+				**/
+
+				paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
+
 
 				if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
 				{
@@ -15302,20 +15964,20 @@ void* Map_Pair_Seq_split(void* arg)
 					if (output_methy == 1)
 					{
 						output_paired_methy_buffer_mutiple_threads_1(read_batch1[i].seq, read_batch1[i].rseq, &result1, matched_length1,
-							&methy);
+							&methy, &read1_site, &read1_length);
 
 						output_paired_methy_buffer_mutiple_threads_2(read_batch2[i].seq, read_batch2[i].rseq, &result2, matched_length2,
-							&methy);
+							&methy, read1_site, read1_length);
 					}
 					else
 					{
 						directly_output_read1_return_buffer(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
 							&result1, &result2, read_batch1[i].length,
-							matched_length1, matched_length2, &current_sub_buffer);
+							matched_length1, matched_length2, &current_sub_buffer, paired_end_distance);
 
 						directly_output_read2_return_buffer(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
 							&result2, &result1, read_batch2[i].length,
-							matched_length2, matched_length1, &current_sub_buffer);
+							matched_length2, matched_length1, &current_sub_buffer, paired_end_distance);
 					}
 
 					

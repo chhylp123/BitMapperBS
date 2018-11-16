@@ -25,6 +25,14 @@ pthread_mutex_t o_doneMutex;
 
 FILE *_out_fp;
 
+
+FILE *_out_fp_methy1;
+FILE *_out_fp_methy2;
+FILE *_out_fp_methy3;
+
+
+
+
 int sub_block_init_length = 10000;
 
 
@@ -33,6 +41,143 @@ Output_buffer_sub_block tmp_buffer_sub_block;
 
 Output_methy_buffer buffer_methy_out;
 Methylation tmp_methy_sub_block;
+
+
+void output_single_methy_CpG
+(bitmapper_bs_iter tmp_pos,
+char* chrome_name,
+int nmethyl,
+int total)
+{
+	int nunmethyl = total - nmethyl;
+
+	double precent;
+
+	if (total == 0)
+	{
+		precent = 0;
+	}
+	else
+	{
+		precent = (double)nmethyl / (double)total;
+	}
+
+
+	fprintf(_out_fp_methy1, "%s\t%llu\t%llu\t%d\t%d\t%d\n",
+		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
+}
+
+
+
+void output_single_methy_CHG
+(bitmapper_bs_iter tmp_pos,
+char* chrome_name,
+int nmethyl,
+int total)
+{
+	int nunmethyl = total - nmethyl;
+
+	double precent;
+
+	if (total == 0)
+	{
+		precent = 0;
+	}
+	else
+	{
+		precent = (double)nmethyl / (double)total;
+	}
+
+
+	fprintf(_out_fp_methy2, "%s\t%llu\t%llu\t%d\t%d\t%d\n",
+		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
+}
+
+
+void output_single_methy_CHH
+(bitmapper_bs_iter tmp_pos,
+char* chrome_name,
+int nmethyl,
+int total)
+{
+	int nunmethyl = total - nmethyl;
+
+	double precent;
+
+	if (total == 0)
+	{
+		precent = 0;
+	}
+	else
+	{
+		precent = (double)nmethyl / (double)total;
+	}
+
+
+	fprintf(_out_fp_methy3, "%s\t%llu\t%llu\t%d\t%d\t%d\n",
+		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
+}
+
+
+
+
+int init_output_methy(char *fileName)
+{
+	char output_name[NAME_LENGTH];
+
+
+
+	sprintf(output_name, "%s_CpG.bedGraph", fileName);
+
+	fprintf(stderr, "%s\n", output_name);
+
+	_out_fp_methy1 = fopen(output_name, "w");
+
+	if (_out_fp_methy1 == NULL)
+	{
+		return 0;
+	}
+
+
+
+
+
+	sprintf(output_name, "%s_CHG.bedGraph", fileName);
+
+	fprintf(stderr, "%s\n", output_name);
+
+	_out_fp_methy2 = fopen(output_name, "w");
+
+	if (_out_fp_methy2 == NULL)
+	{
+		return 0;
+	}
+
+
+
+
+	sprintf(output_name, "%s_CHH.bedGraph", fileName);
+
+	fprintf(stderr, "%s\n", output_name);
+
+	_out_fp_methy3 = fopen(output_name, "w");
+
+	if (_out_fp_methy3 == NULL)
+	{
+		return 0;
+	}
+
+
+
+
+
+	return 1;
+}
+
+
+
+
+
 
 ///void finalizeTXOutput()
 void finalizeOutput()
