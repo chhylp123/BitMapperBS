@@ -187,7 +187,10 @@ The default maximum allowed edit distance is 8% of read length (0.08). This opti
      >>BitMapperBS fixed the bug of the SAM flag when aligning the single-end reads from pbat protocol.
      >>BitMapperBS can check if the AVX2 instructions are supported by CPU automatically. If AVX2 is supported, the AVX2 version of BitMapperBS will be compiled, otherwise the SSE4.2 version of BitMapperBS will be compiled. Please note that the AVX2 version of BitMapperBS may be slightly slower than SSE4.2 version of BitMapperBS.
 
- fixed the bug of the SAM flag when aligning the single-end reads from pbat protocol.
+(1) November 16, 2018: version 1.0.0.2 released. 
+
+    >>BitMapperBS fixed the bug of the TLEN field of SAM format in output SAM file when aligning the paired-end reads.
+
 
 ### Contacts ###
 
