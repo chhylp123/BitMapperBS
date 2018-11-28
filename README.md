@@ -204,6 +204,12 @@ The default maximum allowed edit distance is 8% of read length (0.08). This opti
 
     ./bitmapperBS --search ../../ssd/human_genome.fa --seq ../../ssd/read.fq -t 6 -e 0.04
 
+
+(4) **Methylation Extracting**
+
+The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM file by utilizing samtools. After that, the methylation information is extracted using MethylDackel (see https://github.com/dpryan79/methyldackel). 
+
+
 ### Changelog ###
 
 
