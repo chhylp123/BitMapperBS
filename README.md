@@ -32,7 +32,7 @@ BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for W
    >> (2) To reduce the amount of disk I/O, you can output the mapping results in BAM format (using the option --bam) rather than SAM format.
 
    
-   >> (3) The input files and output files of BitMapperBS (e.g., the read files and the output SAM files) can be saved in fast solid state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
+   >> (3) The input files and output files of BitMapperBS (e.g., the read files and the output SAM or BAM files) can be saved in fast solid state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
 
 
 If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
