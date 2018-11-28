@@ -136,7 +136,7 @@ paired-end reads
 | --seq | NULL| String | NULL | Provide the name of single-end read file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
-| -o | -o | String | output | Provide the name of output file (sam format). |
+| -o | -o | String | output (sam format) | Provide the name of output file (SAM or BAM format). |
 | -e | -e | Double | 0.08 | Set the edit distance rate of read length, which is between 0 and 1. |
 | --min | NULL | Int | 0 | Minimum distance between a pair of end sequences. |
 | --max | NULL | Int | 0 | Maximum distance between a pair of end sequences. |
