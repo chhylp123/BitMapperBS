@@ -60,6 +60,7 @@ extern bitmapper_bs_iter genome_cuts;
 extern bitmapper_bs_iter cut_length;
 extern double methylation_buffer_times;
 extern int is_methy;
+extern int bam_output;
 
 
 double	Get_T(void);

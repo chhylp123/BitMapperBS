@@ -20,6 +20,7 @@
 #include "Process_sam_out.h"
 #include "Index.h"
 #include "Schema.h"
+#include "bam_prase.h"
 #include "Levenshtein_Cal.h"
 
 
@@ -37,7 +38,7 @@ int main(int argc, char *argv[])
 
 
 
-	  ///fprintf(stderr, "output_methy:%d\n", output_methy);
+  fprintf(stderr, "bam_output:%d\n", bam_output);
   
 
   if(is_index)
@@ -56,6 +57,10 @@ int main(int argc, char *argv[])
       double loadingTime;
       double mappingTime;
       char outputFileName[NAME_LENGTH];
+	  char bam_outputFileName[NAME_LENGTH];
+	  
+
+
 
       startTime = Get_T();
 
@@ -72,10 +77,14 @@ int main(int argc, char *argv[])
 	   
 
        sprintf(outputFileName, "%s%s",Mapped_FilePath , Mapped_File);
+	   sprintf(bam_outputFileName, "%s.tmp", outputFileName);
 
 	   if (output_methy == 0)
 	   {
-		   Output_gene(outputFileName);
+
+
+			Output_gene(outputFileName);
+		   
 	   }
 
        
@@ -108,11 +117,17 @@ int main(int argc, char *argv[])
 			{
 				//这个Prepare_alignment()就是将这个文件里的变量各种配置到新文件中
 				OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
+
+
+				if (bam_output == 1)
+				{
+					init_bam_file_from_sam(outputFileName, bam_outputFileName);
+				}
 			}
             
             
 
-			Prepare_alignment(outputFileName, fileName[0], chhy_ih_refGenName, refChromeCont, read_format);
+			Prepare_alignment(outputFileName, fileName[0], chhy_ih_refGenName, refChromeCont, read_format, is_pairedEnd);
 
 			startTime = Get_T();
 
@@ -204,12 +219,17 @@ int main(int argc, char *argv[])
 			{
 
 				OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
+
+				if (bam_output == 1)
+				{
+					init_bam_file_from_sam(outputFileName, bam_outputFileName);
+				}
 			}
 
 
             startTime = Get_T();
 
-			Prepare_alignment(outputFileName, fileName[0], chhy_ih_refGenName, refChromeCont, read_format);
+			Prepare_alignment(outputFileName, fileName[0], chhy_ih_refGenName, refChromeCont, read_format, is_pairedEnd);
 
 
              if(THREAD_COUNT==1)
@@ -227,7 +247,7 @@ int main(int argc, char *argv[])
 
 			 if (output_methy == 1)
 			 {
-				 ///out_paired_distance_statistic();
+				 out_paired_distance_statistic();
 			 }
 
 
@@ -235,6 +255,14 @@ int main(int argc, char *argv[])
             fprintf(stdout, "sucess!\n");
 
         }
+
+
+		if (bam_output == 1)
+		{
+			///close_bam_file();
+			close_bam_file_rename(bam_outputFileName, outputFileName);
+
+		}
 
 	  ///这个一打开速度就奇慢，不知道为什么
       ///finalizeOutput();
@@ -275,7 +303,20 @@ int main(int argc, char *argv[])
 
 		Prepare_methy(fileName[0], chhy_ih_refGenName, refChromeCont);
 
+
 		methy_extract(0, Read_File1);
+
+		/**
+		if (!is_pairedEnd)
+		{
+
+			methy_extract(0, Read_File1);
+		}
+		else
+		{
+			methy_extract_PE(0, Read_File1);
+		}
+		**/
 	}
 
 

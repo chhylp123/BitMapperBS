@@ -44,6 +44,7 @@ double bs_edit_distance_threshold = -1;
 int is_local = 1;
 int bs_available_seed_length = -1;
 int pbat = 0;
+int bam_output = 0;
 ///int methylation_size = 1000000;
 int methylation_size = 100000;
 ///double methylation_buffer_times = 2.5;
@@ -69,6 +70,8 @@ int CommandLine_process (int argc, char *argv[])
 	  { "sensitive", no_argument,      &is_local,  0},
 	  { "fast", no_argument, &is_local, 1},
 	  { "pbat", no_argument, &pbat, 1},
+	  { "bam", no_argument, &bam_output, 1 },
+	  { "sam", no_argument, &bam_output, 0 },
 	  { "methy_out", no_argument, &output_methy, 1},
 	  { "nomethy_out", no_argument, &output_methy, 0},
 	  { "methy_extract", required_argument, 0, 'f' },
@@ -298,7 +301,9 @@ void Print_H()
   fprintf(stdout," --seq [file]\t\tInput sequences in fastq/fastq.gz format [file]. This option is used  \n\t\t\tfor single-end reads.\n");
   fprintf(stdout," --seq1 [file]\t\tInput sequences in fastq/fastq.gz format [file] (First file). \n\t\t\tUse this option to indicate the first file of \n\t\t\tpaired-end reads. \n");
   fprintf(stdout," --seq2 [file]\t\tInput sequences in fastq/fastq.gz format [file] (Second file). \n\t\t\tUse this option to indicate the second file of \n\t\t\tpaired-end reads.  \n");
-  fprintf(stdout," -o [file]\t\tOutput of the mapped sequences. The default is \"output\".\n");
+  fprintf(stdout," -o [file]\t\tOutput of the mapped sequences in SAM or BAM format. The default is \"output\" in SAM format.\n");
+  fprintf(stdout, " --sam \t\t\tOutput mapping results in SAM format (default).\n");
+  fprintf(stdout, " --bam \t\t\tOutput mapping results in BAM format.\n");
   ///fprintf(stdout," -u [file]\t\tSave unmapped sequences in fasta/fastq format.\n");
   ///fprintf(stdout," --seqcomp \t\tIndicates that the input sequences are compressed (gz).\n");
   ///fprintf(stdout," --outcomp \t\tIndicates that output file should be compressed (gz).\n");

@@ -103,6 +103,18 @@ typedef struct
 
 } Output_methy_buffer;
 
+
+typedef struct
+{
+	Pair_Methylation* sub_buffer;
+
+	///这两个单位是subblock
+	long long sub_block_size;
+	long long sub_block_number;
+	int all_buffer_end = 0;
+
+} Output_methy_buffer_pair;
+
 void init_buffer_sub_block(Output_buffer_sub_block* sub_block);
 void init_output_buffer(int thread_number);
 void* pop_buffer(void*);
@@ -111,8 +123,12 @@ void finish_output_buffer();
 
 
 void init_output_methy_buffer(int thread_number);
+void init_output_methy_buffer_pair(int thread_number);
 void* pop_methy_buffer(void*);
+void* pop_methy_buffer_pair(void*);
 void push_methy_to_buffer(Methylation* methy);
+void push_methy_to_buffer_pair(Pair_Methylation* methy);
+void finish_output_buffer_pair();
 
 
 #define OFFSET 32

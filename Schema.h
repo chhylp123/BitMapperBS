@@ -21,6 +21,8 @@
 #define INIT_READ_LENGTH 155
 
 
+#define FORWARD_DUP_MASK 128
+#define RC_DUP_MASK 64
 
 #define Check_Space(read, c_length, n_length) if(n_length > c_length) {read = (char*)realloc(read, n_length);c_length = n_length;}
 
@@ -50,6 +52,77 @@ N-4
 
 
 #define POS_MASK 15
+
+
+
+
+typedef struct deduplicate_PE
+{
+	uint8_t* positive_bits;
+	uint8_t* negative_bits;
+	long long each_site_bits;
+	long long total_sites;
+	long long each_site_uint8;
+}deduplicate_PE;
+
+
+
+inline void init_deduplicate_PE(deduplicate_PE* de, long long each_site_bits, long long total_sites)
+{
+
+	de->each_site_bits = each_site_bits;
+	de->total_sites = total_sites;
+
+	de->each_site_uint8 = each_site_bits / 8;
+
+	if (each_site_bits % 8 != 0)
+	{
+		de->each_site_uint8++;
+	}
+
+	de->positive_bits = (uint8_t*)malloc(sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+	de->negative_bits = (uint8_t*)malloc(sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+
+	memset(de->positive_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+	memset(de->negative_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+
+}
+
+
+inline void re_init_deduplicate_PE(deduplicate_PE* de)
+{
+	memset(de->positive_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+	memset(de->negative_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+}
+
+///把i这个位置置1
+inline void set_deduplicate_PE_mask(deduplicate_PE* de, uint8_t* read_bits, bitmapper_bs_iter i)
+{
+	bitmapper_bs_iter offset = i & 7;
+	uint8_t mask = 1;
+	mask = mask << offset;
+
+	offset = i >> 3;
+
+	read_bits[offset] |= mask;
+}
+
+
+///把i这个位置的值返回回来
+inline uint8_t get_deduplicate_PE_mask(deduplicate_PE* de, uint8_t* read_bits, bitmapper_bs_iter i)
+{
+	bitmapper_bs_iter inner_offset = i & 7;
+	bitmapper_bs_iter offset = i >> 3;
+
+
+	uint8_t mask = 1;
+
+	mask = (read_bits[offset] >> inner_offset) & mask;
+
+	return mask;
+}
+
+
 
 
 
@@ -116,26 +189,47 @@ typedef struct
 
 typedef struct
 {
-	bitmapper_bs_iter minDistance_pair;
+	///bitmapper_bs_iter minDistance_pair;
 	bitmapper_bs_iter maxDistance_pair;
-	bitmapper_bs_iter length;
+	///bitmapper_bs_iter length;
 	bitmapper_bs_iter genome_cuts;
 	bitmapper_bs_iter** count;
 } pair_distance_count;
 
 
+
+typedef struct
+{
+	bitmapper_bs_iter count;
+	short index;
+} pe_distance_info;
+
+
+typedef struct
+{
+	bitmapper_bs_iter maxDistance_pair;
+	bitmapper_bs_iter genome_cuts;
+	pe_distance_info* count;
+	
+} pair_distance_result;
+
+
 inline void init_pe_distance(pair_distance_count* distances, bitmapper_bs_iter minDistance_pair, bitmapper_bs_iter maxDistance_pair)
 {
 	distances->genome_cuts = genome_cuts;
-	distances->minDistance_pair = minDistance_pair;
+	///distances->minDistance_pair = minDistance_pair;
 	distances->maxDistance_pair = maxDistance_pair;
-	distances->length = distances->maxDistance_pair - distances->minDistance_pair + 1;
+	///distances->length = distances->maxDistance_pair - distances->minDistance_pair + 1;
 	distances->count = (bitmapper_bs_iter**)malloc(sizeof(bitmapper_bs_iter*)*distances->genome_cuts);
 	int i;
 	for (i = 0; i < distances->genome_cuts; i++)
 	{
-		distances->count[i] = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*distances->length);
-		memset(distances->count[i], 0, sizeof(bitmapper_bs_iter)*(distances->length));
+		///distances->count[i] = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*distances->length);
+		///这个一定一定要+1
+		distances->count[i] = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*(distances->maxDistance_pair + 1));
+		///memset(distances->count[i], 0, sizeof(bitmapper_bs_iter)*(distances->length));
+		///这个一定一定要+1
+		memset(distances->count[i], 0, sizeof(bitmapper_bs_iter)*(distances->maxDistance_pair + 1));
 	}
 
 }
@@ -225,7 +319,7 @@ extern long long			completedSeqCnt[MAX_Thread];
 extern Methylation_Output methy_out;
 
 
-void Prepare_alignment(char* outputFileName, char *genFileName, _rg_name_l *chhy_ih_refGenName, int chhy_refChromeCont, int i_read_format);
+void Prepare_alignment(char* outputFileName, char *genFileName, _rg_name_l *chhy_ih_refGenName, int chhy_refChromeCont, int i_read_format, int is_pairedEnd);
 int Map_Single_Seq( int thread_id);
 int Map_Single_Seq_pbat(int thread_id);
 ///void* Map_Single_Seq_split(int thread_id);
@@ -331,8 +425,10 @@ inline void init_methylation(Methylation* methy, int size)
 }
 
 
+
 inline bitmapper_bs_iter get_key_pair_methylation(Pair_Methylation* methy, int i)
 {
+	
 	if ((*methy).R[1].sites[i] < (*methy).R[0].sites[i])
 	{
 		return (*methy).R[1].sites[i];
@@ -342,6 +438,39 @@ inline bitmapper_bs_iter get_key_pair_methylation(Pair_Methylation* methy, int i
 		return (*methy).R[0].sites[i];
 	}
 }
+
+/**
+inline bitmapper_bs_iter get_key_pair_methylation(Pair_Methylation* methy, int i)
+{
+
+	if ((*methy).R[1].sites[i] < (*methy).R[0].sites[i])
+	{
+		
+		(*methy).R[0].k_sites = (*methy).R[0].sites[i];
+		(*methy).R[0].k_r_length = (*methy).R[0].r_length[i];
+		(*methy).R[0].k_r_size = (*methy).R[0].r_size[i];
+		(*methy).R[0].k_reads = (*methy).R[0].reads[i];
+
+		(*methy).R[0].sites[i] = (*methy).R[1].sites[i];
+		(*methy).R[0].r_length[i] = (*methy).R[1].r_length[i];
+		(*methy).R[0].r_size[i] = (*methy).R[1].r_size[i];
+		(*methy).R[0].reads[i] = (*methy).R[1].reads[i];
+
+		(*methy).R[1].sites[i] = (*methy).R[0].k_sites;
+		(*methy).R[1].r_length[i] = (*methy).R[0].k_r_length;
+		(*methy).R[1].r_size[i] = (*methy).R[0].k_r_size;
+		(*methy).R[1].reads[i] = (*methy).R[0].k_reads;
+
+	}
+
+
+
+
+	return (*methy).R[0].sites[i];
+	
+}
+**/
+
 
 inline void init_pair_methylation(Pair_Methylation* methy, int size)
 {
@@ -864,6 +993,8 @@ inline void C_to_T_forward_array(char *Seq, char *bsSeq, int length, int* C_site
 
 
 void methy_extract(int thread_id, char* file_name);
+
+void methy_extract_PE(int thread_id, char* file_name);
 
 
 ///min一定是个坐标, max一定是个坐标+长度
