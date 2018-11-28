@@ -116,7 +116,7 @@ output mapping results in BAM format
 ### Methylation Extracting ###
 
 
-We recommd users to use use MethylDackel to extract methylation information. Please see https://github.com/dpryan79/methyldackel. 
+We recommd users to use use MethylDackel (https://github.com/dpryan79/methyldackel) to extract methylation information. Please see https://github.com/dpryan79/methyldackel. 
 
 
 ### General Options ###
