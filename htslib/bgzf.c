@@ -1994,8 +1994,8 @@ void init_multiple_buffer(int number_of_threads)
 	multiple_buffer.number = 0;
 	multiple_buffer.result_array = (bgzf_buffer*)malloc(sizeof(bgzf_buffer)*multiple_buffer.size);
 
-
-	for (int i = 0; i < multiple_buffer.size; i++)
+        int i = 0;
+	for (i = 0; i < multiple_buffer.size; i++)
 	{
 
 		multiple_buffer.result_array[i].uncomp_data = (unsigned char*)malloc(2 * BGZF_MAX_BLOCK_SIZE);
