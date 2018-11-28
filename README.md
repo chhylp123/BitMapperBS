@@ -23,7 +23,7 @@ BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for W
 
 
 >2. (update on November 28, 2018)  When compiling BitMapperBS, if you get the error message "fatal error: zlib.h: no such file or directory" or "fatal error: bzlib.h: No such file or directory" or "fatal error: lzma.h: No such file or directory", please install zlib, libbz2 and liblzma libraries. In Ubuntu, please try:
-   >> sudo apt-get install libz-dev liblzma-dev zlib1g-dev libbz2-dev
+   >> sudo apt-get install liblzma-dev zlib1g-dev libbz2-dev
 
 
 >3. (update on November 28, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
@@ -45,7 +45,7 @@ If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.ed
 
 (3) CMake-supported build tool.
 
-(4) zlib, libbz2 and liblzma libraries. 
+(4) zlib, libbz2 and liblzma libraries. In Ubuntu, please try: sudo apt-get install liblzma-dev zlib1g-dev libbz2-dev.
 
 ### Hardware&software requirements ###
 
