@@ -57,7 +57,7 @@ typedef struct
 } Read_buffer_pe_sub_block;
 
 
-typedef struct
+typedef struct Read_buffer_pe
 {
 	Read_buffer_pe_sub_block* sub_block;
 	///这个值的单位是单个read
@@ -65,7 +65,11 @@ typedef struct
 	///这两个单位是subblock
 	long long sub_block_size;
 	long long sub_block_number;
-	int all_read_end = 0;
+	///int all_read_end = 0;
+	int all_read_end;
+
+	Read_buffer_pe() :all_read_end(0)
+	{};
 
 } Read_buffer_pe;
 
@@ -82,7 +86,7 @@ typedef struct
 } Read_buffer_single_sub_block;
 
 
-typedef struct
+typedef struct Read_buffer_single
 {
 	Read_buffer_single_sub_block* sub_block;
 	///这个值的单位是单个read
@@ -90,7 +94,12 @@ typedef struct
 	///这两个单位是subblock
 	long long sub_block_size;
 	long long sub_block_number;
-	int all_read_end = 0;
+	///int all_read_end = 0;
+	int all_read_end;
+
+
+	Read_buffer_single() :all_read_end(0)
+	{};
 
 } Read_buffer_single;
 

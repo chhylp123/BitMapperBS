@@ -17,6 +17,9 @@
 ///#include <nmmintrin.h>
 
 bwt_index bitmapper_index_params;
+
+
+
 SA_block build_sa_block;
 
 unsigned int debug_2 = 0;

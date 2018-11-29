@@ -80,38 +80,50 @@ typedef struct
 } Output_buffer_sub_block;
 
 
-typedef struct
+typedef struct Output_buffer
 {
 	Output_buffer_sub_block* sub_buffer;
 
 	///这两个单位是subblock
 	long long sub_block_size;
 	long long sub_block_number;
-	int all_buffer_end = 0;
+	///int all_buffer_end = 0;
+	int all_buffer_end;
+
+	Output_buffer() :all_buffer_end(0)
+	{};
 
 } Output_buffer;
 
 
-typedef struct
+typedef struct Output_methy_buffer
 {
 	Methylation* sub_buffer;
 
 	///这两个单位是subblock
 	long long sub_block_size;
 	long long sub_block_number;
-	int all_buffer_end = 0;
+	///int all_buffer_end = 0;
+	int all_buffer_end;
+
+	Output_methy_buffer() :all_buffer_end(0)
+	{};
 
 } Output_methy_buffer;
 
 
-typedef struct
+typedef struct Output_methy_buffer_pair
 {
 	Pair_Methylation* sub_buffer;
 
 	///这两个单位是subblock
 	long long sub_block_size;
 	long long sub_block_number;
-	int all_buffer_end = 0;
+	///int all_buffer_end = 0;
+	int all_buffer_end;
+
+	Output_methy_buffer_pair() :all_buffer_end(0)
+	{};
 
 } Output_methy_buffer_pair;
 

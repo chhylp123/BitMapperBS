@@ -20,8 +20,13 @@ typedef uint64_t bitmapper_bs_iter;
 typedef struct bwt_locate_queue
 {
 	bitmapper_bs_iter* FMtree_queue;
-	bitmapper_bs_iter FMtree_queue_start_point = 0;
-	bitmapper_bs_iter FMtree_queue_end_point = 0;
+	bitmapper_bs_iter FMtree_queue_start_point;
+	bitmapper_bs_iter FMtree_queue_end_point;
+
+
+	bwt_locate_queue():FMtree_queue_start_point(0), FMtree_queue_end_point(0)
+	{};
+
 } bwt_locate_queue;
 
 
@@ -55,51 +60,51 @@ typedef struct bwt_index
 	bitmapper_bs_iter shapline;
 
 
-	unsigned int compress_sa = 8;
+	unsigned int compress_sa;
 	///unsigned int compress_occ = 256;
-	unsigned int compress_occ = 64;
+	unsigned int compress_occ;
 	///unsigned int high_compress_occ = 65536;
 	///unsigned int high_compress_occ = 256;
-	unsigned int high_compress_occ = 128;
-	unsigned int idependent_high_compress_occ = 65536;
+	unsigned int high_compress_occ;
+	unsigned int idependent_high_compress_occ;
 	///unsigned int compress_SA_flag = 224;
-	unsigned int compress_SA_flag = 256;
-	unsigned int bwt_warp_number = sizeof(bwt_string_type)* 8 / 2;
-	unsigned int SA_flag_warp_number = sizeof(SA_flag_string_type)* 8;
-	uint64_t tmp_SA_flag = (uint64_t)0;
-	uint64_t* long_SA_flag = NULL;
-	unsigned int single_occ_bwt = sizeof(bwt_string_type) / sizeof(unsigned short);
-	unsigned int occ_words = 4 / single_occ_bwt;
+	unsigned int compress_SA_flag;
+	unsigned int bwt_warp_number;
+	unsigned int SA_flag_warp_number;
+	uint64_t tmp_SA_flag;
+	uint64_t* long_SA_flag;
+	unsigned int single_occ_bwt;
+	unsigned int occ_words;
 	///unsigned int acctuall_bwt_gap = compress_occ + sizeof(unsigned short)* 4 * 8 / 2;
 	///unsigned int acctuall_bwt_gap = high_compress_occ + 64;
-	unsigned int acctuall_bwt_gap = high_compress_occ + 32;
-	unsigned int acctuall_SA_flag_gap = compress_SA_flag + SA_counter_length;
-	unsigned int SA_counter_shift_length = sizeof(SA_flag_string_type)* 8 - SA_counter_length;
+	unsigned int acctuall_bwt_gap;
+	unsigned int acctuall_SA_flag_gap;
+	unsigned int SA_counter_shift_length;
 	bwt_string_type mode_4[4];
-	bwt_string_type mode = (bwt_string_type)-1;
-	bwt_string_type mode_high_1 = (bwt_string_type)1 << (SA_flag_warp_number - 1);
-	bwt_string_type mode_16 = (bwt_string_type)65535;
-	bwt_string_type mode_32 = ((bwt_string_type)-1) >> 32;
+	bwt_string_type mode;
+	bwt_string_type mode_high_1;
+	bwt_string_type mode_16;
+	bwt_string_type mode_32;
 	///bitmapper_bs_iter mode_low8 = (bwt_string_type)255;
-	bitmapper_bs_iter mode_low32 = ((bwt_string_type)-1) >> 32;
+	bitmapper_bs_iter mode_low32;
 	bwt_string_type mode_high;
 	bwt_string_type mode_low;
-	SA_flag_string_type mode_SA_flag = (SA_flag_string_type)(((SA_flag_string_type)-1) << (sizeof(SA_flag_string_type)* 8 - 1));
-	bwt_string_type mode_bwt_delta = (bwt_string_type)(((bwt_string_type)-1) << (sizeof(bwt_string_type)* 8 - 1));
-	SA_flag_string_type SA_pop_count_mode = (SA_flag_string_type)(((SA_flag_string_type)-1) >> SA_counter_length);
+	SA_flag_string_type mode_SA_flag;
+	bwt_string_type mode_bwt_delta;
+	SA_flag_string_type SA_pop_count_mode;
 	bwt_string_type pop_count_mode[4];
-	unsigned int bwt_count_hash_table_bit = 16;
+	unsigned int bwt_count_hash_table_bit;
 	unsigned int text_length;
 	unsigned int na, nc, ng, nt;
 	bitmapper_bs_iter nacgt[5];
-	unsigned int bwt_step = 1;
+	unsigned int bwt_step;
 	unsigned int ctoi[256];
-	char itoc[4] = { 'A', 'C', 'G', 'T' };
+	char itoc[4];
 
 	unsigned int total_gap;
-	unsigned int num_r = 10000, len_r = 12;
-	unsigned int SA_header_mode = (unsigned int)(((unsigned int)-1) >> 2);
-	unsigned int SA_header_mode_reverse = (unsigned int)(((unsigned int)-1) << 30);
+	unsigned int num_r, len_r;
+	unsigned int SA_header_mode;
+	unsigned int SA_header_mode_reverse;
 	FILE* _rg_fp;
 
 
@@ -113,36 +118,51 @@ typedef struct bwt_index
 	unsigned int tree_index;
 	unsigned int tree_layers;
 	unsigned int need_step;
-	unsigned int cut_thr=1;
-	unsigned int tree_layer_length = 1;
+	unsigned int cut_thr;
+	unsigned int tree_layer_length;
 	bitmapper_bs_iter* FMtree_queue;///unsigned int* FMtree_queue;
 	///char* FMtree_queue_int;
 
-	bitmapper_bs_iter FMtree_queue_start_point = 0;
-	bitmapper_bs_iter FMtree_queue_end_point = 0;
+	bitmapper_bs_iter FMtree_queue_start_point;
+	bitmapper_bs_iter FMtree_queue_end_point;
 
 
-	bitmapper_bs_iter c_0_times = 0;
-	bitmapper_bs_iter c_1_times = 0;
-	bitmapper_bs_iter c_2_times = 0;
+	bitmapper_bs_iter c_0_times;
+	bitmapper_bs_iter c_1_times;
+	bitmapper_bs_iter c_2_times;
 
 
 	unsigned int* hash_table_16_mer_high_32;
-	unsigned int hash_table_shift_length = 28;
-	unsigned int hash_table_mode = ((unsigned int)-1) << hash_table_shift_length;
-	unsigned int hash_table_mode_get = ((unsigned int)-1) >> (32 - hash_table_shift_length);
+	unsigned int hash_table_shift_length;
+	unsigned int hash_table_mode;
+	unsigned int hash_table_mode_get;
 	unsigned char* hash_table_16_mer_low_8;
 	bitmapper_bs_iter hash_table_16_mer_size;
-	/**
-	bitmapper_bs_iter hash_table_16_mer_max_value = 10000000;
-	bitmapper_bs_iter hash_table_16_mer_max_value_line = (bitmapper_bs_iter)-1;
-	**/
 
 
+	bwt_index() :compress_sa(8), compress_occ(64), high_compress_occ(128), idependent_high_compress_occ(65536),
+		compress_SA_flag(256), bwt_warp_number(sizeof(bwt_string_type)* 8 / 2), SA_flag_warp_number(sizeof(SA_flag_string_type)* 8),
+		tmp_SA_flag((uint64_t)0), long_SA_flag(NULL), single_occ_bwt(sizeof(bwt_string_type) / sizeof(unsigned short)),
+		occ_words(4 / single_occ_bwt), acctuall_bwt_gap(high_compress_occ + 32), acctuall_SA_flag_gap(compress_SA_flag + SA_counter_length),
+		SA_counter_shift_length(sizeof(SA_flag_string_type)* 8 - SA_counter_length), mode((bwt_string_type)-1), mode_high_1((bwt_string_type)1 << (SA_flag_warp_number - 1)),
+		mode_16((bwt_string_type)65535), mode_32(((bwt_string_type)-1) >> 32), mode_low32 (((bwt_string_type)-1) >> 32),
+		mode_SA_flag((SA_flag_string_type)(((SA_flag_string_type)-1) << (sizeof(SA_flag_string_type)* 8 - 1))),
+		mode_bwt_delta ((bwt_string_type)(((bwt_string_type)-1) << (sizeof(bwt_string_type)* 8 - 1))),
+		SA_pop_count_mode ((SA_flag_string_type)(((SA_flag_string_type)-1) >> SA_counter_length)),
+		bwt_count_hash_table_bit(16), bwt_step(1), itoc({ 'A', 'C', 'G', 'T' }),
+		num_r(10000), len_r(12),SA_header_mode((unsigned int)(((unsigned int)-1) >> 2)),
+		SA_header_mode_reverse((unsigned int)(((unsigned int)-1) << 30)), cut_thr(1),
+		tree_layer_length(1), FMtree_queue_start_point(0), FMtree_queue_end_point(0),
+		c_0_times(0), c_1_times(0), c_2_times(0),
+		hash_table_shift_length(28),hash_table_mode(((unsigned int)-1) << hash_table_shift_length),
+		hash_table_mode_get(((unsigned int)-1) >> (32 - hash_table_shift_length))
+		{};
 
 
 
 } bwt_index;
+
+
 
 
 typedef struct SA_block

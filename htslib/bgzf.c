@@ -1994,7 +1994,7 @@ void init_multiple_buffer(int number_of_threads)
 	multiple_buffer.number = 0;
 	multiple_buffer.result_array = (bgzf_buffer*)malloc(sizeof(bgzf_buffer)*multiple_buffer.size);
 
-        int i = 0;
+    int i = 0;
 	for (i = 0; i < multiple_buffer.size; i++)
 	{
 
