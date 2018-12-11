@@ -213,6 +213,11 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 ### Changelog ###
 
 
+(4) December 11, 2018: version 1.0.0.4 released. 
+
+    >>BitMapperBS fixed the bug of the QNAME in SAM file when aligning paired-end reads. 
+    >>Removed the reads which are mapped off the end of the reference.
+
 (3) November 28, 2018: version 1.0.0.3 released. 
 
     >>Added support of BitMapperBS to output mapping results in BAM format.

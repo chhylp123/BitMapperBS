@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
 
 
-  fprintf(stderr, "bam_output:%d\n", bam_output);
+  fprintf(stdout, "bam_output:%d\n", bam_output);
   
 
   if(is_index)

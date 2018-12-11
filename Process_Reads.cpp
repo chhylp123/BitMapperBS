@@ -190,7 +190,7 @@ int inputReads_paired_directly(
 		seqList1->name[read1_length - 1] = '\0';
 		for (j = 0; j < read1_length; j++)
 		{
-			if (seqList1->name[j] == ' ')
+			if (seqList1->name[j] == ' ' || seqList1->name[j] == '/')
 			{
 				seqList1->name[j] = '\0';
 				break;
@@ -270,7 +270,7 @@ int inputReads_paired_directly(
 		seqList2->name[read2_length - 1] = '\0';
 		for (j = 0; j < read2_length; j++)
 		{
-			if (seqList2->name[j] == ' ')
+			if (seqList2->name[j] == ' ' || seqList2->name[j] == '/')
 			{
 				seqList2->name[j] = '\0';
 				break;
@@ -333,7 +333,7 @@ inline int post_process_paired_reads(Read_buffer_pe_sub_block* curr_sub_block)
 		curr_sub_block->read1[i].name[seq_length1 - 1] = '\0';
 		for (j = 0; j < seq_length1; j++)
 		{
-			if (curr_sub_block->read1[i].name[j] == ' ')
+			if (curr_sub_block->read1[i].name[j] == ' ' || curr_sub_block->read1[i].name[j] == '/')
 			{
 				curr_sub_block->read1[i].name[j] = '\0';
 				break;
@@ -378,7 +378,7 @@ inline int post_process_paired_reads(Read_buffer_pe_sub_block* curr_sub_block)
 		curr_sub_block->read2[i].name[seq_length2 - 1] = '\0';
 		for (j = 0; j < seq_length2; j++)
 		{
-			if(curr_sub_block->read2[i].name[j] == ' ')
+			if (curr_sub_block->read2[i].name[j] == ' ' || curr_sub_block->read2[i].name[j] == '/')
 			{
 				curr_sub_block->read2[i].name[j] = '\0';
 				break;
@@ -444,7 +444,7 @@ inline int post_process_single_reads(Read_buffer_single_sub_block* curr_sub_bloc
 		curr_sub_block->read[i].name[seq_length1 - 1] = '\0';
 		for (j = 0; j < seq_length1; j++)
 		{
-			if (curr_sub_block->read[i].name[j] == ' ')
+			if (curr_sub_block->read[i].name[j] == ' ' || curr_sub_block->read[i].name[j] == '/')
 			{
 				curr_sub_block->read[i].name[j] = '\0';
 				break;
@@ -501,7 +501,7 @@ inline int post_process_single_reads_pbat(Read_buffer_single_sub_block* curr_sub
 		curr_sub_block->read[i].name[seq_length2 - 1] = '\0';
 		for (j = 0; j < seq_length2; j++)
 		{
-			if (curr_sub_block->read[i].name[j] == ' ')
+			if (curr_sub_block->read[i].name[j] == ' ' || curr_sub_block->read[i].name[j] == '/')
 			{
 				curr_sub_block->read[i].name[j] = '\0';
 				break;
@@ -884,7 +884,7 @@ int inputReads_single_directly(
 		seqList1->name[read1_length - 1] = '\0';
 		for (j = 0; j < read1_length; j++)
 		{
-			if (seqList1->name[j] == ' ')
+			if (seqList1->name[j] == ' ' || seqList1->name[j] == '/')
 			{
 				seqList1->name[j] = '\0';
 				break;
@@ -1068,7 +1068,8 @@ int inputReads_single_directly_pbat(Read *seqList2)
 		seqList2->name[read2_length - 1] = '\0';
 		for (j = 0; j < read2_length; j++)
 		{
-			if (seqList2->name[j] == ' ')
+			
+			if (seqList2->name[j] == ' ' || seqList2->name[j] == '/')
 			{
 				seqList2->name[j] = '\0';
 				break;

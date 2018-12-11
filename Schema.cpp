@@ -38,7 +38,7 @@ char methy_hash[5] = { 'A', 'C', 'G', 'T', 'N' };
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.0.3";
+char *versionN = "1.0.0.4";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
@@ -8033,9 +8033,10 @@ inline void output_sam_end_to_end(char* name, char* read, char* r_read, char* qu
 	bitmapper_bs_iter start_site,
 	int err, char* best_cigar, int read_length,
 	bam_output_cell* cell,
-	Output_buffer_sub_block* sub_block)
+	Output_buffer_sub_block* sub_block,
+	int* map_among_references)
 {
-
+	(*map_among_references) = 0;
 
 	if (bam_output == 0)
 	{
@@ -8070,7 +8071,21 @@ inline void output_sam_end_to_end(char* name, char* read, char* r_read, char* qu
 		}
 
 
+		
+
 		map_location = map_location + 1 - _ih_refGenName[now_ref_name].start_location;
+
+
+		///bitmapper_bs_iter r_length = end_site - start_site + 1;
+		///end_site - start_site + 1这个是read在基因组上的alignment长度
+		///map_location此刻是1-based
+		///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+		if (map_location + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+		{
+
+			(*map_among_references) = 1;
+			return;
+		}
 
 
 		if (name[0] == '@')
@@ -8176,6 +8191,19 @@ inline void output_sam_end_to_end(char* name, char* read, char* r_read, char* qu
 
 
 		map_location = map_location + 1 - _ih_refGenName[now_ref_name].start_location;
+
+
+
+		///bitmapper_bs_iter r_length = end_site - start_site + 1;
+		///end_site - start_site + 1这个是read在基因组上的alignment长度
+		///map_location此刻是1-based
+		///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+		if (map_location + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+		{
+			(*map_among_references) = 1;
+			return;
+		}
+
 
 
 		if (name[0] == '@')
@@ -8493,8 +8521,9 @@ inline void output_sam_end_to_end_output_buffer(char* name, char* read, char* r_
 	bitmapper_bs_iter end_site,
 	bitmapper_bs_iter start_site,
 	int err, char* best_cigar, int read_length, Output_buffer_sub_block* sub_block,
-	bam_phrase* bam_groups)
+	bam_phrase* bam_groups, int* map_among_references)
 {
+	(*map_among_references) = 0;
 
 	if (bam_output == 0)
 	{
@@ -8531,6 +8560,18 @@ inline void output_sam_end_to_end_output_buffer(char* name, char* read, char* r_
 
 
 		map_location = map_location + 1 - _ih_refGenName[now_ref_name].start_location;
+
+
+		///bitmapper_bs_iter r_length = end_site - start_site + 1;
+		///end_site - start_site + 1这个是read在基因组上的alignment长度
+		///map_location此刻是1-based
+		///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+		if (map_location + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+		{
+
+			(*map_among_references) = 1;
+			return;
+		}
 
 		/**
 		if (name[0] == '@')
@@ -8750,6 +8791,20 @@ inline void output_sam_end_to_end_output_buffer(char* name, char* read, char* r_
 			map_location = map_location + 1 - _ih_refGenName[now_ref_name].start_location;
 
 
+
+			///bitmapper_bs_iter r_length = end_site - start_site + 1;
+			///end_site - start_site + 1这个是read在基因组上的alignment长度
+			///map_location此刻是1-based
+			///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+			if (map_location + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+			{
+
+				(*map_among_references) = 1;
+				return;
+			}
+
+
+
 			if (name[0] == '@')
 			{
 				output_to_buffer_char_no_length(sub_block, name + 1);
@@ -8928,8 +8983,10 @@ inline void output_sam_end_to_end_pbat_output_buffer(char* name, char* read, cha
 	bitmapper_bs_iter end_site,
 	bitmapper_bs_iter start_site,
 	int err, char* best_cigar, int read_length, Output_buffer_sub_block* sub_block,
-	bam_phrase* bam_groups)
+	bam_phrase* bam_groups, int* map_among_references)
 {
+
+	(*map_among_references) = 0;
 
 	if (bam_output == 0)
 	{
@@ -8969,6 +9026,22 @@ inline void output_sam_end_to_end_pbat_output_buffer(char* name, char* read, cha
 
 
 		map_location = map_location + 1 - _ih_refGenName[now_ref_name].start_location;
+
+
+
+
+		///bitmapper_bs_iter r_length = end_site - start_site + 1;
+		///end_site - start_site + 1这个是read在基因组上的alignment长度
+		///map_location此刻是1-based
+		///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+		if (map_location + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+		{
+
+			(*map_among_references) = 1;
+			return;
+		}
+
+
 
 		/**
 		if (name[0] == '@')
@@ -9182,6 +9255,20 @@ inline void output_sam_end_to_end_pbat_output_buffer(char* name, char* read, cha
 
 		map_location = map_location + 1 - _ih_refGenName[now_ref_name].start_location;
 
+
+
+		///bitmapper_bs_iter r_length = end_site - start_site + 1;
+		///end_site - start_site + 1这个是read在基因组上的alignment长度
+		///map_location此刻是1-based
+		///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+		if (map_location + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+		{
+
+			(*map_among_references) = 1;
+			return;
+		}
+
+
 		/**
 		if (name[0] == '@')
 		{
@@ -9377,8 +9464,11 @@ inline void output_sam_end_to_end_pbat(char* name, char* read, char* r_read, cha
 	bitmapper_bs_iter start_site,
 	int err, char* best_cigar, int read_length,
 	bam_output_cell* cell,
-	Output_buffer_sub_block* sub_block)
+	Output_buffer_sub_block* sub_block, int* map_among_references)
 {
+
+	(*map_among_references) = 0;
+
 
 	if (bam_output == 0)
 	{
@@ -9419,6 +9509,29 @@ inline void output_sam_end_to_end_pbat(char* name, char* read, char* r_read, cha
 
 
 		map_location = map_location + 1 - _ih_refGenName[now_ref_name].start_location;
+
+
+
+
+		///bitmapper_bs_iter r_length = end_site - start_site + 1;
+		///end_site - start_site + 1这个是read在基因组上的alignment长度
+		///map_location此刻是1-based
+		///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) > _ih_refGenName[now_ref_name]._rg_chrome_length )
+		if (map_location + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+		{
+
+			(*map_among_references) = 1;
+			return;
+		}
+
+
+
+
+
+
+
+
+
 
 
 		if (name[0] == '@')
@@ -9534,6 +9647,22 @@ inline void output_sam_end_to_end_pbat(char* name, char* read, char* r_read, cha
 
 
 		map_location = map_location + 1 - _ih_refGenName[now_ref_name].start_location;
+
+
+
+		///bitmapper_bs_iter r_length = end_site - start_site + 1;
+		///end_site - start_site + 1这个是read在基因组上的alignment长度
+		///map_location此刻是1-based
+		///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) > _ih_refGenName[now_ref_name]._rg_chrome_length )
+		if (map_location + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+		{
+
+			(*map_among_references) = 1;
+			return;
+		}
+
+
+
 
 		/**
 		if (name[0] == '@')
@@ -9976,7 +10105,7 @@ inline int calculate_best_map_cigar_end_to_end_output_buffer(seed_votes* candida
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold, char* tmp_ref,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
 	char* best_cigar, Output_buffer_sub_block* sub_block, Methylation* methy,
-	bam_phrase* bam_groups)
+	bam_phrase* bam_groups, int* map_among_references)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -10049,7 +10178,7 @@ inline int calculate_best_map_cigar_end_to_end_output_buffer(seed_votes* candida
 			candidate_votes[0].end_site,
 			start_site,
 			candidate_votes[0].err, best_cigar,
-			read_length, sub_block, bam_groups);
+			read_length, sub_block, bam_groups, map_among_references);
 	}
 
 	
@@ -10074,7 +10203,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat_output_buffer(seed_votes* ca
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold, char* tmp_ref,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
 	char* best_cigar, Output_buffer_sub_block* sub_block, Methylation* methy,
-	bam_phrase* bam_groups)
+	bam_phrase* bam_groups, int* map_among_references)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -10146,7 +10275,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat_output_buffer(seed_votes* ca
 			candidate_votes[0].end_site,
 			start_site,
 			candidate_votes[0].err, best_cigar,
-			read_length, sub_block, bam_groups);
+			read_length, sub_block, bam_groups, map_among_references);
 
 	}
 
@@ -10171,7 +10300,8 @@ inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitm
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
 	char* best_cigar, Methylation* methy, 
 	bam_output_cell* cell,
-	Output_buffer_sub_block* current_sub_buffer)
+	Output_buffer_sub_block* current_sub_buffer,
+	int *map_among_references)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -10255,7 +10385,8 @@ inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitm
 			candidate_votes[0].err, best_cigar,
 			read_length,
 			cell,
-			current_sub_buffer);
+			current_sub_buffer,
+			map_among_references);
 	}
 	
 
@@ -10277,7 +10408,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat(seed_votes* candidate_votes,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
 	char* best_cigar, Methylation* methy,
 	bam_output_cell* cell,
-	Output_buffer_sub_block* current_sub_buffer)
+	Output_buffer_sub_block* current_sub_buffer, int* map_among_references)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -10397,7 +10528,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat(seed_votes* candidate_votes,
 			candidate_votes[0].err, best_cigar,
 			read_length,
 			cell,
-			current_sub_buffer);
+			current_sub_buffer, map_among_references);
 	}
 
 	
@@ -10424,7 +10555,8 @@ inline int try_process_unique_mismatch_end_to_end(
 	bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, int* get_error,
 	Methylation* methy,
 	bam_output_cell* cell,
-	Output_buffer_sub_block* current_sub_buffer)
+	Output_buffer_sub_block* current_sub_buffer,
+	int* map_among_references)
 {
 	bitmapper_bs_iter tmp_SA_length = 0;
 
@@ -10520,7 +10652,8 @@ inline int try_process_unique_mismatch_end_to_end(
 				0,
 				cigar, read_length,
 				cell,
-				current_sub_buffer);
+				current_sub_buffer,
+				map_among_references);
 		}
 
 		
@@ -10543,7 +10676,8 @@ inline int try_process_unique_mismatch_end_to_end_pbat(
 		bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, int* get_error, 
 		Methylation* methy,
 		bam_output_cell* cell,
-		Output_buffer_sub_block* current_sub_buffer)
+		Output_buffer_sub_block* current_sub_buffer,
+		int *map_among_references)
 	{
 		bitmapper_bs_iter tmp_SA_length = 0;
 
@@ -10639,7 +10773,7 @@ inline int try_process_unique_mismatch_end_to_end_pbat(
 					0,
 					cigar, read_length,
 					cell,
-					current_sub_buffer);
+					current_sub_buffer, map_among_references);
 			}
 
 			
@@ -10666,7 +10800,8 @@ inline int try_process_unique_mismatch_end_to_end_output_buffer(
 	bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, 
 	Output_buffer_sub_block* sub_block, int* get_error,
 	Methylation* methy,
-	bam_phrase* bam_groups)
+	bam_phrase* bam_groups,
+	int* map_among_references)
 {
 	bitmapper_bs_iter tmp_SA_length = 0;
 
@@ -10759,7 +10894,7 @@ inline int try_process_unique_mismatch_end_to_end_output_buffer(
 				read_length - 1,
 				0,
 				0,
-				cigar, read_length, sub_block, bam_groups);
+				cigar, read_length, sub_block, bam_groups, map_among_references);
 		}
 
 		
@@ -10792,7 +10927,7 @@ inline int try_process_unique_mismatch_end_to_end_pbat_get_output_buffer(
 		bitmapper_bs_iter* locates,
 		bitmapper_bs_iter top, char* tmp_ref, bitmapper_bs_iter* matched_length, int first_C_site, 
 		Output_buffer_sub_block* sub_block, int* get_error, Methylation* methy,
-		bam_phrase* bam_groups)
+		bam_phrase* bam_groups, int* map_among_references)
 	{
 		bitmapper_bs_iter tmp_SA_length = 0;
 
@@ -10885,7 +11020,7 @@ inline int try_process_unique_mismatch_end_to_end_pbat_get_output_buffer(
 					read_length - 1,
 					0,
 					0,
-					cigar, read_length, sub_block, bam_groups);
+					cigar, read_length, sub_block, bam_groups, map_among_references);
 			}
 
 			
@@ -14083,6 +14218,8 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 
 
+
+
 	//正向模式
 	i = 0;
 	while (1)
@@ -14145,6 +14282,7 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 		read_1_jump = 0;
 		read_2_jump = 0;
+
 
 
 		//*************************************第一个read的第一个种子********************************************
@@ -14509,8 +14647,15 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 			paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
 
-			if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+			if ((paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+				&&
+				(result1.site + matched_length1 <=_ih_refGenName[result1.chrome_id]._rg_chrome_length + 1)
+				&&
+				(result2.site + matched_length2 <=_ih_refGenName[result2.chrome_id]._rg_chrome_length + 1))
 			{
+
+				
+
 				unique_matched_read++;
 
 
@@ -16282,7 +16427,12 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 			paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
 
 
-			if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+			///if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+		if ((paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+			&&
+			(result1.site + matched_length1 <= _ih_refGenName[result1.chrome_id]._rg_chrome_length + 1)
+			&&
+			(result2.site + matched_length2 <= _ih_refGenName[result2.chrome_id]._rg_chrome_length + 1))
 			{
 				unique_matched_read++;
 
@@ -17124,7 +17274,12 @@ void* Map_Pair_Seq_split_fast(void* arg)
 				paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
 
 
-				if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+				///if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+				if ((paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+					&&
+					(result1.site + matched_length1 <= _ih_refGenName[result1.chrome_id]._rg_chrome_length + 1)
+					&&
+					(result2.site + matched_length2 <= _ih_refGenName[result2.chrome_id]._rg_chrome_length + 1))
 				{
 					unique_matched_read++;
 					
@@ -18506,7 +18661,12 @@ void* Map_Pair_Seq_split(void* arg)
 				paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
 
 
-				if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+				///if (paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+				if ((paired_end_distance <= maxDistance_pair && paired_end_distance >= minDistance_pair)
+					&&
+					(result1.site + matched_length1 <= _ih_refGenName[result1.chrome_id]._rg_chrome_length + 1)
+					&&
+					(result2.site + matched_length2 <= _ih_refGenName[result2.chrome_id]._rg_chrome_length + 1))
 				{
 					unique_matched_read++;
 
@@ -18828,6 +18988,8 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 	int is_mutiple_map = 0;
 
+	int map_among_references;
+
 	int C_site;
 
 
@@ -18840,7 +19002,7 @@ int Map_Single_Seq_end_to_end(int thread_id)
 	int get_error;
 
 	//long long debug_0_mismatch = 0;
-	long long debug_1_mismatch = 0;
+	///long long debug_1_mismatch = 0;
 	//long long debug_seed_match_length = 0;
 	long long first_seed_match_length = 0;
 	long long second_seed_length = 0;
@@ -18925,6 +19087,8 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 		extra_seed_flag = 1;
 
+		map_among_references = 0;
+
 		/*******控制种子数量************************/
 		max_seed_number = current_read.length / 10 - 1;
 		///多用一个不重叠的种子
@@ -18959,13 +19123,17 @@ int Map_Single_Seq_end_to_end(int thread_id)
 				top, tmp_ref, &match_length, current_read.length - C_site - 1, &get_error,
 				&methy,
 				&cell,
-				&current_sub_buffer))
+				&current_sub_buffer,
+				&map_among_references))
 			{
 
-				///debug_0_mismatch++;
+				if (map_among_references == 0)
+				{
+					unique_matched_read++;
+					matched_read++;
+				}
 
-				unique_matched_read++;
-				matched_read++;
+				
 				continue;
 			}
 
@@ -19123,7 +19291,8 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 
 		
-
+		///两种特殊情况为error为0和error为1，这两种情况在上面特殊处理就好了
+		///除了这两种情况, 均在下面处理
 		if (extra_seed_flag == 1)
 		{
 
@@ -19205,6 +19374,7 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 		}
 
+		///这也是个特殊情况, 比较复杂....
 		///candidate_length == 2 && candidates[0] == candidates[1] 这是两个种子都指向了同一个位置
 		if (extra_seed_flag == 0 
 			&& 
@@ -19246,20 +19416,23 @@ int Map_Single_Seq_end_to_end(int thread_id)
 					cigar,
 					current_read.length,
 					&cell,
-					&current_sub_buffer);
+					&current_sub_buffer,
+					&map_among_references);
 			}
 
 
 
 
-			
+			if (map_among_references == 0)
+			{
 
-			unique_matched_read++;
-			matched_read++;
+				unique_matched_read++;
+				matched_read++;
+			}
 
-			debug_1_mismatch++;
+			///debug_1_mismatch++;
 		}
-		else if (candidate_length != 0)
+		else if (candidate_length != 0)   ///这里才是正常情况
 		{
 
 			std::sort(candidates, candidates + candidate_length);
@@ -19335,16 +19508,25 @@ int Map_Single_Seq_end_to_end(int thread_id)
 			if (min_err_index >= 0)
 			{
 
-				matched_read++;
+				
 				calculate_best_map_cigar_end_to_end
 					(candidates_votes, &min_candidates_votes_length,
 					current_read.length, error_threshold1, tmp_ref,
 					current_read.seq, current_read.rseq, current_read.qual, cigar, path, matrix, matrix_bit, current_read.name,
 					best_cigar, &methy,
 					&cell,
-					&current_sub_buffer);
+					&current_sub_buffer,
+					&map_among_references);
 
-				unique_matched_read++;
+
+				if (map_among_references == 0)
+				{
+					matched_read++;
+					unique_matched_read++;
+				}
+
+
+				
 			}
 			else if (min_err_index != -1)
 			{
@@ -19484,7 +19666,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 	bitmapper_bs_iter total_seed_length = 0;
 	bitmapper_bs_iter total_seed_matches = 0;
 	bitmapper_bs_iter total_seed_number = 0;
-	bitmapper_bs_iter total_best_mapping_site = 0;
+	///bitmapper_bs_iter total_best_mapping_site = 0;
 	///bitmapper_bs_iter available_seed_length = 30;
 
 	bitmapper_bs_iter available_seed_length = 30;
@@ -19654,7 +19836,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 	int file_flag;
 
 	int get_error;
-	long long debug_1_mismatch = 0;
+	///long long debug_1_mismatch = 0;
 	long long first_seed_match_length = 0;
 	long long second_seed_length = 0;
 	int extra_seed_flag = 1;
@@ -19662,7 +19844,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 
 
 
-
+	int map_among_references;
 
 
 
@@ -19749,6 +19931,8 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 
 		extra_seed_flag = 1;
 
+		map_among_references = 0;
+
 
 
 		/*******控制种子数量************************/
@@ -19801,11 +19985,14 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 				locates,
 				top, tmp_ref, &match_length, current_read.length - C_site - 1, &get_error, &methy,
 				&cell,
-				&current_sub_buffer))
+				&current_sub_buffer, &map_among_references))
 			{
+				if (map_among_references == 0)
+				{
+					unique_matched_read++;
+					matched_read++;
+				}
 
-				unique_matched_read++;
-				matched_read++;
 				i++;
 				continue;
 
@@ -20173,16 +20360,16 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 					cigar,
 					current_read.length,
 					&cell,
-					&current_sub_buffer);
+					&current_sub_buffer, &map_among_references);
 
 			}
 
+			if (map_among_references == 0)
+			{
+				unique_matched_read++;
+				matched_read++;
+			}
 
-
-			unique_matched_read++;
-			matched_read++;
-
-			debug_1_mismatch++;
 		}
 		else if(candidate_length != 0)
 		{
@@ -20282,8 +20469,8 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 			if (min_err_index >= 0)
 			{
 
-				total_best_mapping_site++;
-				matched_read++;
+				///total_best_mapping_site++;
+				
 				min_candidates_votes_length = 0;
 
 				calculate_best_map_cigar_end_to_end_pbat
@@ -20291,10 +20478,14 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 					current_read.length, error_threshold1, tmp_ref,
 					current_read.seq, current_read.rseq, current_read.qual, cigar, path, matrix, matrix_bit, current_read.name,
 					best_cigar, &methy, &cell,
-					&current_sub_buffer);
+					&current_sub_buffer, &map_among_references);
 
-
-				unique_matched_read++;
+				if (map_among_references == 0)
+				{
+					unique_matched_read++;
+					matched_read++;
+				}
+				
 
 
 			}
@@ -20796,7 +20987,7 @@ void* Map_Single_Seq_split(void* arg)
 	bitmapper_bs_iter total_seed_length = 0;
 	bitmapper_bs_iter total_seed_matches = 0;
 	bitmapper_bs_iter total_seed_number = 0;
-	bitmapper_bs_iter total_best_mapping_site = 0;
+	///bitmapper_bs_iter total_best_mapping_site = 0;
 
 	bitmapper_bs_iter available_seed_length = 30;
 	bitmapper_bs_iter max_seed_matches = 1000;
@@ -20999,7 +21190,7 @@ void* Map_Single_Seq_split(void* arg)
 
 	int get_error;
 
-	long long debug_1_mismatch = 0;
+	///long long debug_1_mismatch = 0;
 	long long first_seed_match_length = 0;
 	long long second_seed_length = 0;
 	int extra_seed_flag = 1;
@@ -21013,7 +21204,7 @@ void* Map_Single_Seq_split(void* arg)
 		init_bam_buffer(&bam_buffer);
 	}
 
-	
+	int map_among_references;
 
 
 	file_flag = 1;
@@ -21068,6 +21259,9 @@ void* Map_Single_Seq_split(void* arg)
 			///这里要改
 			extra_seed_flag = 1;
 
+			map_among_references = 0;
+
+
 			/*******控制种子数量************************/
 			max_seed_number = read_batch[i].length / 10 - 1;
 			if (max_seed_number > max_max_seed_number)
@@ -21113,12 +21307,17 @@ void* Map_Single_Seq_split(void* arg)
 					read_batch[i].length, read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual, cigar, read_batch[i].name,
 					locates,
 					top, tmp_ref, &match_length, read_batch[i].length - C_site - 1, &current_sub_buffer, &get_error,
-					&methy, &bam_buffer))
+					&methy, &bam_buffer, &map_among_references))
 				{
-					direct_match++;
+					///direct_match++;
 
-					unique_matched_read++;
-					matched_read++;
+					if (map_among_references == 0)
+					{
+						unique_matched_read++;
+						matched_read++;
+					}
+
+					
 					i++;
 					continue;
 
@@ -21450,17 +21649,18 @@ void* Map_Single_Seq_split(void* arg)
 						0,
 						1,
 						cigar,
-						read_batch[i].length, &current_sub_buffer, &bam_buffer);
+						read_batch[i].length, &current_sub_buffer, &bam_buffer, &map_among_references);
 				}
 
 				
 
+				if (map_among_references == 0)
+				{
+					unique_matched_read++;
+					matched_read++;
+				}
 
-
-				unique_matched_read++;
-				matched_read++;
-
-				debug_1_mismatch++;
+				//debug_1_mismatch++;
 			}
 			else if (candidate_length != 0)
 			{
@@ -21549,8 +21749,8 @@ void* Map_Single_Seq_split(void* arg)
 				if (min_err_index >= 0)
 				{
 
-					total_best_mapping_site++;
-					matched_read++;
+					///total_best_mapping_site++;
+					
 					min_candidates_votes_length = 0;
 
 					/**
@@ -21567,9 +21767,14 @@ void* Map_Single_Seq_split(void* arg)
 						read_batch[i].length, error_threshold1, tmp_ref,
 						read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual,
 						cigar, path, matrix, matrix_bit, read_batch[i].name,
-						best_cigar, &current_sub_buffer, &methy, &bam_buffer);
+						best_cigar, &current_sub_buffer, &methy, &bam_buffer, &map_among_references);
 
-					unique_matched_read++;
+					if (map_among_references == 0)
+					{
+						matched_read++;
+						unique_matched_read++;
+					}
+					
 
 
 				}
@@ -21721,7 +21926,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 	bitmapper_bs_iter total_seed_length = 0;
 	bitmapper_bs_iter total_seed_matches = 0;
 	bitmapper_bs_iter total_seed_number = 0;
-	bitmapper_bs_iter total_best_mapping_site = 0;
+	///bitmapper_bs_iter total_best_mapping_site = 0;
 
 	bitmapper_bs_iter available_seed_length = 30;
 	bitmapper_bs_iter max_seed_matches = 1000;
@@ -21871,7 +22076,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 	long long total_is_mutiple_map = 0;
 	long long total_cutted = 0;
 	long long direct_cut = 0;
-	long long direct_match = 0;
+	///long long direct_match = 0;
 	int C_site;
 	///std::stringstream result_string;
 	///std::string tmp_result_string;
@@ -21919,7 +22124,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 
 	int get_error;
-	long long debug_1_mismatch = 0;
+	///long long debug_1_mismatch = 0;
 	long long first_seed_match_length = 0;
 	long long second_seed_length = 0;
 	int extra_seed_flag = 1;
@@ -21935,6 +22140,8 @@ void* Map_Single_Seq_split_pbat(void* arg)
 		init_bam_buffer(&bam_buffer);
 	}
 
+
+	int map_among_references;
 
 
 
@@ -21987,6 +22194,8 @@ void* Map_Single_Seq_split_pbat(void* arg)
 			///这里要改
 			extra_seed_flag = 1;
 
+			map_among_references = 0;
+
 
 
 			/*******控制种子数量************************/
@@ -22023,11 +22232,16 @@ void* Map_Single_Seq_split_pbat(void* arg)
 					read_batch[i].length, read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual, cigar, read_batch[i].name,
 					locates,
 					top, tmp_ref, &match_length, read_batch[i].length - C_site - 1, &current_sub_buffer, &get_error, &methy,
-					&bam_buffer))
+					&bam_buffer, &map_among_references))
 				{
-					direct_match++;
-					unique_matched_read++;
-					matched_read++;
+
+					if (map_among_references == 0)
+					{
+						unique_matched_read++;
+						matched_read++;
+					}
+
+				
 					i++;
 					continue;
 
@@ -22361,15 +22575,17 @@ void* Map_Single_Seq_split_pbat(void* arg)
 						cigar,
 						read_batch[i].length,
 						&current_sub_buffer,
-						&bam_buffer);
+						&bam_buffer, &map_among_references);
 				}
 
-				
+				if (map_among_references == 0)
+				{
 
-				unique_matched_read++;
-				matched_read++;
+					unique_matched_read++;
+					matched_read++;
+				}
 
-				debug_1_mismatch++;
+				///debug_1_mismatch++;
 			}
 			else if (candidate_length != 0)
 			{
@@ -22457,8 +22673,8 @@ void* Map_Single_Seq_split_pbat(void* arg)
 				if (min_err_index >= 0)
 				{
 
-					total_best_mapping_site++;
-					matched_read++;
+					///total_best_mapping_site++;
+					
 					min_candidates_votes_length = 0;
 
 					calculate_best_map_cigar_end_to_end_pbat_output_buffer
@@ -22467,9 +22683,15 @@ void* Map_Single_Seq_split_pbat(void* arg)
 						read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual,
 						cigar, path, matrix, matrix_bit, read_batch[i].name,
 						best_cigar, &current_sub_buffer, &methy,
-						&bam_buffer);
+						&bam_buffer, &map_among_references);
 
-					unique_matched_read++;
+					if (map_among_references == 0)
+					{
+						matched_read++;
+						unique_matched_read++;
+					}
+
+					
 
 
 				}
