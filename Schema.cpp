@@ -6118,7 +6118,7 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 
 
 
-inline void output_paired_methy_buffer(
+inline void output_paired_methy_buffer(char* name,
 	char* read1, char* r_read1, map_result* result1, bitmapper_bs_iter r_length1,
 	char* read2, char* r_read2, map_result* result2, bitmapper_bs_iter r_length2,
 	Pair_Methylation* methy, pair_distance_count* distances)
@@ -6232,7 +6232,31 @@ inline void output_paired_methy_buffer(
 			end5_distance = end5_distance * -1;
 		}
 
-		
+
+		/**
+		if (end5_distance != calculate_TLEN(result1->site, r_length1, result2->site, r_length2) && result1->site != result2->site)
+		{
+			fprintf(stderr, "end5_distance: %lld, TLEN: %lld\n", end5_distance, calculate_TLEN(result1->site, r_length1, result2->site, r_length2));
+			fprintf(stderr, "site1: %lld, r_length1: %lld, flag1: %d\n", result1->site, r_length1, result1->flag);
+			fprintf(stderr, "site2: %lld, r_length2: %lld, flag2: %d\n\n", result2->site, r_length2, result2->flag);
+		}
+		**/
+		/**
+		if (result1->flag == 99 && result1->site > result2->site)
+		{
+			fprintf(stderr, "+%s\n", name);
+			fprintf(stderr, "site1: %lld, r_length1: %lld, flag1: %d\n", result1->site, r_length1, result1->flag);
+			fprintf(stderr, "site2: %lld, r_length2: %lld, flag2: %d\n\n", result2->site, r_length2, result2->flag);
+		}
+
+
+		if (result1->flag == 83 && result1->site < result2->site)
+		{
+			fprintf(stderr, "-%s\n", name);
+			fprintf(stderr, "site1: %lld, r_length1: %lld, flag1: %d\n", result1->site, r_length1, result1->flag);
+			fprintf(stderr, "site2: %lld, r_length2: %lld, flag2: %d\n\n", result2->site, r_length2, result2->flag);
+		}
+		**/
 
 		///distances->count[block_ID][end5_distance - distances->minDistance_pair]++;
 		distances->count[block_ID][end5_distance]++;
@@ -9923,7 +9947,9 @@ inline void calculate_cigar_end_to_end(
 	bitmapper_bs_iter site,
 	char* path, int path_length,
 	char* cigar,
-	int t_length)
+	int t_length,
+	int* start_site,
+	bitmapper_bs_iter* end_site)
 {
 
 	int i = 0;
@@ -9937,6 +9963,38 @@ inline void calculate_cigar_end_to_end(
 
 	pre_ciga = 100;
 	pre_ciga_length = 0;
+
+	///调整cigar, 其实就是把cigar两边的I转成M
+	for (i = 0; i < path_length; i++)
+	{
+		if (map_cigar[path[i]] != 'I')
+		{
+			break;
+		}
+		else
+		{
+			path[i] = 1;
+			///(*start_site)--;
+			(*end_site)++;
+		}
+	}
+
+
+	for (i = path_length - 1; i >= 0; i--)
+	{
+		if (map_cigar[path[i]] != 'I')
+		{
+			break;
+		}
+		else
+		{
+			path[i] = 1;
+			///(*end_site)++;
+			(*start_site)--;
+		}
+	}
+	///调整cigar, 其实就是把cigar两边的I转成M
+
 
 	///反向互补链比对上
 	if (site >= _msf_refGenLength)
@@ -10057,9 +10115,11 @@ inline int calculate_best_map_cigar_end_to_end_return(bitmapper_bs_iter* candida
 
 
 
+
 			///double start = Get_T();
-			calculate_cigar_end_to_end(result->origin_site, path, path_length, best_cigar, t_length);
+			calculate_cigar_end_to_end(result->origin_site, path, path_length, best_cigar, t_length, &start_site, &result->end_site);
 			///total = total + Get_T() - start;
+
 		}
 
 
@@ -10147,7 +10207,7 @@ inline int calculate_best_map_cigar_end_to_end_output_buffer(seed_votes* candida
 		}
 		else
 		{
-			calculate_cigar_end_to_end(candidate_votes[0].site, path, path_length, best_cigar, t_length);
+			calculate_cigar_end_to_end(candidate_votes[0].site, path, path_length, best_cigar, t_length, &start_site, &candidate_votes[0].end_site);
 		}
 
 	}
@@ -10245,7 +10305,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat_output_buffer(seed_votes* ca
 		}
 		else
 		{
-			calculate_cigar_end_to_end(candidate_votes[0].site, path, path_length, best_cigar, t_length);
+			calculate_cigar_end_to_end(candidate_votes[0].site, path, path_length, best_cigar, t_length, &start_site, &candidate_votes[0].end_site);
 		}
 
 	}
@@ -10347,7 +10407,7 @@ inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitm
 			///fprintf(stderr, "path_length: %llu\n", path_length);
 
 			///double start = Get_T();
-			calculate_cigar_end_to_end(candidate_votes[0].site, path, path_length, best_cigar, t_length);
+			calculate_cigar_end_to_end(candidate_votes[0].site, path, path_length, best_cigar, t_length, &start_site, &candidate_votes[0].end_site);
 			///total = total + Get_T() - start;
 		}
 
@@ -10449,7 +10509,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat(seed_votes* candidate_votes,
 		else
 		{
 			///double start = Get_T();
-			calculate_cigar_end_to_end(candidate_votes[0].site, path, path_length, best_cigar, t_length);
+			calculate_cigar_end_to_end(candidate_votes[0].site, path, path_length, best_cigar, t_length, &start_site, &candidate_votes[0].end_site);
 			///total = total + Get_T() - start;
 		}
 
@@ -14619,6 +14679,9 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 			result2.origin_site = candidates_votes2[best_pair_2_index].site;
 			result2.end_site = candidates_votes2[best_pair_2_index].end_site;
 
+			
+
+
 			if (result2.err != 0)
 			{
 				calculate_best_map_cigar_end_to_end_return
@@ -14643,6 +14706,9 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 				sprintf(result2.cigar, "%dM", current_read2.length);
 				matched_length2 = current_read2.length;
 			}
+
+
+
 			//****************第二个read的后处理
 
 			paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
@@ -14673,7 +14739,7 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 						&methy, read1_site, read1_length);
 					**/
 
-					output_paired_methy_buffer(
+					output_paired_methy_buffer(current_read1.name,
 						current_read1.seq, current_read1.rseq, &result1, matched_length1,
 						current_read2.seq, current_read2.rseq, &result2, matched_length2,
 						&methy, &PE_distance[thread_id]);
@@ -16446,7 +16512,7 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 						&methy, read1_site, read1_length);
 					**/
 
-					output_paired_methy_buffer(
+					output_paired_methy_buffer(current_read1.name,
 						current_read1.seq, current_read1.rseq, &result1, matched_length1,
 						current_read2.seq, current_read2.rseq, &result2, matched_length2,
 						&methy, &PE_distance[thread_id]);
