@@ -116,7 +116,7 @@ output mapping results in BAM format
 ### Methylation Extracting ###
 
 
-We recommd users to use use MethylDackel to extract methylation information. Please see https://github.com/dpryan79/methyldackel. 
+We recommd users to first remove the duplicates by Picard or samtools, and then use MethylDackel to extract methylation information. Please see https://github.com/dpryan79/methyldackel. 
 
 
 ### General Options ###
@@ -207,7 +207,7 @@ The default maximum allowed edit distance is 8% of read length (0.08). This opti
 
 (4) **Methylation Extracting**
 
-The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM file by utilizing samtools. After that, the methylation information is extracted using MethylDackel (see https://github.com/dpryan79/methyldackel). 
+The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM file by utilizing samtools. After that, duplicate alignments should be removed by Picard or samtools. At last, the methylation information is extracted using MethylDackel (see https://github.com/dpryan79/methyldackel). 
 
 
 ### Changelog ###
