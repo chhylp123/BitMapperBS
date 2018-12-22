@@ -3936,7 +3936,9 @@ inline int bs_Calculate_Cigar(
 
 
 
-inline int fast_bs_Calculate_Cigar(
+
+
+inline int fast_bs_Calculate_Cigar_back_new(
 	char *pattern, int p_length,
 	char *text, int t_length,
 	unsigned short errthold,
@@ -4174,6 +4176,906 @@ inline int fast_bs_Calculate_Cigar(
 	matrix_bit[column_start + 2] = VN;
 	matrix_bit[column_start + 3] = HP;
 	matrix_bit[column_start + 4] = HN;
+
+
+
+
+
+	int back_track_site = band_length - (p_length - end_site);
+
+	Word v_value, h_value, delta_value, min_value, current_value;
+	Word direction, is_mismatch; ///0 is match, 1 is mismatch, 2 is xiang shang, 3 is shuiping
+
+	i = t_length;
+	int path_length = 0;
+	start_site = end_site;
+
+	current_value = *return_err;
+
+
+	int low_bound = band_length - 1;
+
+	while (i>0)
+	{
+		if (current_value == 0)
+		{
+			break;
+		}
+
+		///每8个元素一存
+		column_start = i << 3;
+
+
+		///如果斜对角线方向匹配则D0是1
+		///所以当D0是1, 减0
+		///D0是0, 减1
+		delta_value = current_value -
+			((~(matrix_bit[column_start] >> back_track_site))&err_mask);
+
+
+		if (back_track_site == 0)
+		{
+			///HP
+			h_value = current_value - ((matrix_bit[column_start + 3] >> back_track_site)&err_mask);
+			//HN
+			h_value = h_value + ((matrix_bit[column_start + 4] >> back_track_site)&err_mask);
+
+
+
+
+
+
+			min_value = delta_value;
+			direction = 0;
+
+			if (h_value < min_value)
+			{
+				min_value = h_value;
+				direction = 3;
+			}
+
+		}
+		else if (back_track_site == low_bound)
+		{
+			v_value = current_value - ((matrix_bit[column_start + 1] >> (back_track_site - 1))&err_mask);
+			v_value = v_value + ((matrix_bit[column_start + 2] >> (back_track_site - 1))&err_mask);
+
+			min_value = delta_value;
+			direction = 0;
+
+			if (v_value < min_value)
+			{
+				min_value = v_value;
+				direction = 2;
+			}
+
+		}
+		else
+		{
+
+			h_value = current_value - ((matrix_bit[column_start + 3] >> back_track_site)&(Word)1);
+
+
+			h_value = h_value + ((matrix_bit[column_start + 4] >> back_track_site)&(Word)1);
+
+
+			v_value = current_value - ((matrix_bit[column_start + 1] >> (back_track_site - 1))&err_mask);
+			v_value = v_value + ((matrix_bit[column_start + 2] >> (back_track_site - 1))&err_mask);
+
+
+			min_value = delta_value;
+			direction = 0;
+
+			if (v_value < min_value)
+			{
+				min_value = v_value;
+				direction = 2;
+			}
+
+
+			if (h_value < min_value)
+			{
+				min_value = h_value;
+				direction = 3;
+			}
+
+		}
+
+
+		if (direction == 0)
+		{
+
+			if (delta_value != current_value)
+			{
+				direction = 1;
+			}
+
+			i--;
+
+			start_site--;
+
+		}
+		if (direction == 2)///ru guo xiang shang yi dong, bing bu huan lie
+		{
+			back_track_site--;
+			start_site--;
+		}
+		else if (direction == 3)///ru guo xiang zuo yi dong
+		{
+			i--;
+			back_track_site++;
+		}
+
+
+		path[path_length++] = direction;
+
+
+		current_value = min_value;
+
+	}
+
+
+	if (i > 0)
+	{
+		memset(path + path_length, 0, i);
+		start_site = start_site - i;
+		direction = 0;
+		path_length = path_length + i;
+	}
+
+	/**
+	while (i > 0)
+	{
+	path[path_length++] = 0;
+	i--;
+	start_site--;
+	direction = 0;
+
+	}
+	**/
+
+	if (direction != 3)
+	{
+		start_site++;
+	}
+	(*return_start_site) = start_site;
+	(*return_path_length) = path_length;
+
+
+
+
+	return 1;
+}
+
+
+
+
+inline int try_cigar(char *pattern, int p_length,
+	char *text, int t_length, int end_site, char* path,
+	unsigned int* return_err, 
+	int* return_start_site, 
+	int* return_path_length)
+{
+	int i = 0;
+	int tmp_err = 0;
+	int start_site = end_site - t_length + 1;
+
+	if (start_site >= 0)
+	{
+
+		for (i = 0; i < t_length; i++)
+		{
+			///path[i] = 0;
+			path[t_length - i - 1] = 0;
+			if (text[i] != pattern[i + start_site])
+			{
+
+				if (!(text[i] == 'T' && pattern[i + start_site] == 'C'))
+				{
+					path[t_length - i - 1] = 1;
+					tmp_err++;
+
+					if (tmp_err > (*return_err))
+					{
+						return 0;
+					}
+				}
+
+
+
+			}
+		}
+
+
+
+
+
+
+		if (tmp_err == (*return_err))
+		{
+
+
+			(*return_path_length) = t_length;
+
+			(*return_start_site) = start_site;
+
+			return 6;
+		}
+	}
+
+
+	return 0;
+}
+
+
+inline int trim_Ns(char *pattern, int p_length,
+	char *text, int t_length, int errthold, unsigned int* return_err,
+	int* return_start_site, bitmapper_bs_iter* return_end_site, int pre_end_site)
+{
+	int i = 0;
+	int start_Ns = 0;
+	int end_Ns = 0;
+
+	for (i = 0; i < t_length; i++)
+	{
+		if (text[i] != 'N')
+		{
+			break;
+		}
+		else
+		{
+			start_Ns++;
+		}
+
+	}
+
+	for (i = t_length - 1; i>=0; i--)
+	{
+		if (text[i] != 'N')
+		{
+			break;
+		}
+		else
+		{
+			end_Ns++;
+		}
+	}
+
+
+
+
+	int total_Ns = start_Ns + end_Ns;
+	int tmp_err = 0;
+	int start_site = errthold;
+
+	t_length = t_length - end_Ns;
+
+	for (i = start_Ns; i < t_length; i++)
+	{
+
+		if (text[i] != pattern[i + start_site])
+		{
+
+			if (!(text[i] == 'T' && pattern[i + start_site] == 'C'))
+			{
+
+				tmp_err++;
+
+
+			}
+
+		}
+	}
+
+	/**
+	fprintf(stderr, "(*return_err):%d\n", (*return_err));
+	fprintf(stderr, "tmp_err:%d\n", tmp_err);
+	fprintf(stderr, "total_Ns:%d\n", total_Ns);
+	**/
+
+
+	if (total_Ns + tmp_err <= errthold)
+	{
+		if ((*return_err) * 4 > total_Ns * 1 + tmp_err*4)
+		{
+
+			fprintf(stderr, "err:%d\n", (*return_err));
+
+			(*return_start_site) = errthold;
+			(*return_end_site) = errthold + t_length + end_Ns - 1;
+			(*return_err) = total_Ns + tmp_err;
+
+			fprintf(stderr, "err:%d\n", (*return_err));
+
+			return 1;
+		}
+	}
+
+
+	return 0;
+
+}
+
+
+
+
+inline int trim_Ns_new(char *pattern, int p_length,
+	char *text, int t_length, int errthold, unsigned int* return_err,
+	int* return_start_site, bitmapper_bs_iter* return_end_site, int pre_end_site,
+	int current_score, int mp, int np, char* cigar)
+{
+	int i = 0;
+	int start_Ns = 0;
+	int end_Ns = 0;
+
+	for (i = 0; i < t_length; i++)
+	{
+		if (text[i] != 'N')
+		{
+			break;
+		}
+		else
+		{
+			start_Ns++;
+		}
+
+	}
+
+	for (i = t_length - 1; i >= 0; i--)
+	{
+		if (text[i] != 'N')
+		{
+			break;
+		}
+		else
+		{
+			end_Ns++;
+		}
+	}
+
+
+
+
+	int total_Ns = start_Ns + end_Ns;
+	int tmp_err = 0;
+	int start_site = errthold;
+
+	t_length = t_length - end_Ns;
+
+	for (i = start_Ns; i < t_length; i++)
+	{
+
+		if (text[i] != pattern[i + start_site])
+		{
+
+			if (!(text[i] == 'T' && pattern[i + start_site] == 'C'))
+			{
+
+				tmp_err++;
+
+
+			}
+
+		}
+	}
+
+
+
+
+	if (total_Ns + tmp_err <= errthold)
+	{
+		if (current_score > total_Ns * np + tmp_err * mp)
+		{
+
+
+			(*return_start_site) = errthold;
+			(*return_end_site) = errthold + t_length + end_Ns - 1;
+			(*return_err) = total_Ns + tmp_err;
+
+			sprintf(cigar, "%dM", t_length);
+
+			return 1;
+		}
+	}
+
+
+	return 0;
+
+}
+
+
+
+
+
+
+inline int trim_Ns_new_all(char *pattern, int p_length,
+	char *text, int t_length, int errthold, unsigned int* return_err,
+	int* return_start_site, bitmapper_bs_iter* return_end_site, int pre_end_site,
+	int current_score, int mp, int np, char* cigar)
+{
+	int i = 0;
+
+
+
+	int total_Ns = 0;
+	int tmp_err = 0;
+	int start_site = errthold;
+	int score = 0;
+
+	for (i = 0; i < t_length; i++)
+	{
+		if (text[i] == 'N')
+		{
+			total_Ns++;
+			score = score + np;
+
+			
+			if (score > current_score)
+			{
+				return 0;
+			}
+			
+		}
+		else if (text[i] != pattern[i + start_site])
+		{
+
+			if (!(text[i] == 'T' && pattern[i + start_site] == 'C'))
+			{
+				tmp_err++;
+				score = score + mp;
+
+				
+				if (score > current_score)
+				{
+					return 0;
+				}
+				
+			}
+		}
+
+
+	}
+
+
+	if (total_Ns + tmp_err <= errthold)
+	{
+		if (current_score >= score)
+		{
+
+
+			(*return_start_site) = errthold;
+			(*return_end_site) = errthold + t_length - 1;
+			(*return_err) = total_Ns + tmp_err;
+
+			sprintf(cigar, "%dM", t_length);
+
+			return 1;
+		}
+	}
+
+
+	return 0;
+
+}
+
+
+
+
+
+
+inline void dec_bit_new(Word input)
+{
+	uint8_t binary[64];
+
+	int i = 0;
+
+	for (i = 0; i < 64; i++)
+	{
+		binary[i] = input & (Word)1;
+		input = input >> 1;
+	}
+
+	for (i = 63; i >= 0; i--)
+	{
+		fprintf(stderr, "%u", binary[i]);
+	}
+	fprintf(stderr, "\n");
+
+}
+
+inline int verify_edit_distance(char* src, char* dest)
+{
+#define MAX_STRING_LEN 300 
+#define min(x,y)  ( x<y?x:y )
+
+
+	int i, j;
+	int d[MAX_STRING_LEN][MAX_STRING_LEN] = { 0 };
+
+	for (i = 0; i <= (int)strlen(src); ++i) {
+		d[i][0] = 0;
+	}
+	for (j = 0; j <= (int)strlen(dest); ++j) {
+		d[0][j] = j;
+	}
+	for (i = 1; i <= (int)strlen(src); i++){
+		for (j = 1; j <= (int)strlen(dest); j++){
+			if ((src[i - 1] == dest[j - 1]) 
+				|| 
+				(dest[j - 1] == 'T' && src[i - 1] == 'C'))
+			{
+				d[i][j] = d[i - 1][j - 1];
+			}
+			else{
+				int edIns = d[i][j - 1] + 1;
+				int edDel = d[i - 1][j] + 1;
+				int edRep = d[i - 1][j - 1] + 1;
+
+				d[i][j] = min(min(edIns, edDel), edRep);
+			}
+		}
+	}
+	for (int m = 0; m <= strlen(src); m++){
+		for (int n = 0; n <= strlen(dest); n++)
+			fprintf(stderr, "%d,", d[m][n]);
+		fprintf(stderr,"\n");
+	}
+
+	return d[strlen(src)][strlen(dest)];
+
+
+}
+
+inline int fast_bs_Calculate_Cigar(
+	char *pattern, int p_length,
+	char *text, int t_length,
+	unsigned short errthold,
+	unsigned int* return_err,
+	char* cigar,
+	int end_site,
+	int* return_start_site,
+	char* path,
+	int* return_path_length,
+	Word* matrix_bit,
+	bitmapper_bs_iter* adjust_end_site
+	)
+{
+
+	int start_site = end_site - t_length + 1;
+	int i = 0;
+	int tmp_err = 0;
+
+	if ((*return_err) == 0)
+	{
+		///其实这里还要置位path, 要把path全部置为0
+		(*return_start_site) = start_site;
+
+
+
+		return 1;
+	}
+
+
+
+	if (try_cigar(pattern, p_length, text, t_length, end_site, path,
+		return_err, return_start_site, return_path_length))
+	{
+		return 6;
+	}
+
+
+	/**
+	if (trim_Ns(pattern, p_length, text, t_length, errthold, return_err, return_start_site, adjust_end_site, end_site))
+	{
+		return 6;
+	}
+	**/
+	
+
+
+	///这个是那个需要预处理的向量
+	Word Peq[256];
+
+	int band_length = (errthold << 1) + 1;
+	///int i = 0;
+	Word tmp_Peq_1 = (Word)1;
+
+	Peq['A'] = (Word)0;
+	Peq['T'] = (Word)0;
+	Peq['G'] = (Word)0;
+	Peq['C'] = (Word)0;
+
+
+	Word Peq_A;
+	Word Peq_T;
+	Word Peq_C;
+	Word Peq_G;
+
+
+	///band_length = 2k + 1
+	///这是把pattern的前2k + 1个字符预处理
+	///pattern[0]对应Peq[0]
+	///pattern[2k]对应Peq[2k]
+	for (i = 0; i<band_length; i++)
+	{
+		Peq[pattern[i]] = Peq[pattern[i]] | tmp_Peq_1;
+		tmp_Peq_1 = tmp_Peq_1 << 1;
+	}
+
+	Peq['T'] = Peq['T'] | Peq['C'];
+
+	Peq_A = Peq['A'];
+	Peq_C = Peq['C'];
+	Peq_T = Peq['T'];
+	Peq_G = Peq['G'];
+
+
+	memset(Peq, 0, sizeof(Word)* 256);
+
+
+	Peq['A'] = Peq_A;
+	Peq['C'] = Peq_C;
+	Peq['T'] = Peq_T;
+	Peq['G'] = Peq_G;
+
+
+
+
+	Word Mask = ((Word)1 << (errthold << 1));
+
+	Word VP = 0;
+	Word VN = 0;
+	Word X = 0;
+	Word D0 = 0;
+	Word HN = 0;
+	Word HP = 0;
+
+
+	i = 0;
+
+	int err = 0;
+
+	Word err_mask = (Word)1;
+
+
+	///band_down = 2k
+	///i_bd = 2k
+	///int i_bd = i + band_down;
+	int i_bd = (errthold << 1);
+
+
+	int last_high = (errthold << 1);
+
+
+	/// t_length_1 = SEQ_LENGTH - 1
+	int t_length_1 = t_length - 1;
+	//while(i<t_length)
+
+	///Word inner_i;
+	Word column_start;
+
+	int current_err = 0;
+
+
+
+	while (i<t_length_1)
+	{
+
+
+		///pattern[0]在Peq[2k], 而pattern[2k]在Peq[0]
+		X = Peq[text[i]] | VN;
+
+
+		D0 = ((VP + (X&VP)) ^ VP) | X;
+
+
+		HN = VP&D0;
+
+
+
+		HP = VN | ~(VP | D0);
+
+
+		X = D0 >> 1;
+
+
+		VN = X&HP;
+
+
+		VP = HN | ~(X | HP);
+
+
+
+
+		if (!(D0&err_mask))
+		{
+			++current_err;
+		}
+
+
+
+
+		///pattern[0]在Peq[2k], 而pattern[2k]在Peq[0]
+		//右移实际上是把pattern[0]移掉了
+		Peq['A'] = Peq['A'] >> 1;
+		Peq['C'] = Peq['C'] >> 1;
+		Peq['G'] = Peq['G'] >> 1;
+		Peq['T'] = Peq['T'] >> 1;
+
+
+		++i;
+		++i_bd;
+		///这是把新的pattern[2k]加进来, 这貌似是加到Peq[2k]上了
+		Peq[pattern[i_bd]] = Peq[pattern[i_bd]] | Mask;
+
+
+		Peq['T'] = Peq['T'] | Peq['C'];
+
+		///每8个元素一存
+		column_start = i << 3;
+
+		matrix_bit[column_start] = D0;
+		matrix_bit[column_start + 1] = VP;
+		matrix_bit[column_start + 2] = VN;
+		matrix_bit[column_start + 3] = HP;
+		matrix_bit[column_start + 4] = HN;
+	}
+
+
+
+
+
+	///这个循环拿出来是为了防止内存泄露
+	///其实也就是循环里的最后一行语句吧
+	///完全可以把pattern增大一位
+	///不过这样也好，可以减少计算开销
+	X = Peq[text[i]] | VN;
+	D0 = ((VP + (X&VP)) ^ VP) | X;
+	HN = VP&D0;
+	HP = VN | ~(VP | D0);
+	X = D0 >> 1;
+	VN = X&HP;
+	VP = HN | ~(X | HP);
+
+
+	if (!(D0&err_mask))
+	{
+		++current_err;
+	}
+
+
+
+	///每8个元素一存
+	column_start = (i + 1) << 3;
+
+	matrix_bit[column_start] = D0;
+	matrix_bit[column_start + 1] = VP;
+	matrix_bit[column_start + 2] = VN;
+	matrix_bit[column_start + 3] = HP;
+	matrix_bit[column_start + 4] = HN;
+
+
+	///verify_edit_distance(pattern, text);
+	
+
+
+	/**************************************这一大堆东西可以不要**********************************************/
+	/**
+	int site = t_length - 1;
+	int return_site = -1;
+
+	
+
+	fprintf(stderr, "read: %s\n", text);
+	fprintf(stderr, "ref : %s\n", pattern);
+	fprintf(stderr, "errthold: %d\n", errthold);
+	fprintf(stderr, "t_length: %d\n", t_length);
+	fprintf(stderr, "p_length: %d\n", p_length);
+	
+
+	fprintf(stderr, "current_err: %d, site: %d\n", current_err, site);
+
+	if (current_err == *return_err)
+	{
+		return_site = site;
+
+		if (try_cigar(pattern, p_length, text, t_length, return_site, path,
+			return_err, return_start_site, return_path_length))
+		{
+			*adjust_end_site = return_site;
+			return 6;
+		}
+
+	}
+	int i_last = i;
+	i = 0;
+
+
+
+	while (i<errthold)
+	{
+		current_err = current_err + ((VP >> i)&(Word)1);
+		current_err = current_err - ((VN >> i)&(Word)1);
+		++i;
+
+		fprintf(stderr, "current_err: %d, site: %d\n", current_err, site + i);
+
+		if (current_err == *return_err)
+		{
+			return_site = site + i;
+
+			if (try_cigar(pattern, p_length, text, t_length, return_site, path,
+				return_err, return_start_site, return_path_length))
+			{
+				*adjust_end_site = return_site;
+				return 6;
+			}
+
+		}
+	}
+
+
+	while (i<last_high)
+	{
+		current_err = current_err + ((VP >> i)&(Word)1);
+		current_err = current_err - ((VN >> i)&(Word)1);
+		++i;
+
+		fprintf(stderr, "current_err: %d, site: %d\n", current_err, site + i);
+
+		if (current_err == *return_err)
+		{
+			return_site = site + i;
+
+			if (try_cigar(pattern, p_length, text, t_length, return_site, path,
+				return_err, return_start_site, return_path_length))
+			{
+				*adjust_end_site = return_site;
+				return 6;
+			}
+
+		}
+	}
+	
+	fprintf(stderr, "\n");
+	**/
+	/**************************************这一大堆东西可以不要**********************************************/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

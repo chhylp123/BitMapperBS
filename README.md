@@ -211,7 +211,9 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 
 ### Changelog ###
+(5) December 22, 2018: version 1.0.0.5 released. 
 
+    >>BitMapperBS recalculated CIGAR in SAM file in some extreme cases. 
 
 (4) December 11, 2018: version 1.0.0.4 released. 
 

@@ -304,9 +304,10 @@ int main(int argc, char *argv[])
 		Prepare_methy(fileName[0], chhy_ih_refGenName, refChromeCont);
 
 
-		methy_extract(0, Read_File1);
+		///methy_extract(0, Read_File1);
 
-		/**
+		int PE_distance = 500;
+		
 		if (!is_pairedEnd)
 		{
 
@@ -314,9 +315,8 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
-			methy_extract_PE(0, Read_File1);
+			methy_extract_PE(0, Read_File1, PE_distance);
 		}
-		**/
 	}
 
 

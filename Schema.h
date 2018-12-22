@@ -58,8 +58,8 @@ N-4
 
 typedef struct deduplicate_PE
 {
-	uint8_t* positive_bits;
-	uint8_t* negative_bits;
+	uint8_t* forward_bits;
+	uint8_t* rc_bits;
 	long long each_site_bits;
 	long long total_sites;
 	long long each_site_uint8;
@@ -69,6 +69,8 @@ typedef struct deduplicate_PE
 
 inline void init_deduplicate_PE(deduplicate_PE* de, long long each_site_bits, long long total_sites)
 {
+
+
 
 	de->each_site_bits = each_site_bits;
 	de->total_sites = total_sites;
@@ -80,23 +82,23 @@ inline void init_deduplicate_PE(deduplicate_PE* de, long long each_site_bits, lo
 		de->each_site_uint8++;
 	}
 
-	de->positive_bits = (uint8_t*)malloc(sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
-	de->negative_bits = (uint8_t*)malloc(sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+	de->forward_bits = (uint8_t*)malloc(sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+	de->rc_bits = (uint8_t*)malloc(sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
 
-	memset(de->positive_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
-	memset(de->negative_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+	memset(de->forward_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+	memset(de->rc_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
 
 }
 
 
 inline void re_init_deduplicate_PE(deduplicate_PE* de)
 {
-	memset(de->positive_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
-	memset(de->negative_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+	memset(de->forward_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
+	memset(de->rc_bits, 0, sizeof(uint8_t)*de->each_site_uint8*de->total_sites);
 }
 
 ///把i这个位置置1
-inline void set_deduplicate_PE_mask(deduplicate_PE* de, uint8_t* read_bits, bitmapper_bs_iter i)
+inline void set_deduplicate_PE_mask(deduplicate_PE* de, uint8_t* read_bits, bitmapper_bs_iter site, bitmapper_bs_iter i)
 {
 	bitmapper_bs_iter offset = i & 7;
 	uint8_t mask = 1;
@@ -104,12 +106,12 @@ inline void set_deduplicate_PE_mask(deduplicate_PE* de, uint8_t* read_bits, bitm
 
 	offset = i >> 3;
 
-	read_bits[offset] |= mask;
+	read_bits[offset + site*de->each_site_uint8] |= mask;
 }
 
 
 ///把i这个位置的值返回回来
-inline uint8_t get_deduplicate_PE_mask(deduplicate_PE* de, uint8_t* read_bits, bitmapper_bs_iter i)
+inline uint8_t get_deduplicate_PE_mask(deduplicate_PE* de, uint8_t* read_bits, bitmapper_bs_iter site, bitmapper_bs_iter i)
 {
 	bitmapper_bs_iter inner_offset = i & 7;
 	bitmapper_bs_iter offset = i >> 3;
@@ -117,7 +119,7 @@ inline uint8_t get_deduplicate_PE_mask(deduplicate_PE* de, uint8_t* read_bits, b
 
 	uint8_t mask = 1;
 
-	mask = (read_bits[offset] >> inner_offset) & mask;
+	mask = (read_bits[offset + site*de->each_site_uint8] >> inner_offset) & mask;
 
 	return mask;
 }
@@ -428,6 +430,18 @@ inline void init_methylation(Methylation* methy, int size)
 
 inline bitmapper_bs_iter get_key_pair_methylation(Pair_Methylation* methy, int i)
 {
+	/**
+	if ((*methy).R[0].r_length[i] & 32)  ///比到正向链
+	{
+		return (*methy).R[0].sites[i];
+	}
+	else
+	{
+		return (*methy).R[1].sites[i];
+	}
+
+	**/
+
 	
 	if ((*methy).R[1].sites[i] < (*methy).R[0].sites[i])
 	{
@@ -437,6 +451,7 @@ inline bitmapper_bs_iter get_key_pair_methylation(Pair_Methylation* methy, int i
 	{
 		return (*methy).R[0].sites[i];
 	}
+
 }
 
 /**
@@ -994,7 +1009,7 @@ inline void C_to_T_forward_array(char *Seq, char *bsSeq, int length, int* C_site
 
 void methy_extract(int thread_id, char* file_name);
 
-void methy_extract_PE(int thread_id, char* file_name);
+void methy_extract_PE(int thread_id, char* file_name, int PE_distance);
 
 
 ///min一定是个坐标, max一定是个坐标+长度
