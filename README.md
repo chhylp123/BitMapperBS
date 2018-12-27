@@ -151,8 +151,8 @@ We recommd users to first remove the duplicates by Picard or samtools, and then 
 | --sam | NULL| String | NULL | Output mapping results in SAM format (default). |
 | --bam | NULL| String | NULL | Output mapping results in BAM format. |
 | -e | -e | Double | 0.08 | Set the edit distance rate of read length, which is between 0 and 1. |
-| --min | NULL | Int | 0 | Minimum distance between a pair of end sequences. |
-| --max | NULL | Int | 0 | Maximum distance between a pair of end sequences. |
+| --min | NULL | Int | 0 | Minimum observed template length between a pair of end sequences. |
+| --max | NULL | Int | 0 | Maximum observed template length between a pair of end sequences. |
 | --threads | -t | Int | 1 | Set the number of CPU threads. |
 | --pbat | NULL | NULL | NULL | Map the bs-seq from pbat protocol. |
 
@@ -211,6 +211,12 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 
 ### Changelog ###
+
+(6) December 27, 2018: version 1.0.0.6 released. 
+
+    >>BitMapperBS fixed the bug of the option --min when aligning paired-end reads. 
+    >>Added support of BitMapperBS to report mismatch and indel rate in alignment.
+
 (5) December 22, 2018: version 1.0.0.5 released. 
 
     >>BitMapperBS recalculated CIGAR in SAM file in some extreme cases. 
