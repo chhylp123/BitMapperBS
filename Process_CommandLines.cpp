@@ -310,8 +310,10 @@ void Print_H()
   fprintf(stdout," -e [float]\t\tSet the edit distance rate of read length. This value is between 0 and 1 (default: 0.08 = 8%% of read length).\n");
   //fprintf(stdout, " -s [double]\t\tbs_score_threshold (default 0.3 of the read length).\n");
   //fprintf(stdout, " -d [double]\t\tbs_edit_distance_threshold (default 0.1 of the read length).\n");
-  fprintf(stdout," --min [int]\t\tMin distance allowed between a pair of end sequences (default: 0).\n");
-  fprintf(stdout," --max [int]\t\tMax distance allowed between a pair of end sequences (default: 500).\n");
+  ///fprintf(stdout," --min [int]\t\tMin distance allowed between a pair of end sequences (default: 0).\n");
+  ///fprintf(stdout," --max [int]\t\tMax distance allowed between a pair of end sequences (default: 500).\n");
+  fprintf(stdout, " --min [int]\t\tMin observed template length between a pair of end sequences (default: 0).\n");
+  fprintf(stdout, " --max [int]\t\tMax observed template length between a pair of end sequences (default: 500).\n");
   ///fprintf(stdout," --crop [int]\t\tTrim the reads to the given length.\n");
   fprintf(stdout," --threads, -t [int]\tSet the number of CPU threads (default: 1).\n");
   ///fprintf(stdout, " --seed, -s [int]\tSet the length of seed.\n");

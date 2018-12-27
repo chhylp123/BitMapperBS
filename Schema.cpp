@@ -38,7 +38,7 @@ char methy_hash[5] = { 'A', 'C', 'G', 'T', 'N' };
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.0.5";
+char *versionN = "1.0.0.6";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
@@ -55,6 +55,9 @@ bitmapper_bs_iter total_SA_length;
 
 long long unique_mapped_read[MAX_Thread];
 long long ambiguous_mapped_read[MAX_Thread];
+
+long long mapped_bases[MAX_Thread];
+long long error_mapped_bases[MAX_Thread];
 ///long long unmapped_read[MAX_Thread];
 
 int batch_read_size = 50000;
@@ -161,11 +164,15 @@ inline void load_batch_paired_read(Read* read_batch1, Read* read_batch2, int bat
 
 void get_mapping_informations
 (long long* number_of_read, long long* number_of_unique_mapped_read,
-long long* number_of_ambiguous_mapped_read, long long* number_of_unmapped_read)
+long long* number_of_ambiguous_mapped_read, long long* number_of_unmapped_read, 
+long long* number_of_mapped_bases,
+long long* number_of_mapped_errors)
 {
 	*number_of_read = 0;
 	*number_of_unique_mapped_read = 0;
 	*number_of_ambiguous_mapped_read = 0;
+	*number_of_mapped_bases = 0;
+	*number_of_mapped_errors = 0;
 
 	int i = 0;
 	for (i = 0; i<THREAD_COUNT; i++)
@@ -174,6 +181,8 @@ long long* number_of_ambiguous_mapped_read, long long* number_of_unmapped_read)
 		*number_of_unique_mapped_read += unique_mapped_read[i];
 		*number_of_ambiguous_mapped_read += ambiguous_mapped_read[i];
 		///*number_of_unmapped_read += unmapped_read[i];
+		*number_of_mapped_bases += mapped_bases[i];
+		*number_of_mapped_errors += error_mapped_bases[i];
 
 	}
 
@@ -11837,23 +11846,10 @@ inline int new_faster_verify_pairs(int best_mapp_occ1, int best_mapp_occ2, int e
 						{
 
 							current_sum_err = result1_array[inner_i].err + result2_array[inner_j].err;
-
 							/**
-							if (current_sum_err == 1 && best_mapp_occ1 == 3 && best_mapp_occ2 == 2)
-							{
-								fprintf(stderr, "result1_array[%lld].site: %lld\n", 
-									inner_i, result1_array[inner_i].site);
-								fprintf(stderr, "result2_array[%lld].site: %lld\n",
-									inner_j, result2_array[inner_j].site);
-
-								fprintf(stderr, "distance: %lld\n", distance);
-							}
-							**/
-						
-						
 							if (distance <= maxDistance_pair + current_sum_err
 								&&
-								distance >= minDistance_pair - current_sum_err)
+								distance >= minDistance_pair - current_sum_err)**/
 							{
 
 
@@ -11905,21 +11901,9 @@ inline int new_faster_verify_pairs(int best_mapp_occ1, int best_mapp_occ2, int e
 							current_sum_err = result1_array[inner_i].err + result2_array[inner_j].err;
 
 							/**
-							if (current_sum_err == 1 && best_mapp_occ1 == 3 && best_mapp_occ2 == 2)
-							{
-								fprintf(stderr, "result1_array[%lld].site: %lld\n",
-									inner_i, result1_array[inner_i].site);
-								fprintf(stderr, "result2_array[%lld].site: %lld\n",
-									inner_j, result2_array[inner_j].site);
-
-								fprintf(stderr, "distance: %lld\n", distance);
-							}
-							**/
-
-
 							if (distance <= maxDistance_pair + current_sum_err
 								&&
-								distance >= minDistance_pair - current_sum_err)
+								distance >= minDistance_pair - current_sum_err)**/
 							{
 
 								if (current_sum_err < best_sum_err)
@@ -14853,7 +14837,13 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 		init_buffer_sub_block(&current_sub_buffer);
 	}
 
+	
+	int max_length;
 
+
+
+	long long total_bases = 0;
+	long long error_bases = 0;
 
 
 
@@ -14912,8 +14902,17 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 
 
+		/*****************************有变化*********************************/
+		max_length = current_read1.length;
+		if (current_read2.length > max_length)
+		{
+			max_length = current_read2.length;
+		}
+
+
 		inner_maxDistance_pair = maxDistance_pair + large_error_threshold * 2;
-		inner_minDistance_pair = minDistance_pair - large_error_threshold * 2;
+		inner_minDistance_pair = minDistance_pair - large_error_threshold * 2 - max_length;
+		/*****************************有变化*********************************/
 
 
 
@@ -14981,12 +14980,6 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 			candidates_votes2,
 			&best_mapp_occ2,
 			&candidates_votes_length2);
-
-
-
-
-
-
 
 
 
@@ -15192,13 +15185,6 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 
 
-
-
-
-
-
-
-
 		mapping_pair = 0;
 
 
@@ -15286,6 +15272,9 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 
 
+			
+
+
 			//****************第二个read的后处理
 
 			paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
@@ -15301,7 +15290,8 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 				unique_matched_read++;
 
-
+				total_bases = total_bases + current_read1.length + current_read2.length;
+				error_bases = error_bases + result1.err + result2.err;
 
 
 
@@ -15373,6 +15363,11 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 	completedSeqCnt[thread_id] = enq_i;
 	unique_mapped_read[thread_id] = unique_matched_read;
 	ambiguous_mapped_read[thread_id] = ambious_matched_read;
+
+
+	mapped_bases[thread_id] = total_bases;
+	error_mapped_bases[thread_id] = error_bases;
+
 
 	/**
 	fprintf(stderr, "debug_1: %lld\n", debug_1);
@@ -16143,8 +16138,11 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 	}
 
 
+	int max_length;
 
 
+	long long total_bases = 0;
+	long long error_bases = 0;
 
 
 
@@ -16203,8 +16201,20 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 
 
 
+
+
+		/*****************************有变化*********************************/
+		max_length = current_read1.length;
+		if (current_read2.length > max_length)
+		{
+			max_length = current_read2.length;
+		}
+
+
 		inner_maxDistance_pair = maxDistance_pair + large_error_threshold * 2;
-		inner_minDistance_pair = minDistance_pair - large_error_threshold * 2;
+		inner_minDistance_pair = minDistance_pair - large_error_threshold * 2 - max_length;
+		/*****************************有变化*********************************/
+
 
 
 
@@ -17079,6 +17089,9 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 			{
 				unique_matched_read++;
 
+				total_bases = total_bases + current_read1.length + current_read2.length;
+				error_bases = error_bases + result1.err + result2.err;
+
 				if (output_methy == 1)
 				{
 					/**
@@ -17144,6 +17157,12 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 	completedSeqCnt[thread_id] = enq_i;
 	unique_mapped_read[thread_id] = unique_matched_read;
 	ambiguous_mapped_read[thread_id] = ambious_matched_read;
+
+
+	mapped_bases[thread_id] = total_bases;
+	error_mapped_bases[thread_id] = error_bases;
+
+
 
 	/**
 	fprintf(stderr, "debug_1: %lld\n", debug_1);
@@ -17518,6 +17537,15 @@ void* Map_Pair_Seq_split_fast(void* arg)
 	int extra_seed_flag1, extra_seed_flag2;
 	int paired_end_distance;
 
+
+	int max_length;
+
+
+
+	long long total_bases = 0;
+	long long error_bases = 0;
+
+
 	//正向模式
 	i = 0;
 	while (file_flag != 0)
@@ -17566,8 +17594,17 @@ void* Map_Pair_Seq_split_fast(void* arg)
 			best_sum_err = 2 * large_error_threshold + 1;
 
 
+			/*****************************有变化*********************************/
+			max_length = read_batch1[i].length;
+			if (read_batch2[i].length > max_length)
+			{
+				max_length = read_batch2[i].length;
+			}
+
+
 			inner_maxDistance_pair = maxDistance_pair + large_error_threshold * 2;
-			inner_minDistance_pair = minDistance_pair - large_error_threshold * 2;
+			inner_minDistance_pair = minDistance_pair - large_error_threshold * 2 - max_length;
+			/*****************************有变化*********************************/
 
 
 			read_1_jump = 0;
@@ -17925,6 +17962,10 @@ void* Map_Pair_Seq_split_fast(void* arg)
 					(result2.site + matched_length2 <= _ih_refGenName[result2.chrome_id]._rg_chrome_length + 1))
 				{
 					unique_matched_read++;
+
+
+					total_bases = total_bases + read_batch1[i].length + read_batch2[i].length;
+					error_bases = error_bases + result1.err + result2.err;
 					
 					if (output_methy == 1)
 					{
@@ -18023,6 +18064,10 @@ void* Map_Pair_Seq_split_fast(void* arg)
 	completedSeqCnt[thread_id] = enq_i;
 	unique_mapped_read[thread_id] = unique_matched_read;
 	ambiguous_mapped_read[thread_id] = ambious_matched_read;
+
+
+	mapped_bases[thread_id] = total_bases;
+	error_mapped_bases[thread_id] = error_bases;
 
 	fprintf(stdout, "thread %d completed!\n", thread_id);
 
@@ -18408,6 +18453,25 @@ void* Map_Pair_Seq_split(void* arg)
 	int extra_seed_flag1, extra_seed_flag2;
 	int paired_end_distance;
 
+
+
+
+
+	long long total_bases = 0;
+	long long error_bases = 0;
+
+
+
+
+
+
+
+
+
+
+
+	int max_length;
+
 	//正向模式
 	i = 0;
 	while (file_flag != 0)
@@ -18456,10 +18520,22 @@ void* Map_Pair_Seq_split(void* arg)
 
 			
 
+			
+
+
+			/*****************************有变化*********************************/
+			max_length = read_batch1[i].length;
+			if (read_batch2[i].length > max_length)
+			{
+				max_length = read_batch2[i].length;
+			}
 
 
 			inner_maxDistance_pair = maxDistance_pair + large_error_threshold * 2;
-			inner_minDistance_pair = minDistance_pair - large_error_threshold * 2;
+			inner_minDistance_pair = minDistance_pair - large_error_threshold * 2 - max_length;
+			/*****************************有变化*********************************/
+
+
 
 
 
@@ -19314,6 +19390,10 @@ void* Map_Pair_Seq_split(void* arg)
 					unique_matched_read++;
 
 
+					total_bases = total_bases + read_batch1[i].length + read_batch2[i].length;
+					error_bases = error_bases + result1.err + result2.err;
+
+
 
 					if (output_methy == 1)
 					{
@@ -19405,6 +19485,9 @@ void* Map_Pair_Seq_split(void* arg)
 	completedSeqCnt[thread_id] = enq_i;
 	unique_mapped_read[thread_id] = unique_matched_read;
 	ambiguous_mapped_read[thread_id] = ambious_matched_read;
+
+	mapped_bases[thread_id] = total_bases;
+	error_mapped_bases[thread_id] = error_bases;
 
 	fprintf(stdout, "thread %d completed!\n", thread_id);
 
@@ -19675,7 +19758,8 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 
 
-
+	long long total_bases = 0;
+	long long error_bases = 0;
 
 
 
@@ -19774,6 +19858,9 @@ int Map_Single_Seq_end_to_end(int thread_id)
 				{
 					unique_matched_read++;
 					matched_read++;
+
+					total_bases = total_bases + current_read.length;
+
 				}
 
 				
@@ -20071,6 +20158,10 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 				unique_matched_read++;
 				matched_read++;
+
+				total_bases = total_bases + current_read.length;
+				error_bases = error_bases + 1;
+				
 			}
 
 			///debug_1_mismatch++;
@@ -20166,6 +20257,9 @@ int Map_Single_Seq_end_to_end(int thread_id)
 				{
 					matched_read++;
 					unique_matched_read++;
+
+					total_bases = total_bases + current_read.length;
+					error_bases = error_bases + candidates_votes[0].err;
 				}
 
 
@@ -20202,6 +20296,9 @@ int Map_Single_Seq_end_to_end(int thread_id)
 	completedSeqCnt[thread_id] = enq_i;
 	unique_mapped_read[thread_id] = unique_matched_read;
 	ambiguous_mapped_read[thread_id] = matched_read - unique_matched_read;
+
+	mapped_bases[thread_id] = total_bases;
+	error_mapped_bases[thread_id] = error_bases;
 
 	/**
 	fprintf(stderr, "debug_0_mismatch: %lld\n", debug_0_mismatch);
@@ -20501,6 +20598,10 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 	}
 
 
+	long long total_bases = 0;
+	long long error_bases = 0;
+
+
 
 
 	//正向模式
@@ -20634,6 +20735,8 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 				{
 					unique_matched_read++;
 					matched_read++;
+
+					total_bases = total_bases + current_read.length;
 				}
 
 				i++;
@@ -21011,6 +21114,9 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 			{
 				unique_matched_read++;
 				matched_read++;
+
+				total_bases = total_bases + current_read.length;
+				error_bases = error_bases + 1;
 			}
 
 		}
@@ -21127,6 +21233,10 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 				{
 					unique_matched_read++;
 					matched_read++;
+
+
+					total_bases = total_bases + current_read.length;
+					error_bases = error_bases + candidates_votes[0].err;
 				}
 				
 
@@ -21177,6 +21287,8 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 	completedSeqCnt[thread_id] = enq_i;
 	unique_mapped_read[thread_id] = unique_matched_read;
 	ambiguous_mapped_read[thread_id] = matched_read - unique_matched_read;
+	mapped_bases[thread_id] = total_bases;
+	error_mapped_bases[thread_id] = error_bases;
 
 
 	////fprintf(stderr, "debug_1_mismatch: %lld\n", debug_1_mismatch);
@@ -21849,6 +21961,9 @@ void* Map_Single_Seq_split(void* arg)
 
 	int map_among_references;
 
+	long long total_bases = 0;
+	long long error_bases = 0;
+
 
 	file_flag = 1;
 	while (file_flag != 0)
@@ -21958,6 +22073,8 @@ void* Map_Single_Seq_split(void* arg)
 					{
 						unique_matched_read++;
 						matched_read++;
+
+						total_bases = total_bases + read_batch[i].length;
 					}
 
 					
@@ -22301,6 +22418,9 @@ void* Map_Single_Seq_split(void* arg)
 				{
 					unique_matched_read++;
 					matched_read++;
+
+					total_bases = total_bases + read_batch[i].length;
+					error_bases = error_bases + 1;
 				}
 
 				//debug_1_mismatch++;
@@ -22416,6 +22536,9 @@ void* Map_Single_Seq_split(void* arg)
 					{
 						matched_read++;
 						unique_matched_read++;
+
+						total_bases = total_bases + read_batch[i].length;
+						error_bases = error_bases + candidates_votes[0].err;
 					}
 					
 
@@ -22498,6 +22621,11 @@ void* Map_Single_Seq_split(void* arg)
 	completedSeqCnt[thread_id] = enq_i;
 	unique_mapped_read[thread_id] = unique_matched_read;
 	ambiguous_mapped_read[thread_id] = matched_read - unique_matched_read;
+
+	mapped_bases[thread_id] = total_bases;
+	error_mapped_bases[thread_id] = error_bases;
+
+
 
 	///fprintf(stdout, "thread %d completed!\n", thread_id);
 
@@ -22788,6 +22916,11 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 
 
+	long long total_bases = 0;
+	long long error_bases = 0;
+
+
+
 	file_flag = 1;
 	while (file_flag != 0)
 	{
@@ -22882,6 +23015,8 @@ void* Map_Single_Seq_split_pbat(void* arg)
 					{
 						unique_matched_read++;
 						matched_read++;
+
+						total_bases = total_bases + read_batch[i].length;
 					}
 
 				
@@ -23226,6 +23361,9 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 					unique_matched_read++;
 					matched_read++;
+
+					total_bases = total_bases + read_batch[i].length;
+					error_bases = error_bases + 1;
 				}
 
 				///debug_1_mismatch++;
@@ -23332,6 +23470,9 @@ void* Map_Single_Seq_split_pbat(void* arg)
 					{
 						matched_read++;
 						unique_matched_read++;
+
+						total_bases = total_bases + read_batch[i].length;
+						error_bases = error_bases + candidates_votes[0].err;
 					}
 
 					
@@ -23423,6 +23564,9 @@ void* Map_Single_Seq_split_pbat(void* arg)
 	completedSeqCnt[thread_id] = enq_i;
 	unique_mapped_read[thread_id] = unique_matched_read;
 	ambiguous_mapped_read[thread_id] = matched_read - unique_matched_read;
+
+	mapped_bases[thread_id] = total_bases;
+	error_mapped_bases[thread_id] = error_bases;
 
 	///fprintf(stdout, "thread %d completed!\n", thread_id);
 

@@ -339,7 +339,8 @@ void Prepare_methy(char *genFileName, _rg_name_l *chhy_ih_refGenName, int chhy_r
 
 
 void get_mapping_informations(long long* number_of_read, long long* number_of_unique_mapped_read,
-	long long* number_of_ambiguous_mapped_read, long long* number_of_unmapped_read);
+	long long* number_of_ambiguous_mapped_read, long long* number_of_unmapped_read, long long* number_of_mapped_bases, 
+	long long* number_of_mapped_errors);
 
 
 

@@ -276,8 +276,10 @@ int main(int argc, char *argv[])
 	  long long number_of_unique_mapped_read;
 	  long long number_of_ambiguous_mapped_read;
 	  long long number_of_unmapped_read;
+	  long long number_of_mapped_bases;
+	  long long number_of_mapped_errors;
 	  get_mapping_informations(&number_of_read, &number_of_unique_mapped_read, &number_of_ambiguous_mapped_read,
-		  &number_of_unmapped_read);
+		  &number_of_unmapped_read, &number_of_mapped_bases, &number_of_mapped_errors);
 
 	  fprintf(stdout, "%-48s%lld\n", "No. of Reads:", number_of_read);
 	  fprintf(stdout, "%-48s%lld (%0.2f\%)\n", "No. of Unique Mapped Reads:", 
@@ -286,6 +288,9 @@ int main(int argc, char *argv[])
 		  number_of_ambiguous_mapped_read, ((double)number_of_ambiguous_mapped_read / (double)number_of_read) * 100);
 	  fprintf(stdout, "%-48s%lld (%0.2f\%)\n", "No. of Unmapped Reads:", 
 		  number_of_unmapped_read, ((double)number_of_unmapped_read / (double)number_of_read) * 100);
+
+	  fprintf(stdout, "%-47s %0.2f\%\n", "Mismatch and Indel Rate:",
+		  ((double)number_of_mapped_errors / (double)number_of_mapped_bases) * 100);
 
     }
 	else if (is_methy)
