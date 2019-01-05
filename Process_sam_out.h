@@ -257,7 +257,7 @@ inline void output_to_buffer_int(Output_buffer_sub_block* sub_block, bitmapper_b
 	
 }
 
-int init_output_methy(char *fileName);
+int init_output_methy(char *fileName, int* need_context);
 
 
 void output_single_methy_CpG(bitmapper_bs_iter tmp_pos, char* chrome_name, int nmethyl, int total);

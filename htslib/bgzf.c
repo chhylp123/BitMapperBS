@@ -2306,10 +2306,22 @@ static int chhy_write_disk(BGZF *main_fp, BGZF *buffer_fp, bgzf_buffer* j)
 
 int chhy_lazy_flush_pure(BGZF *main_fp, BGZF *buffer_fp, bgzf_buffer* j)
 {
+	
+
+
 	//block_offset代表uncompressed_block有多少字节待压缩
 	//如果block_offset为0, 则代表uncompressed_block里没数据, 则没必要提交到缓冲区去处理
 	if (buffer_fp->block_offset)
 	{
+
+		if (buffer_fp->block_offset > BGZF_BLOCK_SIZE)
+		{
+			fprintf(stderr, "\n\n\nBAM ERROR ....\n\n\n");
+			exit(0);
+		}
+
+		////fprintf(stderr, "buffer_fp->block_offset: %d\n", buffer_fp->block_offset);
+
 		return chhy_write_disk(main_fp, buffer_fp, j);
 	}
 	else
@@ -2324,7 +2336,8 @@ int chhy_lazy_flush_pure(BGZF *main_fp, BGZF *buffer_fp, bgzf_buffer* j)
 int chhy_bgzf_flush_try_pure(BGZF *main_fp, BGZF *buffer_fp, ssize_t size, bgzf_buffer* j)
 {
 	//注意这里是buffer_fp
-	if (buffer_fp->block_offset + size > BGZF_BLOCK_SIZE)
+	///if (buffer_fp->block_offset + size > BGZF_BLOCK_SIZE)
+	if (buffer_fp->block_offset + size >= BGZF_BLOCK_SIZE)
 	{
 		return chhy_lazy_flush_pure(main_fp, buffer_fp, j);
 	}
@@ -2356,9 +2369,13 @@ ssize_t chhy_bgzf_write_pure(BGZF *main_fp, BGZF *buffer_fp, const void *data, s
 		buffer_fp->block_offset += copy_length;
 		input += copy_length;
 		remaining -= copy_length;
+		/**
 		if (buffer_fp->block_offset == BGZF_BLOCK_SIZE) {  ///只有达到一个BGZF_BLOCK_SIZE的时候, 才会flush
 			if (chhy_lazy_flush_pure(main_fp, buffer_fp, j) != 0) return -1;
 		}
+		**/
+
+		
 	}
 	return length - remaining;
 }

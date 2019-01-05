@@ -66,9 +66,15 @@ int total)
 		precent = (double)nmethyl / (double)total;
 	}
 
-
+	
 	fprintf(_out_fp_methy1, "%s\t%llu\t%llu\t%d\t%d\t%d\n",
 		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
+	
+
+	/**
+	fprintf(_out_fp_methy1, "%s\t%llu\t%llu\t%f\t%d\t%d\n",
+		chrome_name, tmp_pos, tmp_pos + 1, precent * 100, nmethyl, nunmethyl);
+	**/
 }
 
 
@@ -92,9 +98,15 @@ int total)
 		precent = (double)nmethyl / (double)total;
 	}
 
-
+	
 	fprintf(_out_fp_methy2, "%s\t%llu\t%llu\t%d\t%d\t%d\n",
 		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
+	
+
+	/**
+	fprintf(_out_fp_methy2, "%s\t%llu\t%llu\t%f\t%d\t%d\n",
+		chrome_name, tmp_pos, tmp_pos + 1, precent * 100, nmethyl, nunmethyl);
+		**/
 }
 
 
@@ -117,62 +129,80 @@ int total)
 		precent = (double)nmethyl / (double)total;
 	}
 
-
+	
 	fprintf(_out_fp_methy3, "%s\t%llu\t%llu\t%d\t%d\t%d\n",
 		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
+	
+
+	/**
+	fprintf(_out_fp_methy3, "%s\t%llu\t%llu\t%f\t%d\t%d\n",
+		chrome_name, tmp_pos, tmp_pos + 1, precent * 100, nmethyl, nunmethyl);
+		**/
 }
 
 
 
 
-int init_output_methy(char *fileName)
+int init_output_methy(char *fileName, int* need_context)
 {
 	char output_name[NAME_LENGTH];
 
-
-
-	sprintf(output_name, "%s_CpG.bedGraph", fileName);
-
-	fprintf(stderr, "%s\n", output_name);
-
-	_out_fp_methy1 = fopen(output_name, "w");
-
-	if (_out_fp_methy1 == NULL)
+	if (need_context[0])
 	{
-		return 0;
+		sprintf(output_name, "%s_CpG.bedGraph", fileName);
+
+		fprintf(stdout, "Output CpG context methylation metrics to %s ...\n", output_name);
+
+		_out_fp_methy1 = fopen(output_name, "w");
+
+		if (_out_fp_methy1 == NULL)
+		{
+			return 0;
+		}
+
+		fprintf(_out_fp_methy1, "track type=\"bedGraph\" description=\"CpG methylation levels\"\n");
+	}
+
+	
+
+	
+
+
+
+	if (need_context[1])
+	{
+
+		sprintf(output_name, "%s_CHG.bedGraph", fileName);
+
+		fprintf(stdout, "Output CHG context methylation metrics to %s ...\n", output_name);
+
+		_out_fp_methy2 = fopen(output_name, "w");
+
+		if (_out_fp_methy2 == NULL)
+		{
+			return 0;
+		}
+
+		fprintf(_out_fp_methy2, "track type=\"bedGraph\" description=\"CHG methylation levels\"\n");
 	}
 
 
-
-
-
-	sprintf(output_name, "%s_CHG.bedGraph", fileName);
-
-	fprintf(stderr, "%s\n", output_name);
-
-	_out_fp_methy2 = fopen(output_name, "w");
-
-	if (_out_fp_methy2 == NULL)
+	if (need_context[2])
 	{
-		return 0;
+
+		sprintf(output_name, "%s_CHH.bedGraph", fileName);
+
+		fprintf(stdout, "Output CHH context methylation metrics to %s ...\n", output_name);
+
+		_out_fp_methy3 = fopen(output_name, "w");
+
+		if (_out_fp_methy3 == NULL)
+		{
+			return 0;
+		}
+		fprintf(_out_fp_methy3, "track type=\"bedGraph\" description=\"CHH methylation levels\"\n");
+
 	}
-
-
-
-
-	sprintf(output_name, "%s_CHH.bedGraph", fileName);
-
-	fprintf(stderr, "%s\n", output_name);
-
-	_out_fp_methy3 = fopen(output_name, "w");
-
-	if (_out_fp_methy3 == NULL)
-	{
-		return 0;
-	}
-
-
-
 
 
 	return 1;
@@ -409,8 +439,9 @@ inline void pop_single_methy_buffer(Methylation* curr_sub_block)
 	///这四个数组构成一个完整的元素
 	bitmapper_bs_iter* sites;  ///这个要交换
 	uint16_t* r_length;  ///这个要交换
-	uint16_t* r_size;  ///这个要交换
-	char** reads;  ///这个要交换
+	uint16_t* r_real_length;  ///这个要交换
+	uint16_t* r_size_3_bit;  ///这个要交换
+	bitmapper_bs_iter** reads_3_bit;  ///这个要交换
 
 
 	cut_index = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].cut_index;
@@ -425,6 +456,9 @@ inline void pop_single_methy_buffer(Methylation* curr_sub_block)
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_length = curr_sub_block->r_length;
 	curr_sub_block->r_length = r_length;
 
+
+	/*************这里要改**************/
+	/**
 	r_size = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size;
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size = curr_sub_block->r_size;
 	curr_sub_block->r_size = r_size;
@@ -433,6 +467,22 @@ inline void pop_single_methy_buffer(Methylation* curr_sub_block)
 	reads = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads;
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads = curr_sub_block->reads;
 	curr_sub_block->reads = reads;
+	**/
+
+
+	r_size_3_bit = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size_3_bit;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size_3_bit = curr_sub_block->r_size_3_bit;
+	curr_sub_block->r_size_3_bit = r_size_3_bit;
+
+	reads_3_bit = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads_3_bit;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads_3_bit = curr_sub_block->reads_3_bit;
+	curr_sub_block->reads_3_bit = reads_3_bit;
+
+	r_real_length = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_real_length;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_real_length = curr_sub_block->r_real_length;
+	curr_sub_block->r_real_length = r_real_length;
+
+	/*************这里要改**************/
 
 	
 	curr_sub_block->current_size = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].current_size;
@@ -542,8 +592,9 @@ inline void push_single_methy_buffer(Methylation* curr_sub_block)
 	///这四个数组构成一个完整的元素
 	bitmapper_bs_iter* sites;  ///这个要交换
 	uint16_t* r_length;  ///这个要交换
-	uint16_t* r_size;  ///这个要交换
-	char** reads;  ///这个要交换
+	uint16_t* r_real_length;  ///这个要交换
+	uint16_t* r_size_3_bit;  ///这个要交换
+	bitmapper_bs_iter** reads_3_bit;  ///这个要交换
 
 
 	cut_index = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].cut_index;
@@ -558,6 +609,17 @@ inline void push_single_methy_buffer(Methylation* curr_sub_block)
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_length = curr_sub_block->r_length;
 	curr_sub_block->r_length = r_length;
 
+
+
+
+
+
+
+
+
+
+	/*************这里要改**************/
+	/**
 	r_size = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size;
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size = curr_sub_block->r_size;
 	curr_sub_block->r_size = r_size;
@@ -566,6 +628,42 @@ inline void push_single_methy_buffer(Methylation* curr_sub_block)
 	reads = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads;
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads = curr_sub_block->reads;
 	curr_sub_block->reads = reads;
+	**/
+
+
+
+
+
+	r_size_3_bit = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size_3_bit;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size_3_bit = curr_sub_block->r_size_3_bit;
+	curr_sub_block->r_size_3_bit = r_size_3_bit;
+
+
+	reads_3_bit = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads_3_bit;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].reads_3_bit = curr_sub_block->reads_3_bit;
+	curr_sub_block->reads_3_bit = reads_3_bit;
+
+
+
+	r_real_length = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_real_length;
+	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_real_length = curr_sub_block->r_real_length;
+	curr_sub_block->r_real_length = r_real_length;
+
+
+
+
+
+	/*************这里要改**************/
+
+
+
+
+
+
+
+
+
+
 
 
 
