@@ -650,11 +650,7 @@ int chhy_bam_write1_pure(BGZF *main_fp, BGZF *buff_fp, const bam1_t *b, bgzf_buf
 	x[5] = c->mtid;
 	x[6] = c->mpos;
 	x[7] = c->isize;
-
-
-	///ok = (chhy_bgzf_flush_try_pure(main_fp, buff_fp, 4 + block_len,j) >= 0);   ///这个里面有入队列的
-	ok = 1;
-
+	ok = (chhy_bgzf_flush_try_pure(main_fp, buff_fp, 4 + block_len,j) >= 0);   ///这个里面有入队列的
 	if (main_fp->is_be) {
 		for (i = 0; i < 8; ++i) ed_swap_4p(x + i);
 		y = block_len;

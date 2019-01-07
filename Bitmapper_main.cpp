@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
 
 			 if (output_methy == 1)
 			 {
-				 ///out_paired_distance_statistic();
+				 out_paired_distance_statistic();
 			 }
 
 
@@ -296,9 +296,6 @@ int main(int argc, char *argv[])
 	else if (is_methy)
 	{
 
-		fprintf(stdout, "minVariantDepth: %d\n", minVariantDepth);
-		fprintf(stdout, "maxVariantFrac: %f\n", maxVariantFrac);
-
 		sprintf(fileName[1], "%s.methy", fileName[1]);
 
 		if (!Load_Methy_Index(thread_e, &chhy_ih_refGenName, &refChromeCont, fileName[1]))
@@ -307,39 +304,23 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		///need_context[0]是CpG
-		///need_context[1]是CHG
-		///need_context[2]是CHH
-		///int need_context[3] = { 1, 0, 0 };
-		int need_context[3];
-		need_context[0] = CpG;
-		need_context[1] = CHG;
-		need_context[2] = CHH;
-
-		get_genome_cuts(Read_File1);
-
-		fprintf(stdout, "genome_cuts: %d\n", genome_cuts);
-		fprintf(stdout, "PE_distance: %d\n", maxDistance_pair);
-
-		init_output_methy(Read_File1, need_context);
+		init_output_methy(Read_File1);
 
 		Prepare_methy(fileName[0], chhy_ih_refGenName, refChromeCont);
 
-		
-		
 
-		///int PE_distance = 500;
+		///methy_extract(0, Read_File1);
+
+		int PE_distance = 500;
 		
 		if (!is_pairedEnd)
 		{
-			
-			fprintf(stdout, "Extract from single-end alignment ...\n");
-			methy_extract(0, Read_File1, need_context);
+
+			methy_extract(0, Read_File1);
 		}
 		else
 		{
-			fprintf(stdout, "Extract from paired-end alignment ...\n");
-			methy_extract_PE(0, Read_File1, maxDistance_pair, need_context);
+			methy_extract_PE(0, Read_File1, PE_distance);
 		}
 	}
 

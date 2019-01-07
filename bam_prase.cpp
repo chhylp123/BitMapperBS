@@ -239,8 +239,6 @@ void convert_string_to_bam(char* alignment, long long alignment_length, bam_phra
 	memset(bam_groups->b, 0, sizeof(bam1_t));
 	int ret = sam_parse1(&bam_groups->line, bitmapperBS_bam.bam_header, bam_groups->b);
 	///sam_write1(bitmapperBS_bam.bam_file, bitmapperBS_bam.bam_header, cell->b);
-	///这个是防止一行alignment在多线程情况下被bam打断的
-	chhy_bgzf_flush_try_pure(bitmapperBS_bam.bam_file->fp.bgzf, bam_groups->bgzf, alignment_length + 1, &(bam_groups->result));
 	chhy_bam_write1_pure(bitmapperBS_bam.bam_file->fp.bgzf, bam_groups->bgzf, bam_groups->b, &(bam_groups->result));
 }
 

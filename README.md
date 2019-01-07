@@ -212,11 +212,6 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 ### Changelog ###
 
-(7) January 5, 2019: version 1.0.0.7 released.
-
-    >>BitMapperBS fixed the bug of BAM file in extreme cases.
-
-
 (6) December 27, 2018: version 1.0.0.6 released. 
 
     >>BitMapperBS fixed the bug of the option --min when aligning paired-end reads. 
