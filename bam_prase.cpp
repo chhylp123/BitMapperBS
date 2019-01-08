@@ -239,6 +239,7 @@ void convert_string_to_bam(char* alignment, long long alignment_length, bam_phra
 	memset(bam_groups->b, 0, sizeof(bam1_t));
 	int ret = sam_parse1(&bam_groups->line, bitmapperBS_bam.bam_header, bam_groups->b);
 	///sam_write1(bitmapperBS_bam.bam_file, bitmapperBS_bam.bam_header, cell->b);
+	///至少当cigar不超过0xffff时，一行alignment在bam里不会被分开
 	chhy_bam_write1_pure(bitmapperBS_bam.bam_file->fp.bgzf, bam_groups->bgzf, bam_groups->b, &(bam_groups->result));
 }
 

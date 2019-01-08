@@ -5,7 +5,6 @@
 */
 
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,10 +34,31 @@
 
 char methy_hash[5] = { 'A', 'C', 'G', 'T', 'N' };
 
+
+char char_to_3bit[128] = {
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 0, 4, 1, 4, 4, 4, 2,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 3, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4,
+	4, 4, 4, 4, 4, 4, 4, 4
+};
+
+
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.0.6";
+char *versionN = "1.0.0.7";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
@@ -345,9 +365,11 @@ void open_methy_output(Methylation_Output* methy_out, char* file_name, bitmapper
 
 	for (i = 0; i < (*methy_out).genome_cut; i++)
 	{
-		sprintf(tmp_file_name, "%s%d", file_name, i);
+		sprintf(tmp_file_name, "%s_%d.bmm", file_name, i);
 		(*methy_out).files[i] = fopen(tmp_file_name, "w");
 		(*methy_out).cut_index[i] = 0;
+
+		fprintf((*methy_out).files[i], "%llu\t%d\t%d\t", (*methy_out).genome_cut, maxDistance_pair, is_pairedEnd);
 
 		fprintf((*methy_out).files[i], "%llu\t", cut_length*i);
 
@@ -512,6 +534,23 @@ void Prepare_alignment(char* outputFileName, char *genFileName, _rg_name_l *chhy
 
 	if (output_methy == 1)
 	{
+		if (is_pairedEnd)
+		{
+
+			long long total_bit = maxDistance_pair*genome_cuts;
+
+			genome_cuts = total_bit / 500;
+
+			if (total_bit % 500 != 0)
+			{
+				genome_cuts++;
+			}
+
+			
+		}
+
+		///genome_cuts = 64;
+		fprintf(stdout, "genome_cuts: %d\n", genome_cuts);
 
 		///cut_length = (_msf_refGenLength * 2) / genome_cuts;
 		cut_length = _msf_refGenLength / genome_cuts;
@@ -536,7 +575,19 @@ void Prepare_alignment(char* outputFileName, char *genFileName, _rg_name_l *chhy
 
 }
 
+void get_genome_cuts(char* file_name)
+{
+	char tmp_file_name[SEQ_MAX_LENGTH];
 
+	sprintf(tmp_file_name, "%s_%d.bmm", file_name, 0);
+	FILE* read_file = fopen(tmp_file_name, "r");
+
+	bitmapper_bs_iter start_pos, end_pos;
+
+	fscanf(read_file, "%llu\t%d\t%d\t%llu\t%llu\n", &genome_cuts, &maxDistance_pair, &is_pairedEnd, &start_pos, &end_pos);
+
+	fclose(read_file);
+}
 
 void Prepare_methy(char *genFileName, _rg_name_l *chhy_ih_refGenName, int chhy_refChromeCont)
 {
@@ -830,22 +881,85 @@ inline int remove_dup(char* ref_genome, int direction, bitmapper_bs_iter pos, in
 	return 1;
 }
 
+
+///char methy_hash[5] = { 'A', 'C', 'G', 'T', 'N' };
+inline int convert_3bit_to_char(bitmapper_bs_iter* tmp_buffer, int read_length, char* read)
+{
+	int i = 0;
+	int word_21_index = 0;
+	int word_21_inner_index = 0;
+	bitmapper_bs_iter mask = 7;
+	bitmapper_bs_iter tmp;
+	for (i = 0; i < read_length; i++)
+	{
+		tmp = tmp_buffer[word_21_index] >> (word_21_inner_index * 3);
+		tmp = tmp & 7;
+		read[i] = methy_hash[tmp];
+
+		word_21_inner_index++;
+
+		if (word_21_inner_index == 21)
+		{
+			word_21_inner_index = 0;
+			word_21_index++;
+		}
+	}
+
+	read[read_length] = '\0';
+}
+
+
+inline int input_single_alignment(FILE* read_file,
+uint16_t* flag, bitmapper_bs_iter* pos, int* seq_length, char* read,
+bitmapper_bs_iter* tmp_buffer)
+{
+
+
+	fread(flag, sizeof((*flag)), 1, read_file);
+
+	if (feof(read_file))
+	{
+		return 0;
+
+	}
+
+	fread(pos, sizeof((*pos)), 1, read_file);
+	fread(seq_length, sizeof((*seq_length)), 1, read_file);
+
+	/**********这里要改**********/
+	///fread(read, 1, (*seq_length), read_file);
+	///read[(*seq_length)] = '\0';
+
+
+	fread(tmp_buffer, sizeof(bitmapper_bs_iter),
+		((*seq_length) / 21 + ((*seq_length) % 21 != 0)), read_file);
+	convert_3bit_to_char(tmp_buffer, (*seq_length), read);
+	
+	/**********这里要改**********/
+
+	return 1;
+}
+
+
 ///1是拿到一个有效的alignment
 ///0是读到文件末尾了
 ///-1是这个alignment重复了, 拿到了一个空的alignment
 inline int get_alignment(FILE* read_file, char* ref_genome, bitmapper_bs_iter start_pos, char* read, 
-	int* g_seq_length, int* g_C_or_G, int* g_direction, bitmapper_bs_iter* g_pos)
+	int* g_seq_length, int* g_C_or_G, int* g_direction, bitmapper_bs_iter* g_pos,
+	bitmapper_bs_iter* tmp_buffer)
 {
 
 
-	bitmapper_bs_iter flag;
+	uint16_t flag;
 	bitmapper_bs_iter pos;
 	
 	int C_or_G;
 	int direction;
 	int seq_length;
 
-	if (fscanf(read_file, "%llu\t%llu\t%s\n", &flag, &pos, read) != EOF)
+	///if (fscanf(read_file, "%llu\t%llu\t%s\n", &flag, &pos, read) != EOF)
+	if(input_single_alignment(read_file,
+		&flag, &pos, &seq_length, read, tmp_buffer))
 	{
 		get_direction(flag, &C_or_G, &direction);
 		seq_length = strlen(read);
@@ -985,6 +1099,297 @@ inline int remove_dup_PE(char* ref_genome,
 
 
 
+
+///0就是重复了, 1就是没重复，2是异常值
+inline int remove_abnormal_dup_PE(char* ref_genome,
+	int direction1, bitmapper_bs_iter pos1, int seq_length1,
+	int direction2, bitmapper_bs_iter pos2, int seq_length2,
+	deduplicate_PE* PE_de, int PE_distance)
+{
+
+	///return 1;
+
+
+	bitmapper_bs_iter dup_pos1;
+	bitmapper_bs_iter dup_pos2;
+
+	bitmapper_bs_iter distance;
+
+	///说明read1比对到rc链, read2比对到正向链
+	if (direction1 == 2)
+	{
+		if (direction2 != 1)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+		dup_pos1 = pos1 + seq_length1 - 1;
+		dup_pos2 = pos2;
+
+
+		///按道理来说, 这种情况dup_pos2必须小于等于dup_pos1
+		///但这个函数本身就是在处理异常情况了
+		///所以dup_pos2必须大于dup_pos1
+		if (dup_pos2 <= dup_pos1)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+		///这个时候distance绝对是>=0
+		distance = dup_pos2 - dup_pos1;
+
+		if (distance>PE_distance)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+
+		/**
+		///大的那个是0是1无所谓，小的这个变成0就好了
+		unset_deduplicate_PE_mask(PE_de, PE_de->rc_bits, dup_pos1, distance);
+		**/
+
+
+		///判断重复
+		if ((ref_genome[dup_pos1] & RC_DUP_MASK)
+			&&
+			get_deduplicate_PE_mask(PE_de, PE_de->rc_bits, dup_pos1, distance))
+		{
+
+			return 0;
+		}
+		else
+		{
+			///没重复则要置位为重复
+			ref_genome[dup_pos1] = ref_genome[dup_pos1] | RC_DUP_MASK;
+			set_deduplicate_PE_mask(PE_de, PE_de->rc_bits, dup_pos1, distance);
+		}
+
+
+
+
+
+
+
+
+
+		return 1;
+
+	}
+	else   ///说明read1比对到正向链, read2比对到rc链
+	{
+
+		if (direction2 != 2)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+
+		dup_pos1 = pos1;
+		dup_pos2 = pos2 + seq_length2 - 1;
+
+
+		///按道理来说, 这种情况dup_pos1必须小于等于dup_pos2
+		///但因为我们本来就是处理异常情况
+		///所以dup_pos1必须大于dup_pos2
+		if (dup_pos1 <= dup_pos2)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+
+		///这个时候distance绝对是>=0
+		distance = dup_pos1 - dup_pos2;
+
+		if (distance>PE_distance)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+
+		///大的那个是0是1无所谓，小的这个变成0就好了
+		///unset_deduplicate_PE_mask(PE_de, PE_de->forward_bits, dup_pos2, distance);
+
+
+		///判断重复
+		if ((ref_genome[dup_pos2] & FORWARD_DUP_MASK)
+			&&
+			get_deduplicate_PE_mask(PE_de, PE_de->forward_bits, dup_pos2, distance))
+		{
+
+			return 0;
+		}
+		else
+		{
+			///没重复则要置位为重复
+			ref_genome[dup_pos2] = ref_genome[dup_pos2] | FORWARD_DUP_MASK;
+			set_deduplicate_PE_mask(PE_de, PE_de->forward_bits, dup_pos2, distance);
+		}
+
+
+		return 1;
+	}
+
+	return 1;
+}
+
+
+
+
+
+
+
+
+///0就是重复了, 1就是没重复，2是异常值
+inline int unset_abnormal_dup_PE(char* ref_genome,
+	int direction1, bitmapper_bs_iter pos1, int seq_length1,
+	int direction2, bitmapper_bs_iter pos2, int seq_length2,
+	deduplicate_PE* PE_de, int PE_distance)
+{
+
+	///return 1;
+
+
+	bitmapper_bs_iter dup_pos1;
+	bitmapper_bs_iter dup_pos2;
+
+	bitmapper_bs_iter distance;
+
+	///说明read1比对到rc链, read2比对到正向链
+	if (direction1 == 2)
+	{
+		if (direction2 != 1)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+		dup_pos1 = pos1 + seq_length1 - 1;
+		dup_pos2 = pos2;
+
+
+		///按道理来说, 这种情况dup_pos2必须小于等于dup_pos1
+		///但这个函数本身就是在处理异常情况了
+		///所以dup_pos2必须大于dup_pos1
+		if (dup_pos2 <= dup_pos1)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+		///这个时候distance绝对是>=0
+		distance = dup_pos2 - dup_pos1;
+
+		if (distance>PE_distance)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+		///大的那个是0是1无所谓，小的这个变成0就好了
+		unset_deduplicate_PE_mask(PE_de, PE_de->rc_bits, dup_pos1, distance);
+
+		/**
+		if (get_deduplicate_PE_mask(PE_de, PE_de->rc_bits, dup_pos1, distance) == 1)
+		{
+			fprintf(stderr, "SBSBSBSBS!\n");
+		}
+		**/
+
+		return 1;
+
+	}
+	else   ///说明read1比对到正向链, read2比对到rc链
+	{
+
+		if (direction2 != 2)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+
+		dup_pos1 = pos1;
+		dup_pos2 = pos2 + seq_length2 - 1;
+
+
+		///按道理来说, 这种情况dup_pos1必须小于等于dup_pos2
+		///但因为我们本来就是处理异常情况
+		///所以dup_pos1必须大于dup_pos2
+		if (dup_pos1 <= dup_pos2)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+
+		///这个时候distance绝对是>=0
+		distance = dup_pos1 - dup_pos2;
+
+		if (distance>PE_distance)
+		{
+			fprintf(stderr, "ERROR!\n");
+		}
+
+
+		///大的那个是0是1无所谓，小的这个变成0就好了
+		unset_deduplicate_PE_mask(PE_de, PE_de->forward_bits, dup_pos2, distance);
+
+		/**
+		if (get_deduplicate_PE_mask(PE_de, PE_de->forward_bits, dup_pos2, distance) == 1)
+		{
+			fprintf(stderr, "SBSBSBSBS!\n");
+		}
+		**/
+
+		return 1;
+	}
+
+	return 1;
+}
+
+
+inline int input_PE_alignment(FILE* read_file, 
+		uint16_t* flag1, bitmapper_bs_iter* pos1, int* seq_length1, char* read1,
+		uint16_t* flag2, bitmapper_bs_iter* pos2, int* seq_length2, char* read2,
+		bitmapper_bs_iter* tmp_buffer)
+{
+
+
+		fread(flag1, sizeof((*flag1)), 1, read_file);
+
+		/**
+		fprintf(stderr, "flag1: %d\n", flag1);
+		fflush(stderr);
+		**/
+
+		if (feof(read_file))
+		{
+			return 0;
+
+		}
+
+		fread(pos1, sizeof((*pos1)), 1, read_file);
+		fread(seq_length1, sizeof((*seq_length1)), 1, read_file);
+		/**********这里要改**********/
+		///fread(read1, 1, (*seq_length1), read_file);
+		///read1[(*seq_length1)] = '\0';
+		fread(tmp_buffer, sizeof(bitmapper_bs_iter),
+			((*seq_length1) / 21 + ((*seq_length1) % 21 != 0)), read_file);
+		convert_3bit_to_char(tmp_buffer, (*seq_length1), read1);
+		/**********这里要改**********/
+
+		fread(flag2, sizeof((*flag2)), 1, read_file);
+		fread(pos2, sizeof((*pos2)), 1, read_file);
+		fread(seq_length2, sizeof((*seq_length2)), 1, read_file);
+		/**********这里要改**********/
+		///fread(read2, 1, (*seq_length2), read_file);
+		///read2[(*seq_length2)] = '\0';
+		fread(tmp_buffer, sizeof(bitmapper_bs_iter),
+			((*seq_length2) / 21 + ((*seq_length2) % 21 != 0)), read_file);
+		convert_3bit_to_char(tmp_buffer, (*seq_length2), read2);
+		/**********这里要改**********/
+
+
+		return 1;
+
+}
+
 ///1是拿到一个有效的alignment
 ///0是读到文件末尾了
 ///-1是这个alignment重复了, 拿到了一个空的alignment
@@ -992,18 +1397,18 @@ inline int remove_dup_PE(char* ref_genome,
 inline int get_alignment_PE(FILE* read_file, char* ref_genome, bitmapper_bs_iter start_pos, 
 	char* read1, int* g_seq_length1, int* g_C_or_G1, int* g_direction1, bitmapper_bs_iter* g_pos1,
 	char* read2, int* g_seq_length2, int* g_C_or_G2, int* g_direction2, bitmapper_bs_iter* g_pos2,
-	deduplicate_PE* PE_de, int PE_distance)
+	deduplicate_PE* PE_de, int PE_distance, bitmapper_bs_iter* tmp_buffer)
 {
 
 
-	bitmapper_bs_iter flag1;
+	uint16_t flag1;
 	bitmapper_bs_iter pos1;
 	int C_or_G1;
 	int direction1;
 	int seq_length1;
 
 
-	bitmapper_bs_iter flag2;
+	uint16_t flag2;
 	bitmapper_bs_iter pos2;
 	int C_or_G2;
 	int direction2;
@@ -1011,8 +1416,12 @@ inline int get_alignment_PE(FILE* read_file, char* ref_genome, bitmapper_bs_iter
 
 	int return_value;
 
+	/**
 	if (fscanf(read_file, "%llu\t%llu\t%s\t%llu\t%llu\t%s\n", 
-		&flag1, &pos1, read1, &flag2, &pos2, read2) != EOF)
+		&flag1, &pos1, read1, &flag2, &pos2, read2) != EOF)**/
+	if (input_PE_alignment(read_file,
+		&flag1, &pos1, &seq_length1, read1,
+		&flag2, &pos2, &seq_length2, read2, tmp_buffer))
 	{
 		/**
 		fprintf(stderr, "%llu\t%llu\t%s\t%llu\t%llu\t%s\n",
@@ -1022,9 +1431,10 @@ inline int get_alignment_PE(FILE* read_file, char* ref_genome, bitmapper_bs_iter
 		get_direction(flag1, &C_or_G1, &direction1);
 		get_direction(flag2, &C_or_G2, &direction2);
 	
-		
+		/**
 		seq_length1 = strlen(read1);
 		seq_length2 = strlen(read2);
+		**/
 
 		return_value = remove_dup_PE(ref_genome, direction1, pos1 - start_pos, seq_length1,
 			direction2, pos2 - start_pos, seq_length2, PE_de, PE_distance);
@@ -1439,8 +1849,14 @@ inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correc
 
 		if (tmp == 1 || tmp == 2) //C或者G
 		{
-			if (correct_methy[i] != correct_total[i])
+			///if (correct_methy[i] != correct_total[i])
+			if (correct_total[i] > minVariantDepth && ((double)(correct_methy[i]) / (double)(correct_total[i])) < maxVariantFrac)
 			{
+				/**
+				fprintf(stderr, "correct_methy[i]: %d\n", correct_methy[i]);
+				fprintf(stderr, "correct_total[i]: %d\n", correct_total[i]);
+				fprintf(stderr, "F: %f\n\n", ((double)(correct_methy[i]) / (double)(correct_total[i])));
+				**/
 				continue;
 			}
 
@@ -1483,11 +1899,59 @@ inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correc
 }
 
 
+void phrase_abnormal_alignment(char* ref_genome, bitmapper_bs_iter start_pos,
+	char* read1, char* read2, FILE* abnormal_file, deduplicate_PE* PE_de, int PE_distance,
+	uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+	long long* unique_read, long long* duplicate_read)
+{
+	int seq_length1, seq_length2;
+	int C_or_G1, C_or_G2;
+	int direction1, direction2;
+	bitmapper_bs_iter pos1, pos2;
+	int read1_length, read2_length;
 
 
 
+	while (fscanf(abnormal_file, "%s\t%d\t%d\t%d\t%llu\t%s\t%d\t%d\t%d\t%llu\n",
+		read1, &read1_length, &C_or_G1, &direction1, &pos1,
+		read2, &read2_length, &C_or_G2, &direction2, &pos2) != EOF)
+	{
+		unset_abnormal_dup_PE(ref_genome, direction1, pos1 - start_pos, seq_length1,
+			direction2, pos2 - start_pos, seq_length2, PE_de, PE_distance);
+	}
 
-void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
+	///回到文件开头
+	fseek(abnormal_file, 0, SEEK_SET);
+
+
+	while (fscanf(abnormal_file, "%s\t%d\t%d\t%d\t%llu\t%s\t%d\t%d\t%d\t%llu\n",
+		read1, &read1_length, &C_or_G1, &direction1, &pos1,
+		read2, &read2_length, &C_or_G2, &direction2, &pos2) != EOF)
+	{
+		if (remove_abnormal_dup_PE(ref_genome, direction1, pos1 - start_pos, seq_length1,
+			direction2, pos2 - start_pos, seq_length2, PE_de, PE_distance))
+		{
+			update_methylation(C_or_G1, ref_genome + pos1 - start_pos, read1, read1_length,
+				methy + pos1 - start_pos, total + pos1 - start_pos,
+				correct_methy + pos1 - start_pos, correct_total + pos1 - start_pos);
+
+			update_methylation(C_or_G2, ref_genome + pos2 - start_pos, read2, read2_length,
+				methy + pos2 - start_pos, total + pos2 - start_pos,
+				correct_methy + pos2 - start_pos, correct_total + pos2 - start_pos);
+
+			(*unique_read)++;
+		}
+		else
+		{
+			(*duplicate_read)++;
+		}
+	}
+
+}
+
+
+
+void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need_context)
 {
 
 	cut_length = _msf_refGenLength / genome_cuts;
@@ -1499,13 +1963,15 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
 
 
 	FILE* read_file;
+	FILE* abnormal_file;
 	int i = 0;
 	char tmp_file_name[SEQ_MAX_LENGTH];
+	char abnormal_file_name[SEQ_MAX_LENGTH];
 	char read1[SEQ_MAX_LENGTH];
 	char read2[SEQ_MAX_LENGTH];
 	bitmapper_bs_iter start_pos, end_pos;
 	bitmapper_bs_iter length;
-	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2 + maxDistance_pair; ///这个是为了处理边界情况
+	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2 + PE_distance; ///这个是为了处理边界情况
 
 
 	uint16_t* methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
@@ -1533,10 +1999,7 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
 	int read2_length;
 	char last_two_bases[2];
 
-	///need_context[0]是CpG
-	///need_context[1]是CHG
-	///need_context[2]是CHH
-	int need_context[3] = { 1, 0, 0 };
+	
 
 
 	long long total_read = 0;
@@ -1544,12 +2007,39 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
 	long long unique_read = 0;
 	long long abnormal_read = 0;
 
+	sprintf(abnormal_file_name, "%s_abnormal%d", file_name, thread_id);
+
+	bitmapper_bs_iter tmp_genome_cuts;
+	int tmp_maxDistance_pair;
+	int tmp_mode;
+
+
+	bitmapper_bs_iter tmp_buffer[100];
+
+
+
+
+	/**
+	uint16_t* back_methy = (uint16_t*)malloc(sizeof(uint16_t)*(extra_length));
+	uint16_t* back_total = (uint16_t*)malloc(sizeof(uint16_t)*(extra_length));
+	uint16_t* back_correct_methy = (uint16_t*)malloc(sizeof(uint16_t)*(extra_length));
+	uint16_t* back_correct_total = (uint16_t*)malloc(sizeof(uint16_t)*(extra_length));
+	memset(back_methy, 0, extra_length*sizeof(uint16_t));
+	memset(back_total, 0, extra_length*sizeof(uint16_t));
+	memset(back_correct_methy, 0, extra_length*sizeof(uint16_t));
+	memset(back_correct_total, 0, extra_length*sizeof(uint16_t));
+	int jki;
+	**/
+
 	for (i = 0; i < genome_cuts; i++)
 	{
-		sprintf(tmp_file_name, "%s%d", file_name, i);
+		sprintf(tmp_file_name, "%s_%d.bmm", file_name, i);
 		read_file = fopen(tmp_file_name, "r");
 
-		fscanf(read_file, "%llu\t%llu\n", &start_pos, &end_pos);
+		///这里要写异常文件
+		abnormal_file = fopen(abnormal_file_name, "w");
+
+		fscanf(read_file, "%llu\t%d\t%d\t%llu\t%llu\n", &tmp_genome_cuts, &tmp_maxDistance_pair, &tmp_mode, &start_pos, &end_pos);
 
 		length = end_pos - start_pos + 1;
 
@@ -1561,6 +2051,22 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
 		}
 
 
+		/**
+		for (jki = 0; jki < extra_length; jki++)
+		{
+			if (!(back_methy[jki] == methy[jki] &&
+				back_total[jki] == total[jki] &&
+				back_correct_methy[jki] == correct_methy[jki] &&
+				back_correct_total[jki] == correct_total[jki]))
+				fprintf(stderr, "ERROR ...., jki:%d \n", jki);
+			else
+			{
+				fprintf(stderr, "very well .... \n");
+			}
+		}
+		**/
+
+
 		///1是拿到一个有效的alignment
 		///0是读到文件末尾了
 		///-1是这个alignment重复了, 拿到了一个空的alignment
@@ -1568,7 +2074,7 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
 		while (return_value = get_alignment_PE(read_file, ref_genome, start_pos, 
 			read1, &read1_length, &C_or_G1, &direction1, &pos1,
 			read2, &read2_length, &C_or_G2, &direction2, &pos2,
-			&PE_de, PE_distance))
+			&PE_de, PE_distance, tmp_buffer))
 		{
 
 			total_read++;
@@ -1585,6 +2091,13 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
 			else   ///这是返回值为2的情况，也是5'端位置异常的情况  ///暂时还没处理
 			{
 				abnormal_read++;  
+
+				///将异常结果写入临时文件
+				fprintf(abnormal_file, "%s\t%d\t%d\t%d\t%llu\t%s\t%d\t%d\t%d\t%llu\n",
+					read1, read1_length, C_or_G1, direction1, pos1,
+					read2, read2_length, C_or_G2, direction2, pos2);
+
+
 			}
 
 
@@ -1604,6 +2117,16 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
 
 
 		}
+
+
+		///这里要关闭异常文件, 再打开
+		fclose(abnormal_file);
+		abnormal_file = fopen(abnormal_file_name, "r");
+
+		phrase_abnormal_alignment(ref_genome, start_pos, read1, read2, abnormal_file, &PE_de, PE_distance,
+			methy, total, correct_methy, correct_total, &unique_read, &duplicate_read);
+
+		fclose(abnormal_file);
 		
 		print_methylation(methy, total, correct_methy, correct_total,
 			start_pos, end_pos, ref_genome, last_two_bases, need_context);
@@ -1615,8 +2138,20 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
 		last_two_bases[0] = ref_genome[length - 2];
 		last_two_bases[1] = ref_genome[length - 1];
 
+		/**
+		for (jki = 0; jki < extra_length; jki++)
+		{
+
+				back_methy[jki] = methy[jki + length];
+				back_total[jki] = total[jki + length];
+				back_correct_methy[jki] = correct_methy[jki + length];
+				back_correct_total[jki] = correct_total[jki + length];
+		}
+		**/
 	}
 
+	///至少要把这个异常文件删除了
+	remove(abnormal_file_name);
 
 	fprintf(stderr, "total_read: %lld\n", total_read);
 	fprintf(stderr, "duplicate_read: %lld\n", duplicate_read);
@@ -1629,7 +2164,7 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance)
 
 
 
-void methy_extract(int thread_id, char* file_name)
+void methy_extract(int thread_id, char* file_name, int* need_context)
 {
 
 	cut_length = _msf_refGenLength / genome_cuts;
@@ -1649,6 +2184,7 @@ void methy_extract(int thread_id, char* file_name)
 	bitmapper_bs_iter length;
 	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2 + maxDistance_pair; ///这个是为了处理边界情况
 
+	bitmapper_bs_iter tmp_buffer[100];
 
 	uint16_t* methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
 	total_memory_size = total_memory_size + sizeof(uint16_t)*(cut_length + extra_length);
@@ -1677,18 +2213,20 @@ void methy_extract(int thread_id, char* file_name)
 	int read_length;
 	char last_two_bases[2];
 
-	///need_context[0]是CpG
-	///need_context[1]是CHG
-	///need_context[2]是CHH
-	int need_context[3] = { 1, 0, 0 };
+	bitmapper_bs_iter tmp_genome_cuts;
+	int tmp_maxDistance_pair;
+	int tmp_mode;
 
+	long long total_read = 0;
+	long long duplicate_read = 0;
+	long long unique_read = 0;
 
 	for (i = 0; i < genome_cuts; i++)
 	{
-		sprintf(tmp_file_name, "%s%d", file_name, i);
+		sprintf(tmp_file_name, "%s_%d.bmm", file_name, i);
 		read_file = fopen(tmp_file_name, "r");
 
-		fscanf(read_file, "%llu\t%llu\n", &start_pos, &end_pos);
+		fscanf(read_file, "%llu\t%d\t%d\t%llu\t%llu\n", &tmp_genome_cuts, &tmp_maxDistance_pair, &tmp_mode, &start_pos, &end_pos);
 
 		length = end_pos - start_pos + 1;
 
@@ -1702,11 +2240,20 @@ void methy_extract(int thread_id, char* file_name)
 		///return_value=0则读到文件末尾
 		///return_value = -1读到了一个重复的alignment
 		while (return_value = get_alignment(read_file, ref_genome, start_pos, read,
-			&read_length, &C_or_G, &direction, &pos))
+			&read_length, &C_or_G, &direction, &pos, tmp_buffer))
 		{
+
+			total_read++;
+
 			if (return_value == -1)
 			{
+				duplicate_read++;
+
 				continue;
+			}
+			else
+			{
+				unique_read++;
 			}
 
 
@@ -1736,7 +2283,11 @@ void methy_extract(int thread_id, char* file_name)
 	}
 
 
-	fprintf(stderr, "total_memory_size: %lld\n", total_memory_size);
+	///fprintf(stderr, "total_memory_size: %lld\n", total_memory_size);
+
+	fprintf(stderr, "total_read: %lld\n", total_read);
+	fprintf(stderr, "duplicate_read: %lld\n", duplicate_read);
+	fprintf(stderr, "unique_read: %lld\n", unique_read);
 
 
 
@@ -2211,10 +2762,6 @@ inline void get_actuall_rc_genome(char* tmp_ref, bitmapper_bs_iter rc_start_site
 
 
 
-
-
-
-
 inline void map_candidate_votes_mutiple_cut_end_to_end_4_sse(
 	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold,
@@ -2315,9 +2862,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4_sse(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[0] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[0]<(*min_err))
 		{
@@ -2331,9 +2881,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4_sse(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[1] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[1]<(*min_err))
 		{
@@ -2348,9 +2901,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4_sse(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[2] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[2]<(*min_err))
 		{
@@ -2365,9 +2921,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4_sse(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[3] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[3]<(*min_err))
 		{
@@ -2418,9 +2977,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4_sse(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (candidate_votes[i].err == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (candidate_votes[i].err < (*min_err))
 		{
@@ -2451,9 +3013,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4_sse(
 			///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 			if (return_sites_error[inner_i] == (*min_err)
 				&&
-				min_err_site != tmp_min_err_site)
+				min_err_site != tmp_min_err_site
+				&&
+				(*min_err_index) >= 0)
 			{
-				(*min_err_index) = -2;
+				(*min_err_index) = -2 - (*min_err_index);
+				///(*min_err_index) = -2;
 			}
 			else if (return_sites_error[inner_i]<(*min_err))
 			{
@@ -2477,8 +3042,6 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4_sse(
 
 
 }
-
-
 
 inline void map_candidate_votes_mutiple_cut_end_to_end_2_sse(
 	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
@@ -2554,9 +3117,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_2_sse(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[0] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[0]<(*min_err))
 		{
@@ -2570,9 +3136,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_2_sse(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[1] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[1]<(*min_err))
 		{
@@ -2621,9 +3190,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_2_sse(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (candidate_votes[i].err == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (candidate_votes[i].err < (*min_err))
 		{
@@ -2654,9 +3226,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_2_sse(
 			///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 			if (return_sites_error[inner_i] == (*min_err)
 				&&
-				min_err_site != tmp_min_err_site)
+				min_err_site != tmp_min_err_site
+				&&
+				(*min_err_index) >= 0)
 			{
-				(*min_err_index) = -2;
+				(*min_err_index) = -2 - (*min_err_index);
+				///(*min_err_index) = -2;
 			}
 			else if (return_sites_error[inner_i]<(*min_err))
 			{
@@ -2680,9 +3255,6 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_2_sse(
 
 
 }
-
-
-
 
 
 inline void map_candidate_votes_mutiple_cut_end_to_end_4_for_paired_end_sse(
@@ -3128,7 +3700,6 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_2_for_paired_end_sse(
 
 }
 
-
 inline int map_candidate_votes_mutiple_end_to_end_4_sse(
 	seed_votes* candidate_votes, bitmapper_bs_iter* candidate_votes_length,
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold,
@@ -3230,7 +3801,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4_sse(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -3254,7 +3828,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4_sse(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -3278,7 +3855,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4_sse(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -3301,7 +3881,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4_sse(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -3354,7 +3937,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4_sse(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -3393,7 +3979,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4_sse(
 				&&
 				min_err_site != tmp_min_err_site)
 			{
-				(*min_err_index) = -2;
+				if ((*min_err_index) >= 0)
+				{
+					(*min_err_index) = -2 - (*min_err_index);
+				}
 
 				if ((*min_err) == 0)
 				{
@@ -3425,6 +4014,7 @@ inline int map_candidate_votes_mutiple_end_to_end_4_sse(
 	return 1;
 
 }
+
 
 
 
@@ -3503,7 +4093,10 @@ inline int map_candidate_votes_mutiple_end_to_end_2_sse(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -3527,7 +4120,10 @@ inline int map_candidate_votes_mutiple_end_to_end_2_sse(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -3580,7 +4176,10 @@ inline int map_candidate_votes_mutiple_end_to_end_2_sse(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -3619,7 +4218,10 @@ inline int map_candidate_votes_mutiple_end_to_end_2_sse(
 				&&
 				min_err_site != tmp_min_err_site)
 			{
-				(*min_err_index) = -2;
+				if ((*min_err_index) >= 0)
+				{
+					(*min_err_index) = -2 - (*min_err_index);
+				}
 
 				if ((*min_err) == 0)
 				{
@@ -3668,7 +4270,6 @@ inline int map_candidate_votes_mutiple_end_to_end_2_sse(
 
 
 
-
 #if defined __AVX2__
 
 inline void map_candidate_votes_mutiple_cut_end_to_end_4(
@@ -3691,7 +4292,7 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4(
 	t[1] = t[0] + p_length + 32;
 	t[2] = t[1] + p_length + 32;
 	t[3] = t[2] + p_length + 32;
-	
+
 
 	i = 0;
 
@@ -3772,9 +4373,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[0] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[0]<(*min_err))
 		{
@@ -3788,9 +4392,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[1] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[1]<(*min_err))
 		{
@@ -3805,9 +4412,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[2] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[2]<(*min_err))
 		{
@@ -3822,9 +4432,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[3] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[3]<(*min_err))
 		{
@@ -3900,9 +4513,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (candidate_votes[i].err == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (candidate_votes[i].err < (*min_err))
 		{
@@ -3933,9 +4549,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_4(
 			///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 			if (return_sites_error[inner_i] == (*min_err)
 				&&
-				min_err_site != tmp_min_err_site)
+				min_err_site != tmp_min_err_site
+				&&
+				(*min_err_index) >= 0)
 			{
-				(*min_err_index) = -2;
+				(*min_err_index) = -2 - (*min_err_index);
+				///(*min_err_index) = -2;
 			}
 			else if (return_sites_error[inner_i]<(*min_err))
 			{
@@ -4711,7 +5330,7 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 			get_actuall_rc_genome(t[7], candidate_votes[i + 7].site - _msf_refGenLength, p_length);
 		}
 
-		
+
 
 
 
@@ -4731,9 +5350,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[0] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[0]<(*min_err))
 		{
@@ -4750,9 +5372,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[1] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			//(*min_err_index) = -2;
 		}
 		else if (return_sites_error[1]<(*min_err))
 		{
@@ -4769,9 +5394,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[2] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[2]<(*min_err))
 		{
@@ -4789,9 +5417,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[3] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[3]<(*min_err))
 		{
@@ -4809,9 +5440,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[4] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[4]<(*min_err))
 		{
@@ -4829,9 +5463,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[5] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[5]<(*min_err))
 		{
@@ -4848,9 +5485,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[6] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			//(*min_err_index) = -2;
 		}
 		else if (return_sites_error[6]<(*min_err))
 		{
@@ -4868,9 +5508,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (return_sites_error[7] == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (return_sites_error[7]<(*min_err))
 		{
@@ -4919,9 +5562,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 		///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 		if (candidate_votes[i].err == (*min_err)
 			&&
-			min_err_site != tmp_min_err_site)
+			min_err_site != tmp_min_err_site
+			&&
+			(*min_err_index) >= 0)
 		{
-			(*min_err_index) = -2;
+			(*min_err_index) = -2 - (*min_err_index);
+			///(*min_err_index) = -2;
 		}
 		else if (candidate_votes[i].err < (*min_err))
 		{
@@ -4962,9 +5608,12 @@ inline void map_candidate_votes_mutiple_cut_end_to_end_8(
 			///首先要最小值相同，其次位置要不同，这样的话才算有best map有多个
 			if (return_sites_error[inner_i] == (*min_err)
 				&&
-				min_err_site != tmp_min_err_site)
+				min_err_site != tmp_min_err_site
+				&&
+				(*min_err_index) >= 0)
 			{
-				(*min_err_index) = -2;
+				(*min_err_index) = -2 - (*min_err_index);
+				///(*min_err_index) = -2;
 			}
 			else if (return_sites_error[inner_i]<(*min_err))
 			{
@@ -5134,7 +5783,7 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 		}
 
 
-		
+
 
 		BS_Reserve_Banded_BPM_8_SSE(
 			t[0], t[1], t[2], t[3],
@@ -5155,7 +5804,11 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
+
 
 			if ((*min_err) == 0)
 			{
@@ -5180,7 +5833,10 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5204,7 +5860,10 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5230,7 +5889,10 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5256,7 +5918,10 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5281,7 +5946,10 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5307,7 +5975,10 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5333,7 +6004,10 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5384,7 +6058,10 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5433,7 +6110,10 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 				&&
 				min_err_site != tmp_min_err_site)
 			{
-				(*min_err_index) = -2;
+				if ((*min_err_index) >= 0)
+				{
+					(*min_err_index) = -2 - (*min_err_index);
+				}
 
 				if ((*min_err) == 0)
 				{
@@ -5469,6 +6149,7 @@ inline int map_candidate_votes_mutiple_end_to_end_8(
 	return 1;
 
 }
+
 
 
 #endif
@@ -5580,7 +6261,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5612,7 +6296,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5643,7 +6330,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5676,7 +6366,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5748,7 +6441,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4(
 			&&
 			min_err_site != tmp_min_err_site)
 		{
-			(*min_err_index) = -2;
+			if ((*min_err_index) >= 0)
+			{
+				(*min_err_index) = -2 - (*min_err_index);
+			}
 
 			if ((*min_err) == 0)
 			{
@@ -5794,7 +6490,10 @@ inline int map_candidate_votes_mutiple_end_to_end_4(
 				&&
 				min_err_site != tmp_min_err_site)
 			{
-				(*min_err_index) = -2;
+				if ((*min_err_index) >= 0)
+				{
+					(*min_err_index) = -2 - (*min_err_index);
+				}
 
 				if ((*min_err) == 0)
 				{
@@ -5919,10 +6618,217 @@ inline void output_sam_end_to_end_return(
 
 
 
+inline void directly_output_read1_return_buffer_unmapped_PE(char* name, char* read, char* r_read, char* qulity,
+	int read_length, Output_buffer_sub_block* sub_block, bam_phrase* bam_groups, int flag)
+{
+
+	if (bam_output == 0)
+	{
+
+		if (name[0] == '@')
+		{
+			output_to_buffer_char_no_length(sub_block, name + 1);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			output_to_buffer_char_no_length(sub_block, name);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+
+
+		if (flag == 1)
+		{
+			sub_block->buffer[sub_block->length] = '7';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '7';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			sub_block->buffer[sub_block->length] = '1';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '4';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '1';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+
+		///fprintf(schema_out_fp, "*\t0\t0\t*\t*\t0\t0\t");
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+
+		if (flag == 1)
+		{
+			output_to_buffer_char_length(sub_block, read, read_length);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			output_to_buffer_char_length(sub_block, r_read, read_length);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+
+		output_to_buffer_char_length(sub_block, qulity, read_length);
+		//上面扩容时有32的余量，所以下面\t不需要检查了
+		sub_block->buffer[sub_block->length] = '\n';
+		sub_block->length++;
+
+
+	}
+	else
+	{
+
+
+		///这个一定一定要有
+		///directly_output_read1_return_buffer里面一定要有置0, 但是在最后并不转换成bam
+		///directly_output_read2_return_buffer这里不能置0，但是在最后需要转成bam
+		///这样是为了避免在bam结果中，一对paired-end read的结果被分开了
+		sub_block->length = 0;
+
+		if (name[0] == '@')
+		{
+			output_to_buffer_char_no_length(sub_block, name + 1);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			output_to_buffer_char_no_length(sub_block, name);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+		if (flag == 1)
+		{
+			sub_block->buffer[sub_block->length] = '7';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '7';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			sub_block->buffer[sub_block->length] = '1';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '4';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '1';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+
+		///fprintf(schema_out_fp, "*\t0\t0\t*\t*\t0\t0\t");
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+
+		if (flag == 1)
+		{
+			output_to_buffer_char_length(sub_block, read, read_length);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			output_to_buffer_char_length(sub_block, r_read, read_length);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+		///这里应该是'\0', 不是'\t'也不是'\n'
+		output_to_buffer_char_length(sub_block, qulity, read_length);
+		sub_block->buffer[sub_block->length] = '\0';
+
+		convert_string_to_bam(sub_block->buffer, sub_block->length, bam_groups);
+
+
+	}
+
+}
+
+
+
+
+
+
 inline void directly_output_read1_return_buffer(char* name, char* read, char* r_read, char* qulity,
 	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length,
 	Output_buffer_sub_block* sub_block, int paired_end_distance,
-	bam_phrase* bam_groups)
+	bam_phrase* bam_groups, int output_mask)
 {
 
 	if (bam_output == 0)
@@ -5955,6 +6861,8 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
 		}
 
+
+		result->flag = result->flag | output_mask;
 
 		output_to_buffer_int(sub_block, result->flag);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
@@ -6188,6 +7096,9 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 
 
 		///这个一定一定要有
+		///directly_output_read1_return_buffer里面一定要有置0, 但是在最后并不转换成bam
+		///directly_output_read2_return_buffer这里不能置0，但是在最后需要转成bam
+		///这样是为了避免在bam结果中，一对paired-end read的结果被分开了
 		sub_block->length = 0;
 
 
@@ -6219,6 +7130,8 @@ inline void directly_output_read1_return_buffer(char* name, char* read, char* r_
 			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
 		}
 
+
+		result->flag = result->flag | output_mask;
 
 		output_to_buffer_int(sub_block, result->flag);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
@@ -6473,11 +7386,18 @@ inline void output_paired_methy_buffer(char* name,
 		long long end_5_pos1, end_5_pos2;
 
 		/**read1的信息**/
+		/*************这里要改**************/
+
 		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).R[0].reads[(*methy).current_size], (*methy).R[0].r_size[(*methy).current_size], r_length1 + 1);
+		///Check_Space((*methy).R[0].reads[(*methy).current_size], (*methy).R[0].r_size[(*methy).current_size], r_length1 + 1);
+
+		Check_Space_3_Bit((*methy).R[0].reads_3_bit[(*methy).current_size], 
+			(*methy).R[0].r_size_3_bit[(*methy).current_size], r_length1)
+		(*methy).R[0].r_real_length[(*methy).current_size] = r_length1;
+		/*************这里要改**************/
 
 		(*methy).R[0].r_length[(*methy).current_size] = r_length1;
-
+		
 
 		result1->site = result1->site + _ih_refGenName[result1->chrome_id].start_location - 1;
 
@@ -6487,8 +7407,10 @@ inline void output_paired_methy_buffer(char* name,
 		{
 			result1->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
 
-			correct_read_using_cigar(result1->cigar, r_read1, (*methy).R[0].reads[(*methy).current_size]);
-
+			/*************这里要改**************/
+			////correct_read_using_cigar(result1->cigar, r_read1, (*methy).R[0].reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(result1->cigar, r_read1, (*methy).R[0].reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
 
 			end_5_pos1 = result1->site + r_length1;
 		}
@@ -6497,7 +7419,10 @@ inline void output_paired_methy_buffer(char* name,
 
 			result1->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ1;
 
-			correct_read_using_cigar(result1->cigar, read1, (*methy).R[0].reads[(*methy).current_size]);
+			/*************这里要改**************/
+			///correct_read_using_cigar(result1->cigar, read1, (*methy).R[0].reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(result1->cigar, read1, (*methy).R[0].reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
 
 
 			end_5_pos1 = result1->site;
@@ -6517,8 +7442,15 @@ inline void output_paired_methy_buffer(char* name,
 
 		/**read2的信息**/
 
+		/*************这里要改**************/
 		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).R[1].reads[(*methy).current_size], (*methy).R[1].r_size[(*methy).current_size], r_length2 + 1);
+		///Check_Space((*methy).R[1].reads[(*methy).current_size], (*methy).R[1].r_size[(*methy).current_size], r_length2 + 1);
+		Check_Space_3_Bit(
+			(*methy).R[1].reads_3_bit[(*methy).current_size], 
+			(*methy).R[1].r_size_3_bit[(*methy).current_size], 
+			r_length2);
+		(*methy).R[1].r_real_length[(*methy).current_size] = r_length2;
+		/*************这里要改**************/
 
 		(*methy).R[1].r_length[(*methy).current_size] = r_length2;
 
@@ -6529,7 +7461,12 @@ inline void output_paired_methy_buffer(char* name,
 		{
 			result2->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
 
-			correct_read_using_cigar(result2->cigar, r_read2, (*methy).R[1].reads[(*methy).current_size]);
+			/*************这里要改**************/
+			///correct_read_using_cigar(result2->cigar, r_read2, (*methy).R[1].reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit_over_lap_length_r2(
+				result2->cigar, r_read2, (*methy).R[1].reads_3_bit[(*methy).current_size],
+				result1->site, r_length1, result2->site, r_length2);
+			/*************这里要改**************/
 
 			
 			end_5_pos2 = result2->site;
@@ -6538,15 +7475,21 @@ inline void output_paired_methy_buffer(char* name,
 		{
 			result2->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ2;
 
-			correct_read_using_cigar(result2->cigar, read2, (*methy).R[1].reads[(*methy).current_size]);
+			/*************这里要改**************/
+			///correct_read_using_cigar(result2->cigar, read2, (*methy).R[1].reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit_over_lap_length_r2(
+				result2->cigar, read2, (*methy).R[1].reads_3_bit[(*methy).current_size],
+				result1->site, r_length1, result2->site, r_length2);
+			/*************这里要改**************/
 
 
 			end_5_pos2 = result2->site + r_length2;
 		}
 
 
-
-		over_lap_length(result1->site, r_length1, result2->site, r_length2, (*methy).R[1].reads[(*methy).current_size]);
+		/*************这里要改**************/
+		///over_lap_length(result1->site, r_length1, result2->site, r_length2, (*methy).R[1].reads[(*methy).current_size]);
+		/*************这里要改**************/
 
 
 		(*methy).R[1].r_length[(*methy).current_size] = result2->flag;
@@ -6641,152 +7584,6 @@ inline void output_paired_methy_buffer(char* name,
 
 
 
-inline void output_paired_methy_buffer_1(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
-	Methylation* methy, bitmapper_bs_iter* read1_site, bitmapper_bs_iter* read1_length)
-{
-	if ((*methy).current_size < (*methy).total_size)
-	{
-
-		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
-
-		(*methy).r_length[(*methy).current_size] = r_length;
-
-
-		result->site = result->site + _ih_refGenName[result->chrome_id].start_location - 1;
-
-
-
-		if (result->flag == 16)   ///read1比到反向互补链上了
-		{
-			///result->site = _msf_refGenLength * 2 - result->site - 1;
-
-			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
-
-			correct_read_using_cigar(result->cigar, r_read, (*methy).reads[(*methy).current_size]);
-		}
-		else  ///正向链
-		{
-			
-			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ1;
-
-			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
-		}
-
-		/**
-		if (r_length != strlen((*methy).reads[(*methy).current_size]))
-		{
-			fprintf(stderr, "ERRORE\n");
-		}
-		else
-		{
-			///fprintf(stderr, "SUCESS\n");
-		}
-		**/
-
-		(*read1_site) = result->site;
-		(*read1_length) = r_length;
-
-		(*methy).r_length[(*methy).current_size] = result->flag;
-
-		(*methy).sites[(*methy).current_size] = result->site;
-
-		(*methy).cut_index[get_cut_id(methy, result->site)]++;
-
-		(*methy).current_size++;
-	}
-
-
-	if ((*methy).current_size == (*methy).total_size)
-	{
-		assign_cuts(methy);
-
-		output_methylation(methy);
-
-		clear_methylation(methy);
-	}
-
-}
-
-
-
-
-inline void output_paired_methy_buffer_2(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
-	Methylation* methy, bitmapper_bs_iter read1_site, bitmapper_bs_iter read1_length)
-{
-	if ((*methy).current_size < (*methy).total_size)
-	{
-
-		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
-
-		(*methy).r_length[(*methy).current_size] = r_length;
-
-
-		result->site = result->site + _ih_refGenName[result->chrome_id].start_location - 1;
-
-		if (result->flag == 16)   ///代表read2的反向互补链比对到了参考组的正向上, read2本身实际上比到了参考组反向互补链上
-		{
-			///result->site = _msf_refGenLength * 2 - result->site - 1;
-
-			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
-
-			correct_read_using_cigar(result->cigar, r_read, (*methy).reads[(*methy).current_size]);
-		}
-		else
-		{
-			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ2;
-
-
-			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
-		}
-
-
-		/**
-		if (r_length != strlen((*methy).reads[(*methy).current_size]))
-		{
-			fprintf(stderr, "ERRORE\n");
-		}
-		else
-		{
-			///fprintf(stderr, "SUCESS\n");
-		}
-		**/
-
-
-		over_lap_length(read1_site, read1_length, result->site, r_length, (*methy).reads[(*methy).current_size]);
-
-
-
-
-		///如果完全重叠就不用输出了
-		(*methy).r_length[(*methy).current_size] = result->flag;
-
-		(*methy).sites[(*methy).current_size] = result->site;
-
-		(*methy).cut_index[get_cut_id(methy, result->site)]++;
-
-
-		(*methy).current_size++;
-		
-
-		
-	}
-
-
-	if ((*methy).current_size == (*methy).total_size)
-	{
-		assign_cuts(methy);
-
-		output_methylation(methy);
-
-		clear_methylation(methy);
-	}
-
-}
-
-
-
 
 
 inline void output_paired_methy_buffer_mutiple_threads(
@@ -6801,9 +7598,17 @@ inline void output_paired_methy_buffer_mutiple_threads(
 
 		/**read1的信息**/
 		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).R[0].reads[(*methy).current_size], (*methy).R[0].r_size[(*methy).current_size], r_length1 + 1);
+		/*************这里要改**************/
+		///Check_Space((*methy).R[0].reads[(*methy).current_size], (*methy).R[0].r_size[(*methy).current_size], r_length1 + 1);
+		Check_Space_3_Bit((*methy).R[0].reads_3_bit[(*methy).current_size],
+			(*methy).R[0].r_size_3_bit[(*methy).current_size], r_length1)
+			(*methy).R[0].r_real_length[(*methy).current_size] = r_length1;
+		(*methy).R[0].r_real_length[(*methy).current_size] = r_length1;
+		/*************这里要改**************/
+
 
 		(*methy).R[0].r_length[(*methy).current_size] = r_length1;
+		
 
 
 		result1->site = result1->site + _ih_refGenName[result1->chrome_id].start_location - 1;
@@ -6814,7 +7619,10 @@ inline void output_paired_methy_buffer_mutiple_threads(
 		{
 			result1->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
 
-			correct_read_using_cigar(result1->cigar, r_read1, (*methy).R[0].reads[(*methy).current_size]);
+			/*************这里要改**************/
+			///correct_read_using_cigar(result1->cigar, r_read1, (*methy).R[0].reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(result1->cigar, r_read1, (*methy).R[0].reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
 
 
 			end_5_pos1 = result1->site + r_length1;
@@ -6824,7 +7632,10 @@ inline void output_paired_methy_buffer_mutiple_threads(
 
 			result1->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ1;
 
-			correct_read_using_cigar(result1->cigar, read1, (*methy).R[0].reads[(*methy).current_size]);
+			/*************这里要改**************/
+			///correct_read_using_cigar(result1->cigar, read1, (*methy).R[0].reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(result1->cigar, read1, (*methy).R[0].reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
 
 
 			end_5_pos1 = result1->site;
@@ -6844,9 +7655,15 @@ inline void output_paired_methy_buffer_mutiple_threads(
 
 
 		/**read2的信息**/
-
+		/*************这里要改**************/
 		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).R[1].reads[(*methy).current_size], (*methy).R[1].r_size[(*methy).current_size], r_length2 + 1);
+		///Check_Space((*methy).R[1].reads[(*methy).current_size], (*methy).R[1].r_size[(*methy).current_size], r_length2 + 1);
+		Check_Space_3_Bit(
+			(*methy).R[1].reads_3_bit[(*methy).current_size],
+			(*methy).R[1].r_size_3_bit[(*methy).current_size],
+			r_length2);
+		(*methy).R[1].r_real_length[(*methy).current_size] = r_length2;
+		/*************这里要改**************/
 
 		(*methy).R[1].r_length[(*methy).current_size] = r_length2;
 
@@ -6857,7 +7674,12 @@ inline void output_paired_methy_buffer_mutiple_threads(
 		{
 			result2->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
 
-			correct_read_using_cigar(result2->cigar, r_read2, (*methy).R[1].reads[(*methy).current_size]);
+			/*************这里要改**************/
+			///correct_read_using_cigar(result2->cigar, r_read2, (*methy).R[1].reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit_over_lap_length_r2(
+				result2->cigar, r_read2, (*methy).R[1].reads_3_bit[(*methy).current_size],
+				result1->site, r_length1, result2->site, r_length2);
+			/*************这里要改**************/
 
 
 			end_5_pos2 = result2->site;
@@ -6866,16 +7688,21 @@ inline void output_paired_methy_buffer_mutiple_threads(
 		{
 			result2->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ2;
 
-			correct_read_using_cigar(result2->cigar, read2, (*methy).R[1].reads[(*methy).current_size]);
+			/*************这里要改**************/
+			////correct_read_using_cigar(result2->cigar, read2, (*methy).R[1].reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit_over_lap_length_r2(
+				result2->cigar, read2, (*methy).R[1].reads_3_bit[(*methy).current_size],
+				result1->site, r_length1, result2->site, r_length2);
+			/*************这里要改**************/
 
 
 			end_5_pos2 = result2->site + r_length2;
 		}
 
 
-
-		over_lap_length(result1->site, r_length1, result2->site, r_length2, (*methy).R[1].reads[(*methy).current_size]);
-
+		/*************这里要改**************/
+		///over_lap_length(result1->site, r_length1, result2->site, r_length2, (*methy).R[1].reads[(*methy).current_size]);
+		/*************这里要改**************/
 
 		(*methy).R[1].r_length[(*methy).current_size] = result2->flag;
 
@@ -6927,127 +7754,150 @@ inline void output_paired_methy_buffer_mutiple_threads(
 
 
 
-inline void output_paired_methy_buffer_mutiple_threads_1(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
-	Methylation* methy, bitmapper_bs_iter* read1_site, bitmapper_bs_iter* read1_length)
+
+///flag == 1是read1
+///flag == 2是read2
+inline void directly_output_unmapped_PE(char* name, char* read, char* r_read, char* qulity,
+	int read_length, bam_output_cell* cell, Output_buffer_sub_block* sub_block, int flag)
 {
-	if ((*methy).current_size < (*methy).total_size)
+
+	if (bam_output == 0)
 	{
-
-		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
-
-		(*methy).r_length[(*methy).current_size] = r_length;
-
-
-		result->site = result->site + _ih_refGenName[result->chrome_id].start_location - 1;
-
-		if (result->flag == 16)   ///read1比到反向互补链上了
+		if (name[0] == '@')
 		{
-			///result->site = _msf_refGenLength * 2 - result->site - 1;
-
-			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
-
-			correct_read_using_cigar(result->cigar, r_read, (*methy).reads[(*methy).current_size]);
-		}
-		else  ///正向链
-		{
-
-			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ1;
-
-			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
-		}
-
-
-		(*read1_site) = result->site;
-		(*read1_length) = r_length;
-
-		(*methy).r_length[(*methy).current_size] = result->flag;
-
-		(*methy).sites[(*methy).current_size] = result->site;
-
-		(*methy).cut_index[get_cut_id(methy, result->site)]++;
-
-		(*methy).current_size++;
-	}
-
-
-
-	if ((*methy).current_size == (*methy).total_size)
-	{
-		assign_cuts(methy);
-
-		push_methy_to_buffer(methy);
-
-		///这个不用清理，因为再push 的时候清理过了
-		///clear_methylation(methy);
-
-	}
-
-
-}
-
-
-
-
-inline void output_paired_methy_buffer_mutiple_threads_2(char* read, char* r_read, map_result* result, bitmapper_bs_iter r_length,
-	Methylation* methy, bitmapper_bs_iter read1_site, bitmapper_bs_iter read1_length)
-{
-	if ((*methy).current_size < (*methy).total_size)
-	{
-
-		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
-
-		(*methy).r_length[(*methy).current_size] = r_length;
-
-
-		result->site = result->site + _ih_refGenName[result->chrome_id].start_location - 1;
-
-		if (result->flag == 16)   ///代表read2的反向互补链比对到了参考组的正向上, read2本身实际上比到了参考组反向互补链上
-		{
-			///result->site = _msf_refGenLength * 2 - result->site - 1;
-
-			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
-
-			correct_read_using_cigar(result->cigar, r_read, (*methy).reads[(*methy).current_size]);
+			fprintf(schema_out_fp, "%s\t", name + 1);
 		}
 		else
 		{
-			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ2;
+			fprintf(schema_out_fp, "%s\t", name);
+		}
+
+		if (flag == 1)
+		{
+			fprintf(schema_out_fp, "77\t");
+		}
+		else
+		{
+			fprintf(schema_out_fp, "141\t");
+		}
+
+		fprintf(schema_out_fp, "*\t0\t0\t*\t*\t0\t0\t");
+
+		if (flag == 1)
+		{
+			fprintf(schema_out_fp, "%s\t", read);
+		}
+		else
+		{
+			fprintf(schema_out_fp, "%s\t", r_read);
+		}
+
+		fprintf(schema_out_fp, "%s\n", qulity);
+	}
+	else
+	{
+
+		///这个一定一定要有
+		sub_block->length = 0;
 
 
-			correct_read_using_cigar(result->cigar, read, (*methy).reads[(*methy).current_size]);
+		if (name[0] == '@')
+		{
+			output_to_buffer_char_no_length(sub_block, name + 1);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			output_to_buffer_char_no_length(sub_block, name);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+		if (flag == 1)
+		{
+			sub_block->buffer[sub_block->length] = '7';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '7';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			sub_block->buffer[sub_block->length] = '1';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '4';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '1';
+			sub_block->length++;
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
 		}
 
 
-		over_lap_length(read1_site, read1_length, result->site, r_length, (*methy).reads[(*methy).current_size]);
+		///fprintf(schema_out_fp, "*\t0\t0\t*\t*\t0\t0\t");
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
 
-		(*methy).r_length[(*methy).current_size] = result->flag;
+		if (flag == 1)
+		{
+			output_to_buffer_char_length(sub_block, read, read_length);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			output_to_buffer_char_length(sub_block, r_read, read_length);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
 
-		(*methy).sites[(*methy).current_size] = result->site;
+		///这里应该是'\0', 不是'\t'也不是'\n'
+		output_to_buffer_char_length(sub_block, qulity, read_length);
+		sub_block->buffer[sub_block->length] = '\0';
 
-		(*methy).cut_index[get_cut_id(methy, result->site)]++;
+		write_alignment_directly(sub_block->buffer, sub_block->length, cell);
 
-		(*methy).current_size++;
+
 	}
 
 
 
-	if ((*methy).current_size == (*methy).total_size)
-	{
-		assign_cuts(methy);
 
-		push_methy_to_buffer(methy);
-
-		///这个不用清理，因为再push 的时候清理过了
-		///clear_methylation(methy);
-
-	}
 
 
 }
-
-
 
 
 
@@ -7055,7 +7905,7 @@ inline void output_paired_methy_buffer_mutiple_threads_2(char* read, char* r_rea
 inline void directly_output_read1(char* name, char* read, char* r_read, char* qulity,
 	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length,
 	int paired_end_distance, bam_output_cell* cell,
-	Output_buffer_sub_block* sub_block)
+	Output_buffer_sub_block* sub_block, int output_mask)
 {
 
 	if (bam_output == 0)
@@ -7079,6 +7929,10 @@ inline void directly_output_read1(char* name, char* read, char* r_read, char* qu
 		{
 			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
 		}
+
+		///这里要改
+		result->flag = result->flag | output_mask;
+
 
 		fprintf(schema_out_fp, "%d\t", result->flag);
 
@@ -7201,6 +8055,8 @@ inline void directly_output_read1(char* name, char* read, char* r_read, char* qu
 			result->flag = IS_PAIRED | MATE_MAPPED | RC_MAPPED | READ1;
 		}
 
+		///这里要改
+		result->flag = result->flag | output_mask;
 
 		output_to_buffer_int(sub_block, result->flag);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
@@ -7428,7 +8284,7 @@ inline void directly_output_read1(char* name, char* read, char* r_read, char* qu
 inline void directly_output_read2_return_buffer(char* name, char* read, char* r_read, char* qulity,
 	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length,
 	Output_buffer_sub_block* sub_block, int paired_end_distance,
-	bam_phrase* bam_groups)
+	bam_phrase* bam_groups, int output_mask)
 {
 
 	if (bam_output == 0)
@@ -7444,7 +8300,9 @@ inline void directly_output_read2_return_buffer(char* name, char* read, char* r_
 			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
 		}
 
+		result->flag = result->flag | output_mask;
 
+		
 
 		if (name[0] == '@')
 		{
@@ -7718,7 +8576,7 @@ inline void directly_output_read2_return_buffer(char* name, char* read, char* r_
 			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
 		}
 
-
+		result->flag = result->flag | output_mask;
 
 		if (name[0] == '@')
 		{
@@ -7992,7 +8850,7 @@ inline void directly_output_read2_return_buffer(char* name, char* read, char* r_
 inline void directly_output_read2(char* name, char* read, char* r_read, char* qulity,
 	map_result* result, map_result* another_result, int read_length, int matched_length, int another_matched_length,
 	int paired_end_distance, bam_output_cell* cell,
-	Output_buffer_sub_block* sub_block)
+	Output_buffer_sub_block* sub_block, int output_mask)
 {
 
 	if (bam_output == 0)
@@ -8009,6 +8867,9 @@ inline void directly_output_read2(char* name, char* read, char* r_read, char* qu
 		}
 		///result->flag == 16代表read2的反向互补链比对到了参考组反向互补链上
 		//所以在这种情况下，read2本身实际上比到了参考组正向链上
+
+		///这里要改
+		result->flag = result->flag | output_mask;
 
 
 		if (name[0] == '@')
@@ -8138,6 +8999,8 @@ inline void directly_output_read2(char* name, char* read, char* r_read, char* qu
 			result->flag = IS_PAIRED | MATE_MAPPED | RC_MATE_MAPPED | READ2;
 		}
 
+		///这里要改
+		result->flag = result->flag | output_mask;
 
 
 		if (name[0] == '@')
@@ -8420,7 +9283,7 @@ inline void output_sam_end_to_end(char* name, char* read, char* r_read, char* qu
 	int err, char* best_cigar, int read_length,
 	bam_output_cell* cell,
 	Output_buffer_sub_block* sub_block,
-	int* map_among_references)
+	int* map_among_references, int output_mask)
 {
 	(*map_among_references) = 0;
 
@@ -8484,7 +9347,7 @@ inline void output_sam_end_to_end(char* name, char* read, char* r_read, char* qu
 		}
 
 
-		fprintf(schema_out_fp, "%d\t", flag);
+		fprintf(schema_out_fp, "%d\t", flag | output_mask);
 
 		fprintf(schema_out_fp, "%s\t", _ih_refGenName[now_ref_name]._rg_chrome_name);
 
@@ -8613,7 +9476,7 @@ inline void output_sam_end_to_end(char* name, char* read, char* r_read, char* qu
 
 
 		///result_string << flag << "\t";
-		output_to_buffer_int(sub_block, flag);
+		output_to_buffer_int(sub_block, flag | output_mask);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
 		sub_block->buffer[sub_block->length] = '\t';
 		sub_block->length++;
@@ -8763,9 +9626,12 @@ inline void output_methy_end_to_end(char* name, char* read, char* r_read, char* 
 	bitmapper_bs_iter end_site,
 	bitmapper_bs_iter start_site,
 	int err, char* best_cigar, int read_length,
-	Methylation* methy)
+	Methylation* methy,
+	int* map_among_references)
 {
 	int flag;
+
+	(*map_among_references) = 0;
 
 	if ((*methy).current_size < (*methy).total_size)
 	{
@@ -8775,8 +9641,13 @@ inline void output_methy_end_to_end(char* name, char* read, char* r_read, char* 
 		///矫正之后的read长度就是这个
 		bitmapper_bs_iter r_length = end_site - start_site + 1;
 
+		/*************这里要改**************/
 		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length+1);
+		///Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length+1);
+		Check_Space_3_Bit((*methy).reads_3_bit[(*methy).current_size], (*methy).r_size_3_bit[(*methy).current_size],
+			r_length);
+		(*methy).r_real_length[(*methy).current_size] = r_length;
+		/*************这里要改**************/
 
 		(*methy).r_length[(*methy).current_size] = r_length;
 
@@ -8787,7 +9658,42 @@ inline void output_methy_end_to_end(char* name, char* read, char* r_read, char* 
 
 			site = _msf_refGenLength * 2 - site - 1;
 
-			correct_read_using_cigar(best_cigar, r_read, (*methy).reads[(*methy).current_size]);
+
+			/**************************这个是加的东西*******************************/
+			int now_ref_name;
+
+			for (now_ref_name = 0; now_ref_name < refChromeCont; ++now_ref_name)
+			{
+				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
+				{
+					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
+
+					///bitmapper_bs_iter r_length = end_site - start_site + 1;
+					///end_site - start_site + 1这个是read在基因组上的alignment长度
+					///map_location此刻是1-based
+					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					{
+						(*map_among_references) = 1;
+						return;
+					}
+
+
+					break;
+				}
+					
+			}
+			/**************************这个是加的东西*******************************/
+
+
+
+
+
+			/*************这里要改**************/
+			///correct_read_using_cigar(best_cigar, r_read, (*methy).reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(best_cigar, r_read, (*methy).reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
+			
 
 			flag = 16;
 
@@ -8796,7 +9702,41 @@ inline void output_methy_end_to_end(char* name, char* read, char* r_read, char* 
 		{
 			site = site + start_site;
 
-			correct_read_using_cigar(best_cigar, read, (*methy).reads[(*methy).current_size]);
+
+
+			/**************************这个是加的东西*******************************/
+			int now_ref_name;
+
+			for (now_ref_name = 0; now_ref_name < refChromeCont; ++now_ref_name)
+			{
+				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
+				{
+					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
+
+					///bitmapper_bs_iter r_length = end_site - start_site + 1;
+					///end_site - start_site + 1这个是read在基因组上的alignment长度
+					///map_location此刻是1-based
+					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					{
+						(*map_among_references) = 1;
+						return;
+					}
+
+
+					break;
+				}
+
+			}
+			/**************************这个是加的东西*******************************/
+
+
+
+
+			/*************这里要改**************/
+			///correct_read_using_cigar(best_cigar, read, (*methy).reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(best_cigar, read, (*methy).reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
 
 			flag = 0;
 		}
@@ -8835,8 +9775,12 @@ inline void output_methy_end_to_end_output_buffer(char* name, char* read, char* 
 	bitmapper_bs_iter site,
 	bitmapper_bs_iter end_site,
 	bitmapper_bs_iter start_site,
-	int err, char* best_cigar, int read_length, Methylation* methy)
+	int err, char* best_cigar, int read_length, Methylation* methy,
+	int* map_among_references)
 {
+
+	(*map_among_references) = 0;
+
 
 	int flag;
 
@@ -8848,8 +9792,30 @@ inline void output_methy_end_to_end_output_buffer(char* name, char* read, char* 
 		///矫正之后的read长度就是这个
 		bitmapper_bs_iter r_length = end_site - start_site + 1;
 
+
+
+
+
+		/*************这里要改**************/
 		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+		///Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+		Check_Space_3_Bit((*methy).reads_3_bit[(*methy).current_size], (*methy).r_size_3_bit[(*methy).current_size],
+			r_length);
+		(*methy).r_real_length[(*methy).current_size] = r_length;
+
+		/*************这里要改**************/
+
+
+
+
+
+
+
+
+
+
+
+
 
 		(*methy).r_length[(*methy).current_size] = r_length;
 
@@ -8860,7 +9826,48 @@ inline void output_methy_end_to_end_output_buffer(char* name, char* read, char* 
 
 			site = _msf_refGenLength * 2 - site - 1;
 
-			correct_read_using_cigar(best_cigar, r_read, (*methy).reads[(*methy).current_size]);
+
+
+
+
+
+			/**************************这个是加的东西*******************************/
+			int now_ref_name;
+
+			for (now_ref_name = 0; now_ref_name < refChromeCont; ++now_ref_name)
+			{
+				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
+				{
+					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
+
+					///bitmapper_bs_iter r_length = end_site - start_site + 1;
+					///end_site - start_site + 1这个是read在基因组上的alignment长度
+					///map_location此刻是1-based
+					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					{
+						(*map_among_references) = 1;
+						return;
+					}
+
+
+					break;
+				}
+
+			}
+			/**************************这个是加的东西*******************************/
+
+
+
+
+
+
+
+
+			/*************这里要改**************/
+			///correct_read_using_cigar(best_cigar, r_read, (*methy).reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(best_cigar, r_read, (*methy).reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
 
 			flag = 16;
 
@@ -8869,7 +9876,45 @@ inline void output_methy_end_to_end_output_buffer(char* name, char* read, char* 
 		{
 			site = site + start_site;
 
-			correct_read_using_cigar(best_cigar, read, (*methy).reads[(*methy).current_size]);
+
+
+
+
+			/**************************这个是加的东西*******************************/
+			int now_ref_name;
+
+			for (now_ref_name = 0; now_ref_name < refChromeCont; ++now_ref_name)
+			{
+				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
+				{
+					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
+
+					///bitmapper_bs_iter r_length = end_site - start_site + 1;
+					///end_site - start_site + 1这个是read在基因组上的alignment长度
+					///map_location此刻是1-based
+					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					{
+						(*map_among_references) = 1;
+						return;
+					}
+
+
+					break;
+				}
+
+			}
+			/**************************这个是加的东西*******************************/
+
+
+
+
+
+
+			/*************这里要改**************/
+			///correct_read_using_cigar(best_cigar, read, (*methy).reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(best_cigar, read, (*methy).reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
 
 			flag = 0;
 		}
@@ -8907,7 +9952,7 @@ inline void output_sam_end_to_end_output_buffer(char* name, char* read, char* r_
 	bitmapper_bs_iter end_site,
 	bitmapper_bs_iter start_site,
 	int err, char* best_cigar, int read_length, Output_buffer_sub_block* sub_block,
-	bam_phrase* bam_groups, int* map_among_references)
+	bam_phrase* bam_groups, int* map_among_references, int output_mode)
 {
 	(*map_among_references) = 0;
 
@@ -8954,23 +9999,10 @@ inline void output_sam_end_to_end_output_buffer(char* name, char* read, char* r_
 		///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
 		if (map_location + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
 		{
-
 			(*map_among_references) = 1;
 			return;
 		}
 
-		/**
-		if (name[0] == '@')
-		{
-		///fprintf(schema_out_fp, "%s\t", name + 1);
-		result_string << name + 1 << "\t";
-		}
-		else
-		{
-		///fprintf(schema_out_fp, "%s\t", name);
-		result_string << name << "\t";
-		}
-		**/
 
 
 		if (name[0] == '@')
@@ -8989,12 +10021,8 @@ inline void output_sam_end_to_end_output_buffer(char* name, char* read, char* r_
 		}
 
 
-
-
-
-
 		///result_string << flag << "\t";
-		output_to_buffer_int(sub_block, flag);
+		output_to_buffer_int(sub_block, flag | output_mode);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
 		sub_block->buffer[sub_block->length] = '\t';
 		sub_block->length++;
@@ -9212,7 +10240,7 @@ inline void output_sam_end_to_end_output_buffer(char* name, char* read, char* r_
 
 
 			///result_string << flag << "\t";
-			output_to_buffer_int(sub_block, flag);
+			output_to_buffer_int(sub_block, flag | output_mode);
 			//上面扩容时有32的余量，所以下面\t不需要检查了
 			sub_block->buffer[sub_block->length] = '\t';
 			sub_block->length++;
@@ -9359,6 +10387,175 @@ inline void output_sam_end_to_end_output_buffer(char* name, char* read, char* r_
 
 
 
+inline void output_sam_end_to_end_output_buffer_unmapped(char* name, char* read, char* r_read, char* qulity,
+	int read_length, Output_buffer_sub_block* sub_block, bam_phrase* bam_groups)
+{
+
+	if (bam_output == 0)
+	{
+
+		if (name[0] == '@')
+		{
+			output_to_buffer_char_no_length(sub_block, name + 1);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			output_to_buffer_char_no_length(sub_block, name);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+
+
+		///fprintf(schema_out_fp, "4\t*\t0\t0\t*\t*\t0\t0\t");
+		sub_block->buffer[sub_block->length] = '4';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+
+
+
+		///result_string << read << "\t";
+		output_to_buffer_char_length(sub_block, read, read_length);
+		//上面扩容时有32的余量，所以下面\t不需要检查了
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+
+		///result_string << qulity << "\t";
+		output_to_buffer_char_length(sub_block, qulity, read_length);
+		//上面扩容时有32的余量，所以下面\t不需要检查了
+		sub_block->buffer[sub_block->length] = '\n';
+		sub_block->length++;
+
+
+
+
+	}
+	else
+	{
+
+
+		///这个一定一定要有
+		sub_block->length = 0;
+
+
+
+
+		if (name[0] == '@')
+		{
+			output_to_buffer_char_no_length(sub_block, name + 1);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			output_to_buffer_char_no_length(sub_block, name);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+
+
+
+
+
+
+		///fprintf(schema_out_fp, "4\t*\t0\t0\t*\t*\t0\t0\t");
+		sub_block->buffer[sub_block->length] = '4';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+
+
+
+		///result_string << read << "\t";
+		output_to_buffer_char_length(sub_block, read, read_length);
+		//上面扩容时有32的余量，所以下面\t不需要检查了
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+
+		///result_string << qulity << "\t";
+		output_to_buffer_char_length(sub_block, qulity, read_length);
+
+
+		sub_block->buffer[sub_block->length] = '\0';
+
+
+		convert_string_to_bam(sub_block->buffer, sub_block->length, bam_groups);
+
+
+	}
+
+
+}
+
+
+
+
+
+
 
 
 
@@ -9369,7 +10566,7 @@ inline void output_sam_end_to_end_pbat_output_buffer(char* name, char* read, cha
 	bitmapper_bs_iter end_site,
 	bitmapper_bs_iter start_site,
 	int err, char* best_cigar, int read_length, Output_buffer_sub_block* sub_block,
-	bam_phrase* bam_groups, int* map_among_references)
+	bam_phrase* bam_groups, int* map_among_references, int output_mode)
 {
 
 	(*map_among_references) = 0;
@@ -9465,7 +10662,7 @@ inline void output_sam_end_to_end_pbat_output_buffer(char* name, char* read, cha
 		**/
 
 
-		output_to_buffer_int(sub_block, flag);
+		output_to_buffer_int(sub_block, flag | output_mode);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
 		sub_block->buffer[sub_block->length] = '\t';
 		sub_block->length++;
@@ -9691,7 +10888,7 @@ inline void output_sam_end_to_end_pbat_output_buffer(char* name, char* read, cha
 		**/
 
 
-		output_to_buffer_int(sub_block, flag);
+		output_to_buffer_int(sub_block, flag | output_mode);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
 		sub_block->buffer[sub_block->length] = '\t';
 		sub_block->length++;
@@ -9850,7 +11047,7 @@ inline void output_sam_end_to_end_pbat(char* name, char* read, char* r_read, cha
 	bitmapper_bs_iter start_site,
 	int err, char* best_cigar, int read_length,
 	bam_output_cell* cell,
-	Output_buffer_sub_block* sub_block, int* map_among_references)
+	Output_buffer_sub_block* sub_block, int* map_among_references, int output_mode)
 {
 
 	(*map_among_references) = 0;
@@ -9930,7 +11127,7 @@ inline void output_sam_end_to_end_pbat(char* name, char* read, char* r_read, cha
 		}
 
 
-		fprintf(schema_out_fp, "%d\t", flag);
+		fprintf(schema_out_fp, "%d\t", flag | output_mode);
 
 		fprintf(schema_out_fp, "%s\t", _ih_refGenName[now_ref_name]._rg_chrome_name);
 
@@ -10086,7 +11283,7 @@ inline void output_sam_end_to_end_pbat(char* name, char* read, char* r_read, cha
 		**/
 
 
-		output_to_buffer_int(sub_block, flag);
+		output_to_buffer_int(sub_block, flag | output_mode);
 		//上面扩容时有32的余量，所以下面\t不需要检查了
 		sub_block->buffer[sub_block->length] = '\t';
 		sub_block->length++;
@@ -10232,8 +11429,12 @@ inline void output_methy_end_to_end_pbat(char* name, char* read, char* r_read, c
 	bitmapper_bs_iter end_site,
 	bitmapper_bs_iter start_site,
 	int err, char* best_cigar, int read_length,
-	Methylation* methy)
+	Methylation* methy,
+	int* map_among_references)
 {
+
+
+	(*map_among_references) = 0;
 
 	int flag;
 
@@ -10245,8 +11446,13 @@ inline void output_methy_end_to_end_pbat(char* name, char* read, char* r_read, c
 		///矫正之后的read长度就是这个
 		bitmapper_bs_iter r_length = end_site - start_site + 1;
 
+		/*************这里要改**************/
 		///注意r_length一定要+1, 这个是为了放/0的
-		Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+		///Check_Space((*methy).reads[(*methy).current_size], (*methy).r_size[(*methy).current_size], r_length + 1);
+		Check_Space_3_Bit((*methy).reads_3_bit[(*methy).current_size], (*methy).r_size_3_bit[(*methy).current_size],
+			r_length);
+		(*methy).r_real_length[(*methy).current_size] = r_length;
+		/*************这里要改**************/
 
 		(*methy).r_length[(*methy).current_size] = r_length;
 
@@ -10257,7 +11463,51 @@ inline void output_methy_end_to_end_pbat(char* name, char* read, char* r_read, c
 
 			site = _msf_refGenLength * 2 - site - 1;
 
-			correct_read_using_cigar(best_cigar, r_read, (*methy).reads[(*methy).current_size]);
+
+
+
+
+
+
+			/**************************这个是加的东西*******************************/
+			int now_ref_name;
+
+			for (now_ref_name = 0; now_ref_name < refChromeCont; ++now_ref_name)
+			{
+				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
+				{
+					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
+
+					///bitmapper_bs_iter r_length = end_site - start_site + 1;
+					///end_site - start_site + 1这个是read在基因组上的alignment长度
+					///map_location此刻是1-based
+					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					{
+						(*map_among_references) = 1;
+						return;
+					}
+
+
+					break;
+				}
+
+			}
+			/**************************这个是加的东西*******************************/
+
+
+
+
+
+
+
+
+
+
+			/*************这里要改**************/
+			///correct_read_using_cigar(best_cigar, r_read, (*methy).reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(best_cigar, r_read, (*methy).reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
 
 			flag = 16;
 
@@ -10266,7 +11516,52 @@ inline void output_methy_end_to_end_pbat(char* name, char* read, char* r_read, c
 		{
 			site = site + start_site;
 
-			correct_read_using_cigar(best_cigar, read, (*methy).reads[(*methy).current_size]);
+
+
+
+
+			/**************************这个是加的东西*******************************/
+			int now_ref_name;
+
+			for (now_ref_name = 0; now_ref_name < refChromeCont; ++now_ref_name)
+			{
+				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
+				{
+					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
+
+					///bitmapper_bs_iter r_length = end_site - start_site + 1;
+					///end_site - start_site + 1这个是read在基因组上的alignment长度
+					///map_location此刻是1-based
+					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					{
+						(*map_among_references) = 1;
+						return;
+					}
+
+
+					break;
+				}
+
+			}
+			/**************************这个是加的东西*******************************/
+
+
+
+
+
+
+
+
+
+
+
+
+
+			/*************这里要改**************/
+			////correct_read_using_cigar(best_cigar, read, (*methy).reads[(*methy).current_size]);
+			correct_read_using_cigar_3_bit(best_cigar, read, (*methy).reads_3_bit[(*methy).current_size]);
+			/*************这里要改**************/
 
 			flag = 0;
 		}
@@ -10747,7 +12042,7 @@ inline int calculate_best_map_cigar_end_to_end_output_buffer(seed_votes* candida
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold, char* tmp_ref,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
 	char* best_cigar, Output_buffer_sub_block* sub_block, Methylation* methy,
-	bam_phrase* bam_groups, int* map_among_references)
+	bam_phrase* bam_groups, int* map_among_references, int output_mode)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -10811,7 +12106,7 @@ inline int calculate_best_map_cigar_end_to_end_output_buffer(seed_votes* candida
 			candidate_votes[0].end_site,
 			start_site,
 			candidate_votes[0].err, best_cigar,
-			read_length, methy);
+			read_length, methy, map_among_references);
 	}
 	else
 	{
@@ -10821,7 +12116,7 @@ inline int calculate_best_map_cigar_end_to_end_output_buffer(seed_votes* candida
 			candidate_votes[0].end_site,
 			start_site,
 			candidate_votes[0].err, best_cigar,
-			read_length, sub_block, bam_groups, map_among_references);
+			read_length, sub_block, bam_groups, map_among_references, output_mode);
 	}
 
 	
@@ -10846,7 +12141,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat_output_buffer(seed_votes* ca
 	bitmapper_bs_iter read_length, bitmapper_bs_iter error_threshold, char* tmp_ref,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
 	char* best_cigar, Output_buffer_sub_block* sub_block, Methylation* methy,
-	bam_phrase* bam_groups, int* map_among_references)
+	bam_phrase* bam_groups, int* map_among_references, int output_mode)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -10910,7 +12205,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat_output_buffer(seed_votes* ca
 			candidate_votes[0].end_site,
 			start_site,
 			candidate_votes[0].err, best_cigar,
-			read_length, methy);
+			read_length, methy, map_among_references);
 	}
 	else
 	{
@@ -10919,7 +12214,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat_output_buffer(seed_votes* ca
 			candidate_votes[0].end_site,
 			start_site,
 			candidate_votes[0].err, best_cigar,
-			read_length, sub_block, bam_groups, map_among_references);
+			read_length, sub_block, bam_groups, map_among_references, output_mode);
 
 	}
 
@@ -10945,7 +12240,7 @@ inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitm
 	char* best_cigar, Methylation* methy, 
 	bam_output_cell* cell,
 	Output_buffer_sub_block* current_sub_buffer,
-	int *map_among_references)
+	int *map_among_references, int output_mask)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -11019,7 +12314,7 @@ inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitm
 			start_site,
 			candidate_votes[0].err, best_cigar,
 			read_length, 
-			methy);
+			methy, map_among_references);
 	}
 	else
 	{
@@ -11031,7 +12326,7 @@ inline int calculate_best_map_cigar_end_to_end(seed_votes* candidate_votes, bitm
 			read_length,
 			cell,
 			current_sub_buffer,
-			map_among_references);
+			map_among_references, output_mask);
 	}
 	
 
@@ -11053,7 +12348,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat(seed_votes* candidate_votes,
 	char* read, char* r_read, char* qulity, char* cigar, char* path, uint16_t* matrix, Word* matrix_bit, char* name,
 	char* best_cigar, Methylation* methy,
 	bam_output_cell* cell,
-	Output_buffer_sub_block* current_sub_buffer, int* map_among_references)
+	Output_buffer_sub_block* current_sub_buffer, int* map_among_references, int output_mode)
 {
 	bitmapper_bs_iter t_length = read_length;
 	bitmapper_bs_iter p_length = read_length + 2 * error_threshold;
@@ -11163,7 +12458,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat(seed_votes* candidate_votes,
 			candidate_votes[0].end_site,
 			start_site,
 			candidate_votes[0].err, best_cigar,
-			read_length, methy);
+			read_length, methy, map_among_references);
 	}
 	else
 	{
@@ -11174,7 +12469,7 @@ inline int calculate_best_map_cigar_end_to_end_pbat(seed_votes* candidate_votes,
 			candidate_votes[0].err, best_cigar,
 			read_length,
 			cell,
-			current_sub_buffer, map_among_references);
+			current_sub_buffer, map_among_references, output_mode);
 	}
 
 	
@@ -11287,7 +12582,7 @@ inline int try_process_unique_mismatch_end_to_end(
 				read_length - 1,
 				0,
 				0,
-				cigar, read_length, methy);
+				cigar, read_length, methy, map_among_references);
 		}
 		else
 		{
@@ -11299,7 +12594,7 @@ inline int try_process_unique_mismatch_end_to_end(
 				cigar, read_length,
 				cell,
 				current_sub_buffer,
-				map_among_references);
+				map_among_references,0);
 		}
 
 		
@@ -11408,7 +12703,7 @@ inline int try_process_unique_mismatch_end_to_end_pbat(
 					read_length - 1,
 					0,
 					0,
-					cigar, read_length, methy);
+					cigar, read_length, methy, map_among_references);
 			}
 			else
 			{
@@ -11419,7 +12714,7 @@ inline int try_process_unique_mismatch_end_to_end_pbat(
 					0,
 					cigar, read_length,
 					cell,
-					current_sub_buffer, map_among_references);
+					current_sub_buffer, map_among_references,0);
 			}
 
 			
@@ -11531,7 +12826,7 @@ inline int try_process_unique_mismatch_end_to_end_output_buffer(
 				read_length - 1,
 				0,
 				0,
-				cigar, read_length, methy);
+				cigar, read_length, methy, map_among_references);
 		}
 		else
 		{
@@ -11540,7 +12835,7 @@ inline int try_process_unique_mismatch_end_to_end_output_buffer(
 				read_length - 1,
 				0,
 				0,
-				cigar, read_length, sub_block, bam_groups, map_among_references);
+				cigar, read_length, sub_block, bam_groups, map_among_references, 0);
 		}
 
 		
@@ -11657,7 +12952,7 @@ inline int try_process_unique_mismatch_end_to_end_pbat_get_output_buffer(
 					read_length - 1,
 					0,
 					0,
-					cigar, read_length, methy);
+					cigar, read_length, methy, map_among_references);
 			}
 			else
 			{
@@ -11666,7 +12961,7 @@ inline int try_process_unique_mismatch_end_to_end_pbat_get_output_buffer(
 					read_length - 1,
 					0,
 					0,
-					cigar, read_length, sub_block, bam_groups, map_among_references);
+					cigar, read_length, sub_block, bam_groups, map_among_references,0);
 			}
 
 			
@@ -11866,6 +13161,8 @@ inline int new_faster_verify_pairs(int best_mapp_occ1, int best_mapp_occ2, int e
 
 									if (best_sum_err == 0)
 									{
+										(*best_pair_1_index_return) = best_pair_1_index;
+										(*best_pair_2_index_return) = best_pair_2_index;
 										return mapping_pair;
 									}
 								}
@@ -11919,6 +13216,9 @@ inline int new_faster_verify_pairs(int best_mapp_occ1, int best_mapp_occ2, int e
 
 									if (best_sum_err == 0)
 									{
+
+										(*best_pair_1_index_return) = best_pair_1_index;
+										(*best_pair_2_index_return) = best_pair_2_index;
 										return mapping_pair;
 									}
 
@@ -14611,6 +15911,9 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 	bitmapper_bs_iter unique_matched_read = 0;
 	bitmapper_bs_iter ambious_matched_read = 0;
 	bitmapper_bs_iter unmatched_read = 0;
+
+
+	
 	///bitmapper_bs_iter inner_i;
 
 	bitmapper_bs_iter total_all_candidates_length = 0;
@@ -14847,10 +16150,39 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 
 
+	///这里要改
+	bitmapper_bs_iter pre_unique_matched_read = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter pre_ambious_matched_read = (bitmapper_bs_iter)-1;
+	int output_mask;
+
 	//正向模式
 	i = 0;
 	while (1)
 	{
+
+
+		/********************************************输出不匹配结果用的********************************************/
+		///这里要改
+		///这说明上一个read没有匹配
+		///初始pre_ambious_matched_read = (bitmapper_bs_iter)-1, ambious_matched_read = 0
+		///这样就避免了初始的问题, 因为初始情况下不该输出任何东西
+		if (pre_ambious_matched_read == ambious_matched_read
+			&&
+			pre_unique_matched_read == unique_matched_read)
+		{
+			if (unmapped_out == 1)
+			{
+				directly_output_unmapped_PE(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
+					current_read1.length, &cell, &current_sub_buffer, 1);
+				directly_output_unmapped_PE(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
+					current_read2.length, &cell, &current_sub_buffer, 2);
+			}
+		}
+		pre_ambious_matched_read = ambious_matched_read;
+		pre_unique_matched_read = unique_matched_read;
+		/********************************************输出不匹配结果用的********************************************/
+
+
 
 
 		file_flag = inputReads_paired_directly(&current_read1, &current_read2);
@@ -15196,7 +16528,12 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 
 	end_i:
-		if (mapping_pair == 1)
+		///这里要改
+		if (
+			(mapping_pair == 1) 
+			||
+			(ambiguous_out == 1 &&mapping_pair > 1)
+			)
 		{
 
 
@@ -15286,9 +16623,17 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 				(result2.site + matched_length2 <=_ih_refGenName[result2.chrome_id]._rg_chrome_length + 1))
 			{
 
-				
+				///这里要改
+				if (mapping_pair == 1)
+				{
+					unique_matched_read++;
+				}
+				else
+				{
+					ambious_matched_read++;
+				}
 
-				unique_matched_read++;
+				
 
 				total_bases = total_bases + current_read1.length + current_read2.length;
 				error_bases = error_bases + result1.err + result2.err;
@@ -15298,13 +16643,6 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 				if (output_methy == 1)
 				{
-					/**
-					output_paired_methy_buffer_1(current_read1.seq, current_read1.rseq, &result1, matched_length1,
-						&methy, &read1_site, &read1_length);
-
-					output_paired_methy_buffer_2(current_read2.seq, current_read2.rseq, &result2, matched_length2,
-						&methy, read1_site, read1_length);
-					**/
 
 					output_paired_methy_buffer(current_read1.name,
 						current_read1.seq, current_read1.rseq, &result1, matched_length1,
@@ -15314,21 +16652,32 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 				}
 				else
 				{
+					///这里要改
+					if (mapping_pair == 1)
+					{
+						output_mask = 0;
+					}
+					else
+					{
+						output_mask = 0x100;
+					}
+
 					directly_output_read1(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
 						&result1, &result2, current_read1.length,
 						matched_length1, matched_length2, paired_end_distance,
 						&cell,
-						&current_sub_buffer);
+						&current_sub_buffer, output_mask);
 
 					directly_output_read2(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
 						&result2, &result1, current_read2.length,
 						matched_length2, matched_length1, paired_end_distance,
 						&cell,
-						&current_sub_buffer);
+						&current_sub_buffer, output_mask);
 
 				}
 
 			}
+
 
 
 
@@ -16145,11 +17494,41 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 	long long error_bases = 0;
 
 
+	///这里要改
+	bitmapper_bs_iter pre_unique_matched_read = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter pre_ambious_matched_read = (bitmapper_bs_iter)-1;
+	int output_mask;
+
 
 	//正向模式
 	i = 0;
 	while (1)
 	{
+
+
+
+		/********************************************输出不匹配结果用的********************************************/
+		///这里要改
+		///这说明上一个read没有匹配
+		///初始pre_ambious_matched_read = (bitmapper_bs_iter)-1, ambious_matched_read = 0
+		///这样就避免了初始的问题, 因为初始情况下不该输出任何东西
+		if (pre_ambious_matched_read == ambious_matched_read
+			&&
+			pre_unique_matched_read == unique_matched_read)
+		{
+			if (unmapped_out == 1)
+			{
+				directly_output_unmapped_PE(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
+					current_read1.length, &cell, &current_sub_buffer, 1);
+				directly_output_unmapped_PE(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
+					current_read2.length, &cell, &current_sub_buffer, 2);
+			}
+		}
+		pre_ambious_matched_read = ambious_matched_read;
+		pre_unique_matched_read = unique_matched_read;
+		/********************************************输出不匹配结果用的********************************************/
+
+
 
 
 		file_flag = inputReads_paired_directly(&current_read1, &current_read2);
@@ -17005,7 +18384,12 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 		
 
 	end_i:
-		if (mapping_pair == 1)
+		///这里要改
+		if (
+			(mapping_pair == 1)
+			||
+			(ambiguous_out == 1 && mapping_pair > 1)
+			)
 		{
 			
 
@@ -17087,20 +18471,23 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 			&&
 			(result2.site + matched_length2 <= _ih_refGenName[result2.chrome_id]._rg_chrome_length + 1))
 			{
-				unique_matched_read++;
+
+				///这里要改
+				if (mapping_pair == 1)
+				{
+					unique_matched_read++;
+				}
+				else
+				{
+					ambious_matched_read++;
+				}
+
 
 				total_bases = total_bases + current_read1.length + current_read2.length;
 				error_bases = error_bases + result1.err + result2.err;
 
 				if (output_methy == 1)
 				{
-					/**
-					output_paired_methy_buffer_1(current_read1.seq, current_read1.rseq, &result1, matched_length1,
-						&methy, &read1_site, &read1_length);
-
-					output_paired_methy_buffer_2(current_read2.seq, current_read2.rseq, &result2, matched_length2,
-						&methy, read1_site, read1_length);
-					**/
 
 					output_paired_methy_buffer(current_read1.name,
 						current_read1.seq, current_read1.rseq, &result1, matched_length1,
@@ -17109,17 +18496,30 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 				}
 				else
 				{
+
+
+					///这里要改
+					if (mapping_pair == 1)
+					{
+						output_mask = 0;
+					}
+					else
+					{
+						output_mask = 0x100;
+					}
+
+
 					directly_output_read1(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
 						&result1, &result2, current_read1.length,
 						matched_length1, matched_length2, paired_end_distance,
 						&cell,
-						&current_sub_buffer);
+						&current_sub_buffer, output_mask);
 
 					directly_output_read2(current_read2.name, current_read2.seq, current_read2.rseq, current_read2.qual,
 						&result2, &result1, current_read2.length,
 						matched_length2, matched_length1, paired_end_distance,
 						&cell,
-						&current_sub_buffer);
+						&current_sub_buffer, output_mask);
 				}
 				
 				
@@ -17545,6 +18945,11 @@ void* Map_Pair_Seq_split_fast(void* arg)
 	long long total_bases = 0;
 	long long error_bases = 0;
 
+	///这里要改
+	bitmapper_bs_iter pre_unique_matched_read = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter pre_ambious_matched_read = (bitmapper_bs_iter)-1;
+	int output_mask;
+
 
 	//正向模式
 	i = 0;
@@ -17559,14 +18964,52 @@ void* Map_Pair_Seq_split_fast(void* arg)
 
 
 
-
 		enq_i = enq_i + obtain_reads_num;
 
 		i = 0;
 
+		////这里要改
+		pre_unique_matched_read = (bitmapper_bs_iter)-1;
+		pre_ambious_matched_read = (bitmapper_bs_iter)-1;
 
-		while (i < obtain_reads_num)
+		////这里要改
+		while (1)
 		{
+
+
+			/********************************************输出不匹配结果用的********************************************/
+			///这里要改
+			///这说明上一个read没有匹配
+			///初始pre_ambious_matched_read = (bitmapper_bs_iter)-1, ambious_matched_read = 0
+			///这样就避免了初始的问题, 因为初始情况下不该输出任何东西
+			if (pre_ambious_matched_read == ambious_matched_read
+				&&
+				pre_unique_matched_read == unique_matched_read)
+			{
+				if (unmapped_out == 1)
+				{
+					directly_output_read1_return_buffer_unmapped_PE(
+						read_batch1[i - 1].name, read_batch1[i - 1].seq, read_batch1[i - 1].rseq, read_batch1[i - 1].qual,
+						read_batch1[i - 1].length, &current_sub_buffer, &bam_buffer, 1);
+					directly_output_read1_return_buffer_unmapped_PE(
+						read_batch2[i - 1].name, read_batch2[i - 1].seq, read_batch2[i - 1].rseq, read_batch2[i - 1].qual,
+						read_batch2[i - 1].length, &current_sub_buffer, &bam_buffer, 2);
+				}
+			}
+			pre_ambious_matched_read = ambious_matched_read;
+			pre_unique_matched_read = unique_matched_read;
+			/********************************************输出不匹配结果用的********************************************/
+
+			////这里要改
+			if (i >= obtain_reads_num)
+			{
+				break;
+			}
+
+
+
+
+
 
 
 			error_threshold1 = thread_e_f * read_batch1[i].length;
@@ -17866,7 +19309,12 @@ void* Map_Pair_Seq_split_fast(void* arg)
 
 
 		end_i:
-			if (mapping_pair == 1)
+			///这里要改
+			if (
+				(mapping_pair == 1)
+				||
+				(ambiguous_out == 1 && mapping_pair > 1)
+				)
 			{
 				///unique_matched_read++;
 
@@ -17961,7 +19409,15 @@ void* Map_Pair_Seq_split_fast(void* arg)
 					&&
 					(result2.site + matched_length2 <= _ih_refGenName[result2.chrome_id]._rg_chrome_length + 1))
 				{
-					unique_matched_read++;
+					///这里要改
+					if (mapping_pair == 1)
+					{
+						unique_matched_read++;
+					}
+					else
+					{
+						ambious_matched_read++;
+					}
 
 
 					total_bases = total_bases + read_batch1[i].length + read_batch2[i].length;
@@ -17974,25 +19430,26 @@ void* Map_Pair_Seq_split_fast(void* arg)
 							read_batch2[i].seq, read_batch2[i].rseq, &result2, matched_length2,
 							&methy, &PE_distance[thread_id]);
 
-						/**
-						output_paired_methy_buffer_mutiple_threads_1(read_batch1[i].seq, read_batch1[i].rseq, &result1, matched_length1,
-							&methy, &read1_site, &read1_length);
-
-
-
-						output_paired_methy_buffer_mutiple_threads_2(read_batch2[i].seq, read_batch2[i].rseq, &result2, matched_length2,
-							&methy, read1_site, read1_length);
-						**/
 					}
 					else
 					{
+						///这里要改
+						if (mapping_pair == 1)
+						{
+							output_mask = 0;
+						}
+						else
+						{
+							output_mask = 0x100;
+						}
+
 						directly_output_read1_return_buffer(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
 							&result1, &result2, read_batch1[i].length,
-							matched_length1, matched_length2, &current_sub_buffer, paired_end_distance, &bam_buffer);
+							matched_length1, matched_length2, &current_sub_buffer, paired_end_distance, &bam_buffer, output_mask);
 
 						directly_output_read2_return_buffer(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
 							&result2, &result1, read_batch2[i].length,
-							matched_length2, matched_length1, &current_sub_buffer, paired_end_distance, &bam_buffer);
+							matched_length2, matched_length1, &current_sub_buffer, paired_end_distance, &bam_buffer, output_mask);
 					}
 
 					
@@ -18041,6 +19498,7 @@ void* Map_Pair_Seq_split_fast(void* arg)
 
 	if (bam_output == 1)
 	{
+
 		flush_bam_buffer(&bam_buffer);
 	}
 
@@ -18461,12 +19919,10 @@ void* Map_Pair_Seq_split(void* arg)
 	long long error_bases = 0;
 
 
-
-
-
-
-
-
+	///这里要改
+	bitmapper_bs_iter pre_unique_matched_read = (bitmapper_bs_iter)-1;
+	bitmapper_bs_iter pre_ambious_matched_read = (bitmapper_bs_iter)-1;
+	int output_mask;
 
 
 
@@ -18491,9 +19947,60 @@ void* Map_Pair_Seq_split(void* arg)
 
 		i = 0;
 
+		////这里要改
+		pre_unique_matched_read = (bitmapper_bs_iter)-1;
+		pre_ambious_matched_read = (bitmapper_bs_iter)-1;
 
-		while (i < obtain_reads_num)
+
+		////这里要改
+		while (1)
 		{
+
+
+
+
+			/********************************************输出不匹配结果用的********************************************/
+			///这里要改
+			///这说明上一个read没有匹配
+			///初始pre_ambious_matched_read = (bitmapper_bs_iter)-1, ambious_matched_read = 0
+			///这样就避免了初始的问题, 因为初始情况下不该输出任何东西
+			if (pre_ambious_matched_read == ambious_matched_read
+				&&
+				pre_unique_matched_read == unique_matched_read)
+			{
+				if (unmapped_out == 1)
+				{
+					directly_output_read1_return_buffer_unmapped_PE(
+						read_batch1[i - 1].name, read_batch1[i - 1].seq, read_batch1[i - 1].rseq, read_batch1[i - 1].qual,
+						read_batch1[i - 1].length, &current_sub_buffer, &bam_buffer, 1);
+					directly_output_read1_return_buffer_unmapped_PE(
+						read_batch2[i - 1].name, read_batch2[i - 1].seq, read_batch2[i - 1].rseq, read_batch2[i - 1].qual,
+						read_batch2[i - 1].length, &current_sub_buffer, &bam_buffer, 2);
+				}
+			}
+			pre_ambious_matched_read = ambious_matched_read;
+			pre_unique_matched_read = unique_matched_read;
+			/********************************************输出不匹配结果用的********************************************/
+
+
+
+
+			////这里要改
+			if (i >= obtain_reads_num)
+			{
+				break;
+			}
+
+
+
+
+
+
+
+
+
+
+
 			error_threshold1 = thread_e_f * read_batch1[i].length;
 			if (error_threshold1 >= max_error_threshold)
 			{
@@ -19292,7 +20799,12 @@ void* Map_Pair_Seq_split(void* arg)
 
 
 		end_i:
-			if (mapping_pair == 1)
+			///这里要改
+			if (
+				(mapping_pair == 1)
+				||
+				(ambiguous_out == 1 && mapping_pair > 1)
+				)
 			{
 				///unique_matched_read++;
 
@@ -19365,18 +20877,6 @@ void* Map_Pair_Seq_split(void* arg)
 				//****************第二个read的后处理
 
 
-				/**
-				if (result2.site >= result1.site)
-				{
-					paired_end_distance = result2.site - result1.site + matched_length2;
-
-				}
-				else
-				{
-					paired_end_distance = result1.site - result2.site + matched_length1;
-				}
-				**/
-
 				paired_end_distance = calculate_TLEN(result1.site, matched_length1, result2.site, matched_length2);
 
 
@@ -19387,7 +20887,15 @@ void* Map_Pair_Seq_split(void* arg)
 					&&
 					(result2.site + matched_length2 <= _ih_refGenName[result2.chrome_id]._rg_chrome_length + 1))
 				{
-					unique_matched_read++;
+					///这里要改
+					if (mapping_pair == 1)
+					{
+						unique_matched_read++;
+					}
+					else
+					{
+						ambious_matched_read++;
+					}
 
 
 					total_bases = total_bases + read_batch1[i].length + read_batch2[i].length;
@@ -19402,23 +20910,27 @@ void* Map_Pair_Seq_split(void* arg)
 							read_batch1[i].seq, read_batch1[i].rseq, &result1, matched_length1,
 							read_batch2[i].seq, read_batch2[i].rseq, &result2, matched_length2,
 							&methy, &PE_distance[thread_id]);
-						/**
-						output_paired_methy_buffer_mutiple_threads_1(read_batch1[i].seq, read_batch1[i].rseq, &result1, matched_length1,
-							&methy, &read1_site, &read1_length);
-
-						output_paired_methy_buffer_mutiple_threads_2(read_batch2[i].seq, read_batch2[i].rseq, &result2, matched_length2,
-							&methy, read1_site, read1_length);
-						**/
 					}
 					else
 					{
+						///这里要改
+						if (mapping_pair == 1)
+						{
+							output_mask = 0;
+						}
+						else
+						{
+							output_mask = 0x100;
+						}
+
+
 						directly_output_read1_return_buffer(read_batch1[i].name, read_batch1[i].seq, read_batch1[i].rseq, read_batch1[i].qual,
 							&result1, &result2, read_batch1[i].length,
-							matched_length1, matched_length2, &current_sub_buffer, paired_end_distance, &bam_buffer);
+							matched_length1, matched_length2, &current_sub_buffer, paired_end_distance, &bam_buffer, output_mask);
 
 						directly_output_read2_return_buffer(read_batch2[i].name, read_batch2[i].seq, read_batch2[i].rseq, read_batch2[i].qual,
 							&result2, &result1, read_batch2[i].length,
-							matched_length2, matched_length1, &current_sub_buffer, paired_end_distance, &bam_buffer);
+							matched_length2, matched_length1, &current_sub_buffer, paired_end_distance, &bam_buffer, output_mask);
 					}
 
 					
@@ -19448,6 +20960,8 @@ void* Map_Pair_Seq_split(void* arg)
 		}
 
 	}
+
+
 
 
 	if (methy.current_size != 0)
@@ -19493,6 +21007,178 @@ void* Map_Pair_Seq_split(void* arg)
 
 
 }
+
+
+inline void output_sam_unmapped(char* name, char* read, char* r_read, char* qulity, int read_length,
+	bam_output_cell* cell, Output_buffer_sub_block* sub_block)
+{
+
+	if (bam_output == 0)
+	{
+
+
+
+		if (name[0] == '@')
+		{
+			fprintf(schema_out_fp, "%s\t", name + 1);
+		}
+		else
+		{
+			fprintf(schema_out_fp, "%s\t", name);
+		}
+
+
+
+		fprintf(schema_out_fp, "4\t*\t0\t0\t*\t*\t0\t0\t");
+
+
+		fprintf(schema_out_fp, "%s\t", read);
+
+		fprintf(schema_out_fp, "%s\n", qulity);
+
+	}
+	else
+	{
+
+
+		///这个一定一定要有
+		sub_block->length = 0;
+
+
+
+
+		if (name[0] == '@')
+		{
+			output_to_buffer_char_no_length(sub_block, name + 1);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+		else
+		{
+			output_to_buffer_char_no_length(sub_block, name);
+			//上面扩容时有32的余量，所以下面\t不需要检查了
+			sub_block->buffer[sub_block->length] = '\t';
+			sub_block->length++;
+		}
+
+
+		///fprintf(schema_out_fp, "4\t*\t0\t0\t*\t*\t0\t0\t");
+		sub_block->buffer[sub_block->length] = '4';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '*';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '0';
+		sub_block->length++;
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+
+
+
+		///result_string << read << "\t";
+		output_to_buffer_char_length(sub_block, read, read_length);
+		//上面扩容时有32的余量，所以下面\t不需要检查了
+		sub_block->buffer[sub_block->length] = '\t';
+		sub_block->length++;
+
+		///result_string << qulity << "\t";
+		output_to_buffer_char_length(sub_block, qulity, read_length);
+
+
+		///注意这里和多线程原始的算法不一样
+		/**
+		//上面扩容时有32的余量，所以下面\t不需要检查了
+		sub_block->buffer[sub_block->length] = '\n';
+		sub_block->length++;
+		**/
+		sub_block->buffer[sub_block->length] = '\0';
+
+		write_alignment_directly(sub_block->buffer, sub_block->length, cell);
+
+	}
+
+
+}
+
+
+
+inline int output_ambiguous_exact_map(
+	bitmapper_bs_iter read_length, char* read, char* r_read, char* qulity, char* cigar, char* name,
+	bitmapper_bs_iter* locates,
+	bitmapper_bs_iter top,
+	bitmapper_bs_iter number_of_hits,
+	bitmapper_bs_iter max_seed_matches,
+	bitmapper_bs_iter* matched_length,
+	bam_output_cell* cell,
+	Output_buffer_sub_block* current_sub_buffer,
+	int* map_among_references)
+{
+	bitmapper_bs_iter tmp_SA_length = 0;
+
+	///限制遍历上限
+	if (number_of_hits > max_seed_matches)
+	{
+		number_of_hits = max_seed_matches;
+	}
+
+	///这个cigar一定是精确匹配的
+	sprintf(cigar, "%dM", read_length);
+
+
+	bitmapper_bs_iter i = 0;
+
+	for (i = 0; i < number_of_hits; i++)
+	{
+
+		tmp_SA_length = 0;
+
+		locate_one_position_direct(locates, top + i, &tmp_SA_length, total_SA_length, *matched_length, 0);
+
+
+		output_sam_end_to_end(name, read, r_read, qulity,
+			locates[0],
+			read_length - 1,
+			0,
+			0,
+			cigar, read_length,
+			cell,
+			current_sub_buffer,
+			map_among_references, 256);
+
+		///如果找到了一个匹配，就结束
+		if ((*map_among_references) == 0)
+		{
+			return 1;
+		}
+	}
+}
+
+
+
 
 
 
@@ -19765,11 +21451,43 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 
 
+	///这里要改
+	bitmapper_bs_iter pre_matched_read = (bitmapper_bs_iter)-1;
+	int output_mask;
+	long long ambiguous_index;
+
+
 
 	//正向模式
 	i = 0;
 	while (1)
 	{
+
+
+		///这里要改
+		/********************************************输出不匹配结果用的********************************************/
+		///这里要改
+		///这说明上一个read没有匹配
+		///初始pre_matched_read = (bitmapper_bs_iter)-1, matched_read = 0
+		///这样就避免了初始的问题, 因为初始情况下不该输出任何东西
+		if (pre_matched_read == matched_read)
+		{
+			if (unmapped_out == 1)
+			{
+				output_sam_unmapped(current_read.name, current_read.seq, current_read.rseq, current_read.qual, 
+					current_read.length, &cell, &current_sub_buffer);
+			}
+		}
+		pre_matched_read = matched_read;
+		/********************************************输出不匹配结果用的********************************************/
+
+
+
+
+
+
+
+
 		file_flag = inputReads_single_directly(&current_read);
 		///如果等于0, 估计说明read读完了吧
 		if (file_flag == 0)
@@ -19782,6 +21500,7 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 
 		///等于3应该是有过多的N吧
+		///这个功能应该是不存在的
 		if (file_flag == 3)
 		{
 			continue;
@@ -19839,11 +21558,6 @@ int Map_Single_Seq_end_to_end(int thread_id)
 			first_seed_match_length = match_length;
 
 			
-			/**
-			if (number_of_hits == 1 && try_process_unique_exact_match_end_to_end(
-				current_read.length, current_read.seq, current_read.rseq, current_read.qual, cigar, current_read.name,
-				locates,
-				top, tmp_ref, &match_length, current_read.length - C_site - 1))**/
 			if (number_of_hits == 1 && try_process_unique_mismatch_end_to_end(
 				current_read.length, current_read.seq, current_read.rseq, current_read.qual, cigar, current_read.name,
 				locates,
@@ -19878,8 +21592,36 @@ int Map_Single_Seq_end_to_end(int thread_id)
 				///等于-1说明read里面没有C
 				if (C_site == -1)
 				{
-					matched_read++;
 					i++;
+					matched_read++;
+
+					///这里要改
+					if (ambiguous_out == 1)
+					{
+
+						output_ambiguous_exact_map(
+							current_read.length,
+							current_read.seq,
+							current_read.rseq,
+							current_read.qual,
+							cigar,
+							current_read.name,
+							locates,
+							top,
+							number_of_hits,
+							max_seed_matches,
+							&match_length,
+							&cell,
+							&current_sub_buffer,
+							&map_among_references);
+
+						if (map_among_references != 0)
+						{
+							matched_read--;
+						}
+
+					}
+					
 					continue;
 				}
 
@@ -20129,7 +21871,8 @@ int Map_Single_Seq_end_to_end(int thread_id)
 					1,
 					cigar,
 					current_read.length,
-					&methy);
+					&methy,
+					&map_among_references);
 			}
 			else
 			{
@@ -20147,7 +21890,7 @@ int Map_Single_Seq_end_to_end(int thread_id)
 					current_read.length,
 					&cell,
 					&current_sub_buffer,
-					&map_among_references);
+					&map_among_references,0);
 			}
 
 
@@ -20250,7 +21993,7 @@ int Map_Single_Seq_end_to_end(int thread_id)
 					best_cigar, &methy,
 					&cell,
 					&current_sub_buffer,
-					&map_among_references);
+					&map_among_references,0);
 
 
 				if (map_among_references == 0)
@@ -20268,6 +22011,29 @@ int Map_Single_Seq_end_to_end(int thread_id)
 			else if (min_err_index != -1)
 			{
 				matched_read++;
+
+				///这里要改
+				if (ambiguous_out == 1)
+				{
+					ambiguous_index = -2 - min_err_index;
+					candidates_votes[0].err = candidates_votes[ambiguous_index].err;
+					candidates_votes[0].end_site = candidates_votes[ambiguous_index].end_site;
+					candidates_votes[0].site = candidates_votes[ambiguous_index].site;
+
+					calculate_best_map_cigar_end_to_end
+						(candidates_votes, &min_candidates_votes_length,
+						current_read.length, error_threshold1, tmp_ref,
+						current_read.seq, current_read.rseq, current_read.qual, cigar, path, matrix, matrix_bit, current_read.name,
+						best_cigar, &methy,
+						&cell,
+						&current_sub_buffer,
+						&map_among_references, 256);
+
+					if (map_among_references != 0)
+					{
+						matched_read--;
+					}
+				}
 			}
 
 		}
@@ -20309,6 +22075,59 @@ int Map_Single_Seq_end_to_end(int thread_id)
 	///fprintf(stderr, "debug_1_mismatch: %lld\n", debug_1_mismatch);
 
 	return 1;
+}
+
+
+
+inline int output_ambiguous_exact_map_pbat(
+	bitmapper_bs_iter read_length, char* read, char* r_read, char* qulity, char* cigar, char* name,
+	bitmapper_bs_iter* locates,
+	bitmapper_bs_iter top,
+	bitmapper_bs_iter number_of_hits,
+	bitmapper_bs_iter max_seed_matches,
+	bitmapper_bs_iter* matched_length,
+	bam_output_cell* cell,
+	Output_buffer_sub_block* current_sub_buffer,
+	int* map_among_references)
+{
+	bitmapper_bs_iter tmp_SA_length = 0;
+
+	///限制遍历上限
+	if (number_of_hits > max_seed_matches)
+	{
+		number_of_hits = max_seed_matches;
+	}
+
+	///这个cigar一定是精确匹配的
+	sprintf(cigar, "%dM", read_length);
+
+
+	bitmapper_bs_iter i = 0;
+
+	for (i = 0; i < number_of_hits; i++)
+	{
+
+		tmp_SA_length = 0;
+
+		locate_one_position_direct(locates, top + i, &tmp_SA_length, total_SA_length, *matched_length, 0);
+
+
+		output_sam_end_to_end_pbat(name, read, r_read, qulity,
+			locates[0],
+			read_length - 1,
+			0,
+			0,
+			cigar, read_length,
+			cell,
+			current_sub_buffer,
+			map_among_references, 256);
+
+		///如果找到了一个匹配，就结束
+		if ((*map_among_references) == 0)
+		{
+			return 1;
+		}
+	}
 }
 
 
@@ -20562,7 +22381,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 
 	long long total_is_mutiple_map = 0;
 	long long total_cutted = 0;
-	long long direct_cut = 0;
+	///long long direct_cut = 0;
 	///long long number_of_short_seeds = 0;
 	///long long number_of_short_seeds_matches = 0;
 	int C_site;
@@ -20603,12 +22422,38 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 
 
 
+	///这里要改
+	bitmapper_bs_iter pre_matched_read = (bitmapper_bs_iter)-1;
+	int output_mask;
+	long long ambiguous_index;
+
 
 	//正向模式
 	i = 0;
 	///while (getReads_single(&current_read))
 	while (1)
 	{
+
+
+		///这里要改
+		/********************************************输出不匹配结果用的********************************************/
+		///这里要改
+		///这说明上一个read没有匹配
+		///初始pre_matched_read = (bitmapper_bs_iter)-1, matched_read = 0
+		///这样就避免了初始的问题, 因为初始情况下不该输出任何东西
+		if (pre_matched_read == matched_read)
+		{
+			if (unmapped_out == 1)
+			{
+				///这个seq和rseq要逆过来
+				output_sam_unmapped(current_read.name, current_read.rseq, current_read.seq, current_read.qual,
+					current_read.length, &cell, &current_sub_buffer);
+			}
+		}
+		pre_matched_read = matched_read;
+		/********************************************输出不匹配结果用的********************************************/
+
+
 
 		///int file_flag = inputReads_single(&current_read);
 
@@ -20774,7 +22619,34 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 				{
 					matched_read++;
 					i++;
-					direct_cut++;
+					
+
+					///这里要改
+					if (ambiguous_out == 1)
+					{
+
+						output_ambiguous_exact_map_pbat(
+							current_read.length,
+							current_read.seq,
+							current_read.rseq,
+							current_read.qual,
+							cigar,
+							current_read.name,
+							locates,
+							top,
+							number_of_hits,
+							max_seed_matches,
+							&match_length,
+							&cell,
+							&current_sub_buffer,
+							&map_among_references);
+
+						if (map_among_references != 0)
+						{
+							matched_read--;
+						}
+
+					}
 
 
 
@@ -21089,7 +22961,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 					1,
 					cigar,
 					current_read.length,
-					&methy);
+					&methy, &map_among_references);
 			}
 			else
 			{
@@ -21106,7 +22978,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 					cigar,
 					current_read.length,
 					&cell,
-					&current_sub_buffer, &map_among_references);
+					&current_sub_buffer, &map_among_references,0);
 
 			}
 
@@ -21227,7 +23099,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 					current_read.length, error_threshold1, tmp_ref,
 					current_read.seq, current_read.rseq, current_read.qual, cigar, path, matrix, matrix_bit, current_read.name,
 					best_cigar, &methy, &cell,
-					&current_sub_buffer, &map_among_references);
+					&current_sub_buffer, &map_among_references, 0);
 
 				if (map_among_references == 0)
 				{
@@ -21244,21 +23116,35 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 			}
 			else if (min_err_index == -1)
 			{
-
-				///fprintf(stderr, "name: %s\n", current_read.name);
-				///fprintf(stderr, "length: %u\n", current_read.length);
-				///fprintf(stderr, "max_seed_number: %u\n", max_seed_number);
-				///fprintf(stderr, "seq: %s\n", current_read.seq);
-				///fprintf(stderr, "bsSeq: %s\n", bsSeq);
-				///fprintf(stderr, "rseq: %s\n\n\n", current_read.rseq);
-				
-				
-
 				unmatched_read++;
 			}
 			else
 			{
 				matched_read++;
+
+
+				///这里要改
+				if (ambiguous_out == 1)
+				{
+					ambiguous_index = -2 - min_err_index;
+					candidates_votes[0].err = candidates_votes[ambiguous_index].err;
+					candidates_votes[0].end_site = candidates_votes[ambiguous_index].end_site;
+					candidates_votes[0].site = candidates_votes[ambiguous_index].site;
+
+					calculate_best_map_cigar_end_to_end_pbat
+						(candidates_votes, &min_candidates_votes_length,
+						current_read.length, error_threshold1, tmp_ref,
+						current_read.seq, current_read.rseq, current_read.qual, cigar, path, matrix, matrix_bit, current_read.name,
+						best_cigar, &methy,
+						&cell,
+						&current_sub_buffer,
+						&map_among_references, 256);
+
+					if (map_among_references != 0)
+					{
+						matched_read--;
+					}
+				}
 			}
 
 
@@ -21681,6 +23567,71 @@ inline void load_batch_read_pbat(Read* read_batch, int batch_read_size,
 }
 
 
+
+
+
+
+
+
+inline int output_ambiguous_exact_map_output_buffer(
+	bitmapper_bs_iter read_length, char* read, char* r_read, char* qulity, char* cigar, char* name,
+	bitmapper_bs_iter* locates,
+	bitmapper_bs_iter top,
+	bitmapper_bs_iter number_of_hits,
+	bitmapper_bs_iter max_seed_matches,
+	bitmapper_bs_iter* matched_length,
+	Output_buffer_sub_block* sub_block,
+	bam_phrase* bam_groups,
+	int* map_among_references, int thread_id)
+{
+
+
+
+	bitmapper_bs_iter tmp_SA_length = 0;
+
+	///限制遍历上限
+	if (number_of_hits > max_seed_matches)
+	{
+		number_of_hits = max_seed_matches;
+	}
+
+	///这个cigar一定是精确匹配的
+	sprintf(cigar, "%dM", read_length);
+
+
+	bitmapper_bs_iter i = 0;
+
+	for (i = 0; i < number_of_hits; i++)
+	{
+
+		tmp_SA_length = 0;
+
+		locate_one_position_direct(locates, top + i, &tmp_SA_length, total_SA_length, *matched_length, 0);
+
+		
+	
+		output_sam_end_to_end_output_buffer(name, read, r_read, qulity,
+			locates[0],
+			read_length - 1,
+			0,
+			0,
+			cigar, read_length,
+			sub_block,
+			bam_groups,
+			map_among_references, 256);
+		
+
+		///如果找到了一个匹配，就结束
+		if ((*map_among_references) == 0)
+		{
+			return 1;
+		}
+	}
+}
+
+
+
+
 void* Map_Single_Seq_split(void* arg)
 {
 
@@ -21902,7 +23853,7 @@ void* Map_Single_Seq_split(void* arg)
 
 	long long total_is_mutiple_map = 0;
 	long long total_cutted = 0;
-	long long direct_cut = 0;
+	///long long direct_cut = 0;
 	long long direct_match = 0;
 	int C_site;
 	///std::stringstream result_string;
@@ -21965,6 +23916,20 @@ void* Map_Single_Seq_split(void* arg)
 	long long error_bases = 0;
 
 
+
+
+
+	///这里要改
+	bitmapper_bs_iter pre_matched_read = (bitmapper_bs_iter)-1;
+	int output_mask;
+	long long ambiguous_index;
+
+
+
+
+
+
+
 	file_flag = 1;
 	while (file_flag != 0)
 	{
@@ -21980,8 +23945,43 @@ void* Map_Single_Seq_split(void* arg)
 		enq_i = enq_i + obtain_reads_num;
 
 		i = 0;
-		while (i < obtain_reads_num)
+
+		///这里要改
+		pre_matched_read = (bitmapper_bs_iter)-1;
+		///这里要改
+		while (1)
 		{
+
+
+
+			/********************************************输出不匹配结果用的********************************************/
+			///这里要改
+			///这说明上一个read没有匹配
+			///初始pre_ambious_matched_read = (bitmapper_bs_iter)-1, ambious_matched_read = 0
+			///这样就避免了初始的问题, 因为初始情况下不该输出任何东西
+			if (pre_matched_read == matched_read)
+			{
+				if (unmapped_out == 1)
+				{
+					output_sam_end_to_end_output_buffer_unmapped(
+						read_batch[i - 1].name, read_batch[i - 1].seq, read_batch[i - 1].rseq, read_batch[i - 1].qual,
+						read_batch[i - 1].length, &current_sub_buffer, &bam_buffer);
+				}
+			}
+			pre_matched_read = matched_read;
+			/********************************************输出不匹配结果用的********************************************/
+
+
+			////这里要改
+			if (i >= obtain_reads_num)
+			{
+				break;
+			}
+
+
+
+
+
 			
 			///因为参考组是反的, 那么查询的时候实际上read也要反着查
 			///所以实际上对是把read的反向做bs转换
@@ -22048,19 +24048,7 @@ void* Map_Single_Seq_split(void* arg)
 
 
 
-				
-
-
-					/**
-				if (number_of_hits == 1 && try_process_unique_exact_match_end_to_end_get_result_string(
-					read_batch[i].length, read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual, cigar, read_batch[i].name,
-					locates,
-					top, tmp_ref, &match_length, read_batch[i].length - C_site - 1, result_string))**/
-				/**
-				if (number_of_hits == 1 && try_process_unique_mismatch_end_to_end_get_result_string(
-					read_batch[i].length, read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual, cigar, read_batch[i].name,
-					locates,
-					top, tmp_ref, &match_length, read_batch[i].length - C_site - 1, result_string, &get_error))**/
+		
 				if (number_of_hits == 1 && try_process_unique_mismatch_end_to_end_output_buffer(
 					read_batch[i].length, read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual, cigar, read_batch[i].name,
 					locates,
@@ -22099,8 +24087,40 @@ void* Map_Single_Seq_split(void* arg)
 					if (C_site == -1)
 					{
 						matched_read++;
+						
+
+
+						
+						///这里要改
+						if (ambiguous_out == 1)
+						{
+							output_ambiguous_exact_map_output_buffer(
+								read_batch[i].length,
+								read_batch[i].seq,
+								read_batch[i].rseq,
+								read_batch[i].qual,
+								cigar,
+								read_batch[i].name,
+								locates,
+								top,
+								number_of_hits,
+								max_seed_matches,
+								&match_length,
+								&current_sub_buffer, 
+								&bam_buffer,
+								&map_among_references, thread_id);
+						
+
+							if (map_among_references != 0)
+							{
+								matched_read--;
+							}
+
+						}
+						
+						///注意i一定要放在output_ambiguous_exact_map_output_buffer之后啊
+					    ///血的教训，不放会报错啊啊啊
 						i++;
-						direct_cut++;
 						continue;
 					}
 
@@ -22395,7 +24415,7 @@ void* Map_Single_Seq_split(void* arg)
 						0,
 						1,
 						cigar,
-						read_batch[i].length, &methy);
+						read_batch[i].length, &methy, &map_among_references);
 				}
 				else
 				{
@@ -22409,7 +24429,7 @@ void* Map_Single_Seq_split(void* arg)
 						0,
 						1,
 						cigar,
-						read_batch[i].length, &current_sub_buffer, &bam_buffer, &map_among_references);
+						read_batch[i].length, &current_sub_buffer, &bam_buffer, &map_among_references, 0);
 				}
 
 				
@@ -22511,26 +24531,16 @@ void* Map_Single_Seq_split(void* arg)
 
 				if (min_err_index >= 0)
 				{
-
-					///total_best_mapping_site++;
 					
 					min_candidates_votes_length = 0;
 
-					/**
-					calculate_best_map_cigar_end_to_end_result_string
-						(candidates_votes, &min_candidates_votes_length,
-						read_batch[i].length, error_threshold1, tmp_ref,
-						read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual,
-						cigar, path, matrix, matrix_bit, read_batch[i].name,
-						best_cigar, result_string);
-					**/
 
 					calculate_best_map_cigar_end_to_end_output_buffer
 						(candidates_votes, &min_candidates_votes_length,
 						read_batch[i].length, error_threshold1, tmp_ref,
 						read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual,
 						cigar, path, matrix, matrix_bit, read_batch[i].name,
-						best_cigar, &current_sub_buffer, &methy, &bam_buffer, &map_among_references);
+						best_cigar, &current_sub_buffer, &methy, &bam_buffer, &map_among_references,0);
 
 					if (map_among_references == 0)
 					{
@@ -22551,6 +24561,31 @@ void* Map_Single_Seq_split(void* arg)
 				else
 				{
 					matched_read++;
+
+
+					///这里要改
+					if (ambiguous_out == 1)
+					{
+						ambiguous_index = -2 - min_err_index;
+						candidates_votes[0].err = candidates_votes[ambiguous_index].err;
+						candidates_votes[0].end_site = candidates_votes[ambiguous_index].end_site;
+						candidates_votes[0].site = candidates_votes[ambiguous_index].site;
+
+						calculate_best_map_cigar_end_to_end_output_buffer
+							(candidates_votes, &min_candidates_votes_length,
+							read_batch[i].length, error_threshold1, tmp_ref,
+							read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual,
+							cigar, path, matrix, matrix_bit, read_batch[i].name,
+							best_cigar, &current_sub_buffer, &methy, &bam_buffer, &map_among_references, 256);
+
+						if (map_among_references != 0)
+						{
+							matched_read--;
+						}
+					}
+
+
+
 				}
 
 
@@ -22627,12 +24662,73 @@ void* Map_Single_Seq_split(void* arg)
 
 
 
-	///fprintf(stdout, "thread %d completed!\n", thread_id);
+	fprintf(stdout, "thread %d completed!\n", thread_id);
 
 	///这里要改
 	///fprintf(stderr, "debug_1_mismatch: %lld\n", debug_1_mismatch);
 
 }
+
+
+
+
+inline int output_ambiguous_exact_map_output_buffer_pbat(
+	bitmapper_bs_iter read_length, char* read, char* r_read, char* qulity, char* cigar, char* name,
+	bitmapper_bs_iter* locates,
+	bitmapper_bs_iter top,
+	bitmapper_bs_iter number_of_hits,
+	bitmapper_bs_iter max_seed_matches,
+	bitmapper_bs_iter* matched_length,
+	Output_buffer_sub_block* sub_block,
+	bam_phrase* bam_groups,
+	int* map_among_references, int thread_id)
+{
+
+
+
+	bitmapper_bs_iter tmp_SA_length = 0;
+
+	///限制遍历上限
+	if (number_of_hits > max_seed_matches)
+	{
+		number_of_hits = max_seed_matches;
+	}
+
+	///这个cigar一定是精确匹配的
+	sprintf(cigar, "%dM", read_length);
+
+
+	bitmapper_bs_iter i = 0;
+
+	for (i = 0; i < number_of_hits; i++)
+	{
+
+		tmp_SA_length = 0;
+
+		locate_one_position_direct(locates, top + i, &tmp_SA_length, total_SA_length, *matched_length, 0);
+
+
+
+		output_sam_end_to_end_pbat_output_buffer(name, read, r_read, qulity,
+			locates[0],
+			read_length - 1,
+			0,
+			0,
+			cigar, read_length,
+			sub_block,
+			bam_groups,
+			map_among_references, 256);
+
+
+		///如果找到了一个匹配，就结束
+		if ((*map_among_references) == 0)
+		{
+			return 1;
+		}
+	}
+}
+
+
 
 
 void* Map_Single_Seq_split_pbat(void* arg)
@@ -22846,7 +24942,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 	long long total_is_mutiple_map = 0;
 	long long total_cutted = 0;
-	long long direct_cut = 0;
+	///long long direct_cut = 0;
 	///long long direct_match = 0;
 	int C_site;
 	///std::stringstream result_string;
@@ -22921,6 +25017,13 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 
 
+	///这里要改
+	bitmapper_bs_iter pre_matched_read = (bitmapper_bs_iter)-1;
+	int output_mask;
+	long long ambiguous_index;
+
+
+
 	file_flag = 1;
 	while (file_flag != 0)
 	{
@@ -22934,8 +25037,60 @@ void* Map_Single_Seq_split_pbat(void* arg)
 		enq_i = enq_i + obtain_reads_num;
 
 		i = 0;
-		while (i < obtain_reads_num)
+
+
+		///这里要改
+		pre_matched_read = (bitmapper_bs_iter)-1;
+		///这里要改
+		while (1)
 		{
+
+
+
+
+			/********************************************输出不匹配结果用的********************************************/
+			///这里要改
+			///这说明上一个read没有匹配
+			///初始pre_ambious_matched_read = (bitmapper_bs_iter)-1, ambious_matched_read = 0
+			///这样就避免了初始的问题, 因为初始情况下不该输出任何东西
+			if (pre_matched_read == matched_read)
+			{
+				if (unmapped_out == 1)
+				{
+					///seq和rseq要逆过来
+					output_sam_end_to_end_output_buffer_unmapped(
+						read_batch[i - 1].name, read_batch[i - 1].rseq, read_batch[i - 1].seq, read_batch[i - 1].qual,
+						read_batch[i - 1].length, &current_sub_buffer, &bam_buffer);
+				}
+			}
+			pre_matched_read = matched_read;
+			/********************************************输出不匹配结果用的********************************************/
+
+
+			////这里要改
+			if (i >= obtain_reads_num)
+			{
+				break;
+			}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 			///因为参考组是反的, 那么查询的时候实际上read也要反着查
 			///所以实际上对是把read的反向做bs转换
@@ -23041,8 +25196,43 @@ void* Map_Single_Seq_split_pbat(void* arg)
 					if (C_site == -1)
 					{
 						matched_read++;
+
+
+
+
+						///这里要改
+						if (ambiguous_out == 1)
+						{
+							output_ambiguous_exact_map_output_buffer_pbat(
+								read_batch[i].length,
+								read_batch[i].seq,
+								read_batch[i].rseq,
+								read_batch[i].qual,
+								cigar,
+								read_batch[i].name,
+								locates,
+								top,
+								number_of_hits,
+								max_seed_matches,
+								&match_length,
+								&current_sub_buffer,
+								&bam_buffer,
+								&map_among_references, thread_id);
+
+
+							if (map_among_references != 0)
+							{
+								matched_read--;
+							}
+
+						}
+
+
+
+
+
+
 						i++;
-						direct_cut++;
 						continue;
 					}
 
@@ -23336,7 +25526,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 						1,
 						cigar,
 						read_batch[i].length,
-						&methy);
+						&methy, &map_among_references);
 				}
 				else
 				{
@@ -23353,7 +25543,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 						cigar,
 						read_batch[i].length,
 						&current_sub_buffer,
-						&bam_buffer, &map_among_references);
+						&bam_buffer, &map_among_references,0);
 				}
 
 				if (map_among_references == 0)
@@ -23464,7 +25654,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 						read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual,
 						cigar, path, matrix, matrix_bit, read_batch[i].name,
 						best_cigar, &current_sub_buffer, &methy,
-						&bam_buffer, &map_among_references);
+						&bam_buffer, &map_among_references,0);
 
 					if (map_among_references == 0)
 					{
@@ -23486,6 +25676,30 @@ void* Map_Single_Seq_split_pbat(void* arg)
 				else
 				{
 					matched_read++;
+
+
+
+					///这里要改
+					if (ambiguous_out == 1)
+					{
+						ambiguous_index = -2 - min_err_index;
+						candidates_votes[0].err = candidates_votes[ambiguous_index].err;
+						candidates_votes[0].end_site = candidates_votes[ambiguous_index].end_site;
+						candidates_votes[0].site = candidates_votes[ambiguous_index].site;
+
+						calculate_best_map_cigar_end_to_end_pbat_output_buffer
+							(candidates_votes, &min_candidates_votes_length,
+							read_batch[i].length, error_threshold1, tmp_ref,
+							read_batch[i].seq, read_batch[i].rseq, read_batch[i].qual,
+							cigar, path, matrix, matrix_bit, read_batch[i].name,
+							best_cigar, &current_sub_buffer, &methy, &bam_buffer, &map_among_references, 256);
+
+						if (map_among_references != 0)
+						{
+							matched_read--;
+						}
+					}
+
 				}
 
 
@@ -23568,7 +25782,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 	mapped_bases[thread_id] = total_bases;
 	error_mapped_bases[thread_id] = error_bases;
 
-	///fprintf(stdout, "thread %d completed!\n", thread_id);
+	fprintf(stdout, "thread %d completed!\n", thread_id);
 
 	///这里要改
 	///fprintf(stderr, "debug_1_mismatch: %lld\n", debug_1_mismatch);

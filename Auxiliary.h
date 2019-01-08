@@ -61,6 +61,13 @@ extern bitmapper_bs_iter cut_length;
 extern double methylation_buffer_times;
 extern int is_methy;
 extern int bam_output;
+extern double maxVariantFrac;
+extern int minVariantDepth;
+extern int CpG;
+extern int CHG;
+extern int CHH;
+extern int unmapped_out;
+extern int ambiguous_out;
 
 
 double	Get_T(void);
