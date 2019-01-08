@@ -155,6 +155,8 @@ We recommd users to first remove the duplicates by Picard or samtools, and then 
 | --max | NULL | Int | 0 | Maximum observed template length between a pair of end sequences. |
 | --threads | -t | Int | 1 | Set the number of CPU threads. |
 | --pbat | NULL | NULL | NULL | Map the bs-seq from pbat protocol. |
+| --unmapped_out | NULL | NULL | NULL | Report unmapped reads. |
+| --ambiguous_out | NULL | NULL | NULL | Random report one of hit of each ambiguous mapped read. |
 
 
 
@@ -211,6 +213,11 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 
 ### Changelog ###
+
+(7) January 8, 2019: version 1.0.0.6 released. 
+
+    >>Added support of BitMapperBS to report unmapped reads and ambiguous mapped read.
+
 
 (6) December 27, 2018: version 1.0.0.6 released. 
 

@@ -352,7 +352,7 @@ void Print_H()
   ///fprintf(stdout, " --seed, -s [int]\tSet the length of seed.\n");
   fprintf(stdout, " --pbat \t\tMapping the BS-seq from pbat protocol.\n");
   fprintf(stdout, " --unmapped_out \tReport unmapped reads.\n");
-  fprintf(stdout, " --ambiguous_out \tRandom report one of hit of an ambiguous mapped read.\n");
+  fprintf(stdout, " --ambiguous_out \tRandom report one of hit of each ambiguous mapped read.\n");
   
   fprintf(stdout,"\n\n");
 
