@@ -59,7 +59,7 @@ int CHG = 0;
 int CHH = 0;
 int unmapped_out = 0;
 int ambiguous_out = 0;
-
+int mapstats = 0;
 
 
 void Print_H();
@@ -84,6 +84,7 @@ int CommandLine_process (int argc, char *argv[])
 	  { "CpG", no_argument, &CpG, 1 },
 	  { "CHG", no_argument, &CHG, 1 },
 	  { "CHH", no_argument, &CHH, 1 },
+	  { "mapstats", no_argument, &mapstats, 1},
 	  { "unmapped_out", no_argument, &unmapped_out, 1 },
 	  { "ambiguous_out", no_argument, &ambiguous_out, 1 },
 	  { "methy_extract", required_argument, 0, 'f' },
@@ -353,6 +354,7 @@ void Print_H()
   fprintf(stdout, " --pbat \t\tMapping the BS-seq from pbat protocol.\n");
   fprintf(stdout, " --unmapped_out \tReport unmapped reads.\n");
   fprintf(stdout, " --ambiguous_out \tRandom report one of hit of each ambiguous mapped read.\n");
+  fprintf(stdout, " --mapstats \t\tOutput the statistical information of read alignment into file named \"OUTPUT_FILE.mapstats\", \n\t\t\twhere \"OUTPUT_FILE\" is the name of output SAM or BAM file (defined by the option \"-o\").\n");
   
   fprintf(stdout,"\n\n");
 

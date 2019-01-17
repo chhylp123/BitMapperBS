@@ -13,7 +13,6 @@
 #include<stdint.h>
 #include <zlib.h>
 
-
 /**
 typedef struct
 {
@@ -78,6 +77,7 @@ typedef struct Read_buffer_pe
 
 
 
+
 typedef struct
 {
 	Read* read;
@@ -102,6 +102,18 @@ typedef struct Read_buffer_single
 	{};
 
 } Read_buffer_single;
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void init_Single_Seq_input_buffer(int thread_number);

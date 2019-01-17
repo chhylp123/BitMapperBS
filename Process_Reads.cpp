@@ -55,6 +55,10 @@ char tmp_read_buffer2[SEQ_MAX_LENGTH];
 int file_format;
 char flag_array[2];
 
+
+
+
+
 inline char *Input_line_from_file1( char *seq )
 {
 	if (file_format == FASTQ)
@@ -1838,7 +1842,7 @@ inline void load_sub_block_single_read_pbat(Read* read_batch1, int batch_read_si
 ///初始化缓冲区
 void init_Pair_Seq_input_buffer(int thread_number)
 {
-	if (file_format == FASTQ)
+	///if (file_format == FASTQ)
 	{
 		///每一个sub_block的大小
 		sub_block_inner_size = sub_block_inner_size / 2;
@@ -1861,13 +1865,14 @@ void init_Pair_Seq_input_buffer(int thread_number)
 		}
 
 		buffer_pe.all_read_end = 0;
-	}
+	}/**
 	else
 	{
 		///每一个sub_block的大小
 		sub_block_inner_size = sub_block_inner_size / 2;
 		buffer_pe.sub_block_inner_size = sub_block_inner_size;
 	}
+	**/
 
 	
 
@@ -1882,7 +1887,7 @@ void init_Pair_Seq_input_buffer(int thread_number)
 ///初始化缓冲区
 void init_Single_Seq_input_buffer(int thread_number)
 {
-	if (file_format == FASTQ)
+	///if (file_format == FASTQ)
 	{
 		///每一个sub_block的大小
 		///单端是不是不用除以2
@@ -1906,12 +1911,12 @@ void init_Single_Seq_input_buffer(int thread_number)
 		}
 
 		buffer_single.all_read_end = 0;
-	}
+	}/**
 	else
 	{
 		buffer_single.sub_block_inner_size = sub_block_inner_size;
 	}
-
+	**/
 
 
 }
@@ -2382,7 +2387,7 @@ void init_single_read(Read* read)
 int get_pe_reads_mul_thread(Read_buffer_pe_sub_block* curr_sub_block)
 {
 
-	if (file_format == FASTQ)
+	///if (file_format == FASTQ)
 	{
 		pthread_mutex_lock(&i_readinputMutex);
 
@@ -2429,7 +2434,7 @@ int get_pe_reads_mul_thread(Read_buffer_pe_sub_block* curr_sub_block)
 			return 0;
 		}
 
-	}
+	}/**
 	else
 	{
 		int file_flag = 0;
@@ -2452,6 +2457,7 @@ int get_pe_reads_mul_thread(Read_buffer_pe_sub_block* curr_sub_block)
 
 		return 1;
 	}
+	**/
 
 
 
@@ -2464,7 +2470,7 @@ int get_pe_reads_mul_thread(Read_buffer_pe_sub_block* curr_sub_block)
 int get_single_reads_mul_thread(Read_buffer_single_sub_block* curr_sub_block)
 {
 
-	if (file_format == FASTQ)
+	///if (file_format == FASTQ)
 	{
 		pthread_mutex_lock(&i_readinputMutex);
 
@@ -2510,7 +2516,7 @@ int get_single_reads_mul_thread(Read_buffer_single_sub_block* curr_sub_block)
 
 			return 0;
 		}
-	}
+	}/**
 	else
 	{
 		int file_flag = 0;
@@ -2533,7 +2539,7 @@ int get_single_reads_mul_thread(Read_buffer_single_sub_block* curr_sub_block)
 
 		return 1;
 	}
-
+	**/
 
 }
 
@@ -2547,7 +2553,7 @@ int get_single_reads_mul_thread(Read_buffer_single_sub_block* curr_sub_block)
 int get_single_reads_mul_thread_pbat(Read_buffer_single_sub_block* curr_sub_block)
 {
 
-	if (file_format == FASTQ)
+	///if (file_format == FASTQ)
 	{
 
 
@@ -2604,7 +2610,7 @@ int get_single_reads_mul_thread_pbat(Read_buffer_single_sub_block* curr_sub_bloc
 		}
 
 
-	}
+	}/**
 	else
 	{
 
@@ -2629,7 +2635,7 @@ int get_single_reads_mul_thread_pbat(Read_buffer_single_sub_block* curr_sub_bloc
 
 		return 1;
 	}
-
+	**/
 
 }
 

@@ -292,9 +292,37 @@ int main(int argc, char *argv[])
 	  fprintf(stdout, "%-47s %0.2f\%\n", "Mismatch and Indel Rate:",
 		  ((double)number_of_mapped_errors / (double)number_of_mapped_bases) * 100);
 
+	  if (mapstats == 1)
+	  {
+		  char mapstatsFileName[NAME_LENGTH];
+
+		  sprintf(mapstatsFileName, "%s.mapstats", outputFileName);
+
+		  FILE* mapstats_fp = fopen(mapstatsFileName, "w");
+			 
+		  if (mapstats_fp != NULL)
+		  {
+			  fprintf(mapstats_fp, "%-48s%lld\n", "No. of Reads:", number_of_read);
+			  fprintf(mapstats_fp, "%-48s%lld (%0.2f\%)\n", "No. of Unique Mapped Reads:",
+				  number_of_unique_mapped_read, ((double)number_of_unique_mapped_read / (double)number_of_read) * 100);
+			  fprintf(mapstats_fp, "%-48s%lld (%0.2f\%)\n", "No. of Ambiguous Mapped Reads:",
+				  number_of_ambiguous_mapped_read, ((double)number_of_ambiguous_mapped_read / (double)number_of_read) * 100);
+			  fprintf(mapstats_fp, "%-48s%lld (%0.2f\%)\n", "No. of Unmapped Reads:",
+				  number_of_unmapped_read, ((double)number_of_unmapped_read / (double)number_of_read) * 100);
+
+			  fprintf(mapstats_fp, "%-47s %0.2f\%\n", "Mismatch and Indel Rate:",
+				  ((double)number_of_mapped_errors / (double)number_of_mapped_bases) * 100);
+
+			  fclose(mapstats_fp);
+		  }
+	  }
+
     }
 	else if (is_methy)
 	{
+
+		double total_time = 0;
+		double startTime = Get_T();
 
 		fprintf(stdout, "minVariantDepth: %d\n", minVariantDepth);
 		fprintf(stdout, "maxVariantFrac: %f\n", maxVariantFrac);
@@ -339,10 +367,27 @@ int main(int argc, char *argv[])
 		else
 		{
 			fprintf(stdout, "Extract from paired-end alignment ...\n");
-			methy_extract_PE(0, Read_File1, maxDistance_pair, need_context);
+
+			if (THREAD_COUNT == 1)
+			{
+				methy_extract_PE(0, Read_File1, maxDistance_pair, need_context);
+			}
+			else
+			{
+				methy_extract_PE_mutiple_thread(0, Read_File1, maxDistance_pair, need_context);
+			}
+			
 		}
+
+
+		total_time += Get_T() - startTime;
+
+		fprintf(stdout, "-----------------------------------------------------------------------------------------------------------\n");
+		fprintf(stdout, "%19s%16.2f\n\n", "Total:", total_time);
 	}
 
+
+	
 
   return 0;
 }

@@ -1522,6 +1522,24 @@ inline long long calculate_TLEN(long long min1, long long len1, long long min2, 
 
 
 ///min一定是个坐标, max一定是个坐标+长度
+inline long long calculate_last_base_pos(long long min1, long long len1, long long min2, long long len2)
+{
+
+	long long min = min1;
+	long long max = min1 + len1 - 1;
+
+	if (min1 > min2)
+		min = min2;
+
+	if (max < min2 + len2 - 1)
+		max = min2 + len2 - 1;
+
+	///return max - min + 1;
+	return max;
+}
+
+
+///min一定是个坐标, max一定是个坐标+长度
 inline int over_lap_length(long long min1, long long len1, long long min2, long long len2,char* read2)
 {
 
@@ -1567,5 +1585,138 @@ inline int over_lap_length(long long min1, long long len1, long long min2, long 
 void out_paired_distance_statistic();
 
 void get_genome_cuts(char* file_name);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+typedef struct
+{
+	int number_of_intervals;
+	Pair_Methylation* intervals;
+	bitmapper_bs_iter each_interval_length;
+	bitmapper_bs_iter* each_buffer_interval_start;
+	bitmapper_bs_iter* each_buffer_interval_end;
+
+	pthread_mutex_t* Mutex;
+	pthread_cond_t* stallCond;
+	pthread_cond_t* flushCond;
+
+	pthread_mutex_t input_thread_Mutex;
+	pthread_cond_t input_thread_flushCond;
+	pthread_mutex_t abnormal_file_Mutex;
+	pthread_mutex_t overlap_file_Mutex;
+
+	pthread_mutex_t main_thread_Mutex;
+	pthread_cond_t main_thread_flushCond;
+
+
+	pthread_mutex_t* process_Mutex;
+	pthread_cond_t* process_stallCond;
+
+	int end;
+	int all_end;
+
+	int all_completed;
+
+	pthread_mutex_t all_completed_Mutex;
+
+	bitmapper_bs_iter total_start;
+	bitmapper_bs_iter total_end;
+
+} Inpute_PE_methy_alignment_buffer;
+
+
+
+typedef struct
+{
+	bitmapper_bs_iter* buffer;
+	int size;
+
+}buffer_3_bit;
+
+
+typedef struct
+{
+	FILE* read_file;
+	FILE* abnormal_file;
+	FILE* overlap_file;
+	char* ref_genome;
+	uint16_t* methy;
+	uint16_t* total;
+	uint16_t* correct_methy;
+	uint16_t* correct_total;
+	bitmapper_bs_iter start_pos;
+	bitmapper_bs_iter end_pos;
+	bitmapper_bs_iter length;
+	deduplicate_PE PE_de;
+	int PE_distance;
+	bitmapper_bs_iter extra_length;
+	long long* total_read;
+	long long* duplicate_read; 
+	long long* unique_read;
+	long long* abnormal_read;
+}PE_methy_parameters;
+
+
+inline void init_PE_methy_parameters(PE_methy_parameters *parameters, int PE_distance, bitmapper_bs_iter cut_length)
+{
+	parameters->PE_distance = PE_distance;
+	parameters->extra_length = SEQ_MAX_LENGTH * 2 + parameters->PE_distance;
+
+
+	parameters->methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + parameters->extra_length));
+	parameters->total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + parameters->extra_length));
+	parameters->correct_methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + parameters->extra_length));
+	parameters->correct_total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + parameters->extra_length));
+	parameters->ref_genome = (char*)malloc(sizeof(char)*(cut_length + parameters->extra_length));
+	///按道理来说, PE_de的长度不该有这个extra_length, 但是多加一点以免出错吧
+	init_deduplicate_PE(&(parameters->PE_de), PE_distance, cut_length + parameters->extra_length);
+
+
+		
+	parameters->total_read = (long long*)malloc(sizeof(long long)*THREAD_COUNT);
+	parameters->duplicate_read = (long long*)malloc(sizeof(long long)*THREAD_COUNT);
+	parameters->unique_read = (long long*)malloc(sizeof(long long)*THREAD_COUNT);
+	parameters->abnormal_read = (long long*)malloc(sizeof(long long)*THREAD_COUNT);
+	
+
+	int i = 0;
+
+	for (i = 0; i < THREAD_COUNT; i++)
+	{
+		parameters->total_read[i] = 0;
+		parameters->duplicate_read[i] = 0;
+		parameters->unique_read[i] = 0;
+		parameters->abnormal_read[i] = 0;
+	}
+}
+
+
+#define Init_buffer_3_bit(b) b.size = INIT_READ_3_BIT_LENGTH; b.buffer = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*b.size);
+
+
+void init_methy_input_buffer(long long each_sub_buffer_size, int number_of_threads,
+	bitmapper_bs_iter total_start, bitmapper_bs_iter total_end, int is_init);
+
+void* input_methy_muti_threads(void* arg);
+void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_distance, int* need_context);
+
 
 #endif

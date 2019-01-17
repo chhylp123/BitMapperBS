@@ -31,9 +31,11 @@
 #include "Ref_Genome.h"
 #include "bam_prase.h"
 
-
+Inpute_PE_methy_alignment_buffer methy_input_buffer;
+PE_methy_parameters parameters;
 char methy_hash[5] = { 'A', 'C', 'G', 'T', 'N' };
 
+FILE* input_methy_alignment_file;
 
 char char_to_3bit[128] = {
 	4, 4, 4, 4, 4, 4, 4, 4,
@@ -58,7 +60,7 @@ char char_to_3bit[128] = {
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.0.7";
+char *versionN = "1.0.0.8";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
@@ -1260,7 +1262,7 @@ inline int unset_abnormal_dup_PE(char* ref_genome,
 	{
 		if (direction2 != 1)
 		{
-			fprintf(stderr, "ERROR!\n");
+			fprintf(stderr, "unset ERROR!\n");
 		}
 
 		dup_pos1 = pos1 + seq_length1 - 1;
@@ -1272,7 +1274,7 @@ inline int unset_abnormal_dup_PE(char* ref_genome,
 		///所以dup_pos2必须大于dup_pos1
 		if (dup_pos2 <= dup_pos1)
 		{
-			fprintf(stderr, "ERROR!\n");
+			fprintf(stderr, "unset ERROR!\n");
 		}
 
 		///这个时候distance绝对是>=0
@@ -1280,7 +1282,7 @@ inline int unset_abnormal_dup_PE(char* ref_genome,
 
 		if (distance>PE_distance)
 		{
-			fprintf(stderr, "ERROR!\n");
+			fprintf(stderr, "unset ERROR!\n");
 		}
 
 		///大的那个是0是1无所谓，小的这个变成0就好了
@@ -1301,7 +1303,7 @@ inline int unset_abnormal_dup_PE(char* ref_genome,
 
 		if (direction2 != 2)
 		{
-			fprintf(stderr, "ERROR!\n");
+			fprintf(stderr, "unset ERROR!\n");
 		}
 
 
@@ -1314,7 +1316,7 @@ inline int unset_abnormal_dup_PE(char* ref_genome,
 		///所以dup_pos1必须大于dup_pos2
 		if (dup_pos1 <= dup_pos2)
 		{
-			fprintf(stderr, "ERROR!\n");
+			fprintf(stderr, "unset ERROR!\n");
 		}
 
 
@@ -1323,7 +1325,7 @@ inline int unset_abnormal_dup_PE(char* ref_genome,
 
 		if (distance>PE_distance)
 		{
-			fprintf(stderr, "ERROR!\n");
+			fprintf(stderr, "unset ERROR!\n");
 		}
 
 
@@ -1345,18 +1347,12 @@ inline int unset_abnormal_dup_PE(char* ref_genome,
 
 
 inline int input_PE_alignment(FILE* read_file, 
-		uint16_t* flag1, bitmapper_bs_iter* pos1, int* seq_length1, char* read1,
-		uint16_t* flag2, bitmapper_bs_iter* pos2, int* seq_length2, char* read2,
-		bitmapper_bs_iter* tmp_buffer)
+	uint16_t* flag1, bitmapper_bs_iter* pos1, int* seq_length1, bitmapper_bs_iter* read1,
+	uint16_t* flag2, bitmapper_bs_iter* pos2, int* seq_length2, bitmapper_bs_iter* read2)
 {
-
 
 		fread(flag1, sizeof((*flag1)), 1, read_file);
 
-		/**
-		fprintf(stderr, "flag1: %d\n", flag1);
-		fflush(stderr);
-		**/
 
 		if (feof(read_file))
 		{
@@ -1369,9 +1365,9 @@ inline int input_PE_alignment(FILE* read_file,
 		/**********这里要改**********/
 		///fread(read1, 1, (*seq_length1), read_file);
 		///read1[(*seq_length1)] = '\0';
-		fread(tmp_buffer, sizeof(bitmapper_bs_iter),
+		fread(read1, sizeof(bitmapper_bs_iter),
 			((*seq_length1) / 21 + ((*seq_length1) % 21 != 0)), read_file);
-		convert_3bit_to_char(tmp_buffer, (*seq_length1), read1);
+		///convert_3bit_to_char(tmp_buffer, (*seq_length1), read1);
 		/**********这里要改**********/
 
 		fread(flag2, sizeof((*flag2)), 1, read_file);
@@ -1380,24 +1376,115 @@ inline int input_PE_alignment(FILE* read_file,
 		/**********这里要改**********/
 		///fread(read2, 1, (*seq_length2), read_file);
 		///read2[(*seq_length2)] = '\0';
-		fread(tmp_buffer, sizeof(bitmapper_bs_iter),
+		fread(read2, sizeof(bitmapper_bs_iter),
 			((*seq_length2) / 21 + ((*seq_length2) % 21 != 0)), read_file);
-		convert_3bit_to_char(tmp_buffer, (*seq_length2), read2);
+		///convert_3bit_to_char(tmp_buffer, (*seq_length2), read2);
 		/**********这里要改**********/
-
 
 		return 1;
 
 }
+
+
+
+
+inline int input_PE_alignment_multiple_threads(FILE* read_file,
+	uint16_t* flag1, bitmapper_bs_iter* pos1, int* seq_length1, buffer_3_bit* read1,
+	uint16_t* flag2, bitmapper_bs_iter* pos2, int* seq_length2, buffer_3_bit* read2, int thread_id)
+{
+
+	buffer_3_bit tmp_swap;
+
+	
+	pthread_mutex_lock(&methy_input_buffer.Mutex[thread_id]);
+
+	///如果缓冲区为0且read还没从文件里读完
+	///则消费者要等待，并且通知生成者进行生产
+	while (methy_input_buffer.intervals[thread_id].current_size == 0 && methy_input_buffer.end == 0)
+	{
+		/**
+		fprintf(stderr, "R:current_size: %llu\n", methy_input_buffer.intervals[thread_id].current_size);
+		fprintf(stderr, "R:total_size: %llu\n", methy_input_buffer.intervals[thread_id].total_size);
+		fprintf(stderr, "R:end: %llu\n", methy_input_buffer.end);
+		fflush(stderr);
+		**/
+
+		///按道理这个信号量似乎不用发
+		///因为队列不可能一边满一边空
+		pthread_cond_signal(&methy_input_buffer.flushCond[thread_id]);
+		pthread_cond_wait(&methy_input_buffer.stallCond[thread_id], &methy_input_buffer.Mutex[thread_id]);
+	}
+
+	if (methy_input_buffer.intervals[thread_id].current_size > 0)
+	{
+
+		methy_input_buffer.intervals[thread_id].current_size--;
+
+
+		/************************read1*****************************/
+		(*flag1) = methy_input_buffer.intervals[thread_id].R[0].r_length[methy_input_buffer.intervals[thread_id].current_size];
+		(*pos1) = methy_input_buffer.intervals[thread_id].R[0].sites[methy_input_buffer.intervals[thread_id].current_size];
+		(*seq_length1) = methy_input_buffer.intervals[thread_id].R[0].r_real_length[methy_input_buffer.intervals[thread_id].current_size];
+
+
+		tmp_swap.buffer = methy_input_buffer.intervals[thread_id].R[0].reads_3_bit[methy_input_buffer.intervals[thread_id].current_size];
+		tmp_swap.size = methy_input_buffer.intervals[thread_id].R[0].r_size_3_bit[methy_input_buffer.intervals[thread_id].current_size];
+
+		methy_input_buffer.intervals[thread_id].R[0].reads_3_bit[methy_input_buffer.intervals[thread_id].current_size] = read1->buffer;
+		methy_input_buffer.intervals[thread_id].R[0].r_size_3_bit[methy_input_buffer.intervals[thread_id].current_size] = read1->size;
+
+		*read1 = tmp_swap;
+		/************************read1*****************************/
+
+		/************************read2*****************************/
+		(*flag2) = methy_input_buffer.intervals[thread_id].R[1].r_length[methy_input_buffer.intervals[thread_id].current_size];
+		(*pos2) = methy_input_buffer.intervals[thread_id].R[1].sites[methy_input_buffer.intervals[thread_id].current_size];
+		(*seq_length2) = methy_input_buffer.intervals[thread_id].R[1].r_real_length[methy_input_buffer.intervals[thread_id].current_size];
+
+		tmp_swap.buffer = methy_input_buffer.intervals[thread_id].R[1].reads_3_bit[methy_input_buffer.intervals[thread_id].current_size];
+		tmp_swap.size = methy_input_buffer.intervals[thread_id].R[1].r_size_3_bit[methy_input_buffer.intervals[thread_id].current_size];
+
+		methy_input_buffer.intervals[thread_id].R[1].reads_3_bit[methy_input_buffer.intervals[thread_id].current_size] = read2->buffer;
+		methy_input_buffer.intervals[thread_id].R[1].r_size_3_bit[methy_input_buffer.intervals[thread_id].current_size] = read2->size;
+
+
+		*read2 = tmp_swap;
+		/************************read2*****************************/
+
+
+		/*******************代码在这里*********************/
+
+		pthread_cond_signal(&methy_input_buffer.flushCond[thread_id]);
+		pthread_mutex_unlock(&methy_input_buffer.Mutex[thread_id]);
+
+		return 1;
+
+	}
+	else
+	{
+
+		pthread_cond_signal(&methy_input_buffer.stallCond[thread_id]);
+		pthread_mutex_unlock(&methy_input_buffer.Mutex[thread_id]);
+
+		return 0;
+	}
+
+
+
+	return 1;
+
+}
+
+
 
 ///1是拿到一个有效的alignment
 ///0是读到文件末尾了
 ///-1是这个alignment重复了, 拿到了一个空的alignment
 ////2是异常情况, 就是读了个5'-end位置有问题的结果
 inline int get_alignment_PE(FILE* read_file, char* ref_genome, bitmapper_bs_iter start_pos, 
-	char* read1, int* g_seq_length1, int* g_C_or_G1, int* g_direction1, bitmapper_bs_iter* g_pos1,
-	char* read2, int* g_seq_length2, int* g_C_or_G2, int* g_direction2, bitmapper_bs_iter* g_pos2,
-	deduplicate_PE* PE_de, int PE_distance, bitmapper_bs_iter* tmp_buffer)
+	bitmapper_bs_iter* read1, int* g_seq_length1, int* g_C_or_G1, int* g_direction1, bitmapper_bs_iter* g_pos1,
+	bitmapper_bs_iter* read2, int* g_seq_length2, int* g_C_or_G2, int* g_direction2, bitmapper_bs_iter* g_pos2,
+	deduplicate_PE* PE_de, int PE_distance)
 {
 
 
@@ -1416,28 +1503,19 @@ inline int get_alignment_PE(FILE* read_file, char* ref_genome, bitmapper_bs_iter
 
 	int return_value;
 
-	/**
-	if (fscanf(read_file, "%llu\t%llu\t%s\t%llu\t%llu\t%s\n", 
-		&flag1, &pos1, read1, &flag2, &pos2, read2) != EOF)**/
 	if (input_PE_alignment(read_file,
 		&flag1, &pos1, &seq_length1, read1,
-		&flag2, &pos2, &seq_length2, read2, tmp_buffer))
+		&flag2, &pos2, &seq_length2, read2))
 	{
-		/**
-		fprintf(stderr, "%llu\t%llu\t%s\t%llu\t%llu\t%s\n",
-			flag1, pos1, read1, flag2, pos2, read2);
-		**/
+
 
 		get_direction(flag1, &C_or_G1, &direction1);
 		get_direction(flag2, &C_or_G2, &direction2);
 	
-		/**
-		seq_length1 = strlen(read1);
-		seq_length2 = strlen(read2);
-		**/
 
 		return_value = remove_dup_PE(ref_genome, direction1, pos1 - start_pos, seq_length1,
 			direction2, pos2 - start_pos, seq_length2, PE_de, PE_distance);
+
 
 		///如果重复了
 		if (!return_value)
@@ -1456,13 +1534,15 @@ inline int get_alignment_PE(FILE* read_file, char* ref_genome, bitmapper_bs_iter
 		(*g_seq_length2) = seq_length2;
 		(*g_pos2) = pos2;
 
-	
+		
 	
 		///return 1;
 		return return_value;
 	}
 	else
 	{
+
+
 		return 0;
 	}
 
@@ -1470,6 +1550,78 @@ inline int get_alignment_PE(FILE* read_file, char* ref_genome, bitmapper_bs_iter
 
 
 
+
+
+///1是拿到一个有效的alignment
+///0是读到文件末尾了
+///-1是这个alignment重复了, 拿到了一个空的alignment
+////2是异常情况, 就是读了个5'-end位置有问题的结果
+inline int get_alignment_PE_multiple_threads(FILE* read_file, char* ref_genome, bitmapper_bs_iter start_pos,
+	buffer_3_bit* read1, int* g_seq_length1, int* g_C_or_G1, int* g_direction1, bitmapper_bs_iter* g_pos1,
+	buffer_3_bit* read2, int* g_seq_length2, int* g_C_or_G2, int* g_direction2, bitmapper_bs_iter* g_pos2,
+	deduplicate_PE* PE_de, int PE_distance, int thread_id)
+{
+
+
+	uint16_t flag1;
+	bitmapper_bs_iter pos1;
+	int C_or_G1;
+	int direction1;
+	int seq_length1;
+
+
+	uint16_t flag2;
+	bitmapper_bs_iter pos2;
+	int C_or_G2;
+	int direction2;
+	int seq_length2;
+
+	int return_value;
+
+	if (input_PE_alignment_multiple_threads(read_file,
+		&flag1, &pos1, &seq_length1, read1,
+		&flag2, &pos2, &seq_length2, read2, thread_id))
+	{
+
+
+		get_direction(flag1, &C_or_G1, &direction1);
+		get_direction(flag2, &C_or_G2, &direction2);
+
+
+		return_value = remove_dup_PE(ref_genome, direction1, pos1 - start_pos, seq_length1,
+			direction2, pos2 - start_pos, seq_length2, PE_de, PE_distance);
+
+
+		///如果重复了
+		if (!return_value)
+		{
+			return -1;
+		}
+
+		(*g_C_or_G1) = C_or_G1;
+		(*g_direction1) = direction1;
+		(*g_seq_length1) = seq_length1;
+		(*g_pos1) = pos1;
+
+
+		(*g_C_or_G2) = C_or_G2;
+		(*g_direction2) = direction2;
+		(*g_seq_length2) = seq_length2;
+		(*g_pos2) = pos2;
+
+
+
+		///return 1;
+		return return_value;
+	}
+	else
+	{
+
+
+		return 0;
+	}
+
+}
 
 
 
@@ -1622,51 +1774,63 @@ inline int get_alignment_PE(FILE* read_file, char* ref_genome, bitmapper_bs_iter
 
 
 
-inline void update_methylation(int C_or_G, char* ref_genome, char* read, int read_length, 
+inline void update_methylation(int C_or_G, char* ref_genome, bitmapper_bs_iter* read, int read_length,
 	uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total)
 {
 
 
 	char match, convert, rc_match, rc_convert;
 	Get_BS_conversion(C_or_G);
-	bitmapper_bs_iter i;
-	char tmp;
+	///bitmapper_bs_iter i;
+	int i = 0;
+	int word_21_index = 0;
+	int word_21_inner_index = 0;
+	bitmapper_bs_iter mask = 7;
+	bitmapper_bs_iter read_tmp;
+	bitmapper_bs_iter ref_tmp;
+
 
 	for (i = 0; i < read_length; i++)
 	{
-		tmp = ref_genome[i] & POS_MASK;
+		read_tmp = read[word_21_index] >> (word_21_inner_index * 3);
+		read_tmp = read_tmp & 7;
+		ref_tmp = ref_genome[i] & POS_MASK;
 
-		
-
-		if (tmp == match)
+		if (ref_tmp == match)
 		{
-
-			if (read[i] == methy_hash[convert] && total[i] < 65535)
+			if (read_tmp == convert && total[i] < 65535)
 			{
 				total[i]++;
 			}
-			else if (read[i] == methy_hash[match] && total[i] < 65535)
+			else if (read_tmp == match && total[i] < 65535)
 			{
-				
-
 				total[i]++;
 				methy[i]++;
 			}
-
 		}
-		else if (tmp == rc_match)
+		else if (ref_tmp == rc_match)
 		{
-			if (read[i] == methy_hash[rc_convert] && total[i] < 65535)
+			if (read_tmp == rc_convert && total[i] < 65535)
 			{
 				correct_total[i]++;
 			}
-			else if (read[i] == methy_hash[rc_match] && total[i] < 65535)
+			else if (read_tmp == rc_match && total[i] < 65535)
 			{
 				correct_total[i]++;
 				correct_methy[i]++;
 			}
 		}
+
+
+		word_21_inner_index++;
+
+		if (word_21_inner_index == 21)
+		{
+			word_21_inner_index = 0;
+			word_21_index++;
+		}
 	}
+
 }
 
 
@@ -1674,17 +1838,27 @@ inline void update_methylation(int C_or_G, char* ref_genome, char* read, int rea
 
 
 
-inline void get_chrome_position(bitmapper_bs_iter* position, char** chrome_name, int* chrome_id)
+
+inline void get_chrome_position(bitmapper_bs_iter* position, char** chrome_name, int current_chrome_id, int* chrome_id)
 {
 	bitmapper_bs_iter map_location = *position;
 
 	int now_ref_name = 0;
 
 
-	for (now_ref_name = 0; now_ref_name < refChromeCont; ++now_ref_name)
+	for (now_ref_name = current_chrome_id; now_ref_name < refChromeCont; ++now_ref_name)
 	{
 		if ((map_location >= _ih_refGenName[now_ref_name].start_location) && (map_location <= _ih_refGenName[now_ref_name].end_location))
 			break;
+	}
+
+	if (now_ref_name >= refChromeCont)
+	{
+		for (now_ref_name = 0; now_ref_name < refChromeCont; ++now_ref_name)
+		{
+			if ((map_location >= _ih_refGenName[now_ref_name].start_location) && (map_location <= _ih_refGenName[now_ref_name].end_location))
+				break;
+		}
 	}
 
 
@@ -1835,7 +2009,7 @@ inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correc
 	bitmapper_bs_iter i;
 	bitmapper_bs_iter tmp_pos;
 	char* chrome_name;
-	int chrome_id;
+	int chrome_id = 0;
 
 	char tmp;
 
@@ -1866,7 +2040,7 @@ inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correc
 			}
 
 			tmp_pos = start_pos;
-			get_chrome_position(&tmp_pos, &chrome_name, &chrome_id);
+			get_chrome_position(&tmp_pos, &chrome_name, chrome_id, &chrome_id);
 
 
 			current_context = 
@@ -1874,6 +2048,7 @@ inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correc
 
 			if (need_context[current_context])
 			{
+
 				if (current_context == 0)
 				{
 					output_single_methy_CpG(tmp_pos, chrome_name, methy[i], total[i]);
@@ -1888,6 +2063,7 @@ inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correc
 				{
 					output_single_methy_CHH(tmp_pos, chrome_name, methy[i], total[i]);
 				}
+
 			}
 		}
 		
@@ -1899,8 +2075,35 @@ inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correc
 }
 
 
+inline int get_abnormal_PE_alignment(bitmapper_bs_iter* read1, bitmapper_bs_iter* read2, int* C_or_G1, int* C_or_G2,
+	int* direction1, int* direction2, bitmapper_bs_iter* pos1, bitmapper_bs_iter* pos2, int* read1_length, int* read2_length,
+	FILE* abnormal_file)
+{
+	fread(read1_length, sizeof(int), 1, abnormal_file);
+	if (feof(abnormal_file))
+	{
+		return 0;
+	}
+	fread(C_or_G1, sizeof(int), 1, abnormal_file);
+	fread(direction1, sizeof(int), 1, abnormal_file);
+	fread(pos1, sizeof(bitmapper_bs_iter), 1, abnormal_file);
+	fread(read1, sizeof(bitmapper_bs_iter),
+		((*read1_length) / 21 + ((*read1_length) % 21 != 0)), abnormal_file);
+
+	fread(read2_length, sizeof(int), 1, abnormal_file);
+	fread(C_or_G2, sizeof(int), 1, abnormal_file);
+	fread(direction2, sizeof(int), 1, abnormal_file);
+	fread(pos2, sizeof(bitmapper_bs_iter), 1, abnormal_file);
+	fread(read2, sizeof(bitmapper_bs_iter),
+		((*read2_length) / 21 + ((*read2_length) % 21 != 0)), abnormal_file);
+
+	return 1;
+}
+
+
+
 void phrase_abnormal_alignment(char* ref_genome, bitmapper_bs_iter start_pos,
-	char* read1, char* read2, FILE* abnormal_file, deduplicate_PE* PE_de, int PE_distance,
+	bitmapper_bs_iter* read1, bitmapper_bs_iter* read2, FILE* abnormal_file, deduplicate_PE* PE_de, int PE_distance,
 	uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
 	long long* unique_read, long long* duplicate_read)
 {
@@ -1911,23 +2114,33 @@ void phrase_abnormal_alignment(char* ref_genome, bitmapper_bs_iter start_pos,
 	int read1_length, read2_length;
 
 
+	
 
-	while (fscanf(abnormal_file, "%s\t%d\t%d\t%d\t%llu\t%s\t%d\t%d\t%d\t%llu\n",
-		read1, &read1_length, &C_or_G1, &direction1, &pos1,
-		read2, &read2_length, &C_or_G2, &direction2, &pos2) != EOF)
+
+	
+
+
+	while (get_abnormal_PE_alignment(read1, read2, &C_or_G1, &C_or_G2,
+		&direction1, &direction2, &pos1, &pos2, &read1_length, &read2_length,
+		abnormal_file))
 	{
+		
 		unset_abnormal_dup_PE(ref_genome, direction1, pos1 - start_pos, seq_length1,
 			direction2, pos2 - start_pos, seq_length2, PE_de, PE_distance);
+		
 	}
+
+
 
 	///回到文件开头
 	fseek(abnormal_file, 0, SEEK_SET);
 
 
-	while (fscanf(abnormal_file, "%s\t%d\t%d\t%d\t%llu\t%s\t%d\t%d\t%d\t%llu\n",
-		read1, &read1_length, &C_or_G1, &direction1, &pos1,
-		read2, &read2_length, &C_or_G2, &direction2, &pos2) != EOF)
+	while (get_abnormal_PE_alignment(read1, read2, &C_or_G1, &C_or_G2,
+		&direction1, &direction2, &pos1, &pos2, &read1_length, &read2_length,
+		abnormal_file))
 	{
+
 		if (remove_abnormal_dup_PE(ref_genome, direction1, pos1 - start_pos, seq_length1,
 			direction2, pos2 - start_pos, seq_length2, PE_de, PE_distance))
 		{
@@ -1951,6 +2164,613 @@ void phrase_abnormal_alignment(char* ref_genome, bitmapper_bs_iter start_pos,
 
 
 
+inline int get_overlap_alignment(bitmapper_bs_iter* read, int* C_or_G, 
+	int* direction, bitmapper_bs_iter* pos, int* read_length, FILE* overlap_file)
+{
+	fread(read_length, sizeof(int), 1, overlap_file);
+	if (feof(overlap_file))
+	{
+		return 0;
+	}
+	fread(C_or_G, sizeof(int), 1, overlap_file);
+	fread(direction, sizeof(int), 1, overlap_file);
+	fread(pos, sizeof(bitmapper_bs_iter), 1, overlap_file);
+	fread(read, sizeof(bitmapper_bs_iter),
+		((*read_length) / 21 + ((*read_length) % 21 != 0)), overlap_file);
+
+	return 1;
+}
+
+
+void phrase_overlap_alignment(char* ref_genome, bitmapper_bs_iter start_pos,
+	bitmapper_bs_iter* read, FILE* overlap_file, 
+	uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total, long long* overlap_read)
+{
+	int C_or_G;
+	int direction;
+	bitmapper_bs_iter pos;
+	int read_length;
+
+
+
+
+
+
+
+
+	while (get_overlap_alignment(read, &C_or_G, &direction, &pos, &read_length, overlap_file))
+	{
+
+		update_methylation(C_or_G, ref_genome + pos - start_pos, read, read_length,
+			methy + pos - start_pos, total + pos - start_pos,
+			correct_methy + pos - start_pos, correct_total + pos - start_pos);
+
+		(*overlap_read)++;
+
+	}
+
+}
+
+
+
+
+inline void write_abnormal_PE_alignment(
+	bitmapper_bs_iter* read1, int read1_length, int C_or_G1, int direction1, bitmapper_bs_iter pos1,
+	bitmapper_bs_iter* read2, int read2_length, int C_or_G2, int direction2, bitmapper_bs_iter pos2,
+	FILE* abnormal_file)
+{
+	fwrite(&read1_length, sizeof(int), 1, abnormal_file);
+	fwrite(&C_or_G1, sizeof(int), 1, abnormal_file);
+	fwrite(&direction1, sizeof(int), 1, abnormal_file);
+	fwrite(&pos1, sizeof(bitmapper_bs_iter), 1, abnormal_file);
+	fwrite(read1, sizeof(bitmapper_bs_iter),
+		(read1_length / 21 + (read1_length % 21 != 0)), abnormal_file);
+
+
+
+
+	fwrite(&read2_length, sizeof(int), 1, abnormal_file);
+	fwrite(&C_or_G2, sizeof(int), 1, abnormal_file);
+	fwrite(&direction2, sizeof(int), 1, abnormal_file);
+	fwrite(&pos2, sizeof(bitmapper_bs_iter), 1, abnormal_file);
+	fwrite(read2, sizeof(bitmapper_bs_iter),
+		(read2_length / 21 + (read2_length % 21 != 0)), abnormal_file);
+}
+
+
+inline void write_overlap_alignment(
+	bitmapper_bs_iter* read, int read_length, int C_or_G, int direction, bitmapper_bs_iter pos,
+	FILE* overlap_file)
+{
+	fwrite(&read_length, sizeof(int), 1, overlap_file);
+	fwrite(&C_or_G, sizeof(int), 1, overlap_file);
+	fwrite(&direction, sizeof(int), 1, overlap_file);
+	fwrite(&pos, sizeof(bitmapper_bs_iter), 1, overlap_file);
+	fwrite(read, sizeof(bitmapper_bs_iter),
+		(read_length / 21 + (read_length % 21 != 0)), overlap_file);
+}
+
+
+/**
+void process_PE_methy_alignment(FILE* read_file, FILE* abnormal_file, char* ref_genome, 
+	uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+	bitmapper_bs_iter start_pos, int thread_id, deduplicate_PE* PE_de, int PE_distance, 
+	long long* total_read, long long* duplicate_read, long long* unique_read, long long* abnormal_read)**/
+void process_PE_methy_alignment(int thread_id)
+{
+
+	int return_value;
+
+	buffer_3_bit read1;
+	buffer_3_bit read2;
+
+	Init_buffer_3_bit(read1);
+	Init_buffer_3_bit(read2);
+
+	int read1_length;
+	int read2_length;
+
+	int C_or_G1;
+	int C_or_G2;
+	int direction1;
+	int direction2;
+
+	bitmapper_bs_iter pos1;
+	bitmapper_bs_iter pos2;
+
+
+
+	///1是拿到一个有效的alignment
+	///0是读到文件末尾了
+	///-1是这个alignment重复了, 拿到了一个空的alignment
+	////2是异常情况, 就是读了个5'-end位置有问题的结果
+	while (return_value = get_alignment_PE_multiple_threads(
+		parameters.read_file, parameters.ref_genome, parameters.start_pos,
+		&read1, &read1_length, &C_or_G1, &direction1, &pos1,
+		&read2, &read2_length, &C_or_G2, &direction2, &pos2,
+		&(parameters.PE_de), parameters.PE_distance, thread_id))
+	{
+
+		parameters.total_read[thread_id]++;
+
+		if (return_value == -1)
+		{
+			parameters.duplicate_read[thread_id]++;
+			continue;
+		}
+		else if (return_value == 1)
+		{
+			parameters.unique_read[thread_id]++;
+		}
+		else   ///这是返回值为2的情况，也是5'端位置异常的情况  ///暂时还没处理
+		{
+
+			parameters.abnormal_read[thread_id]++;
+
+
+			pthread_mutex_lock(&methy_input_buffer.abnormal_file_Mutex);
+
+			///将异常结果写入临时文件
+			write_abnormal_PE_alignment(
+				read1.buffer, read1_length, C_or_G1, direction1, pos1,
+				read2.buffer, read2_length, C_or_G2, direction2, pos2,
+				parameters.abnormal_file);
+
+			pthread_mutex_unlock(&methy_input_buffer.abnormal_file_Mutex);
+
+		}
+
+
+		update_methylation(C_or_G1, parameters.ref_genome + pos1 - parameters.start_pos, read1.buffer, read1_length,
+			parameters.methy + pos1 - parameters.start_pos, parameters.total + pos1 - parameters.start_pos,
+			parameters.correct_methy + pos1 - parameters.start_pos, parameters.correct_total + pos1 - parameters.start_pos);
+
+		update_methylation(C_or_G2, parameters.ref_genome + pos2 - parameters.start_pos, read2.buffer, read2_length,
+			parameters.methy + pos2 - parameters.start_pos, parameters.total + pos2 - parameters.start_pos,
+			parameters.correct_methy + pos2 - parameters.start_pos, parameters.correct_total + pos2 - parameters.start_pos);
+
+
+
+	}
+}
+
+
+void* process_PE_methy_alignment_multiple_threads(void* arg)
+{
+	int thread_id = *((int *)arg);
+	int return_value;
+
+	buffer_3_bit read1;
+	buffer_3_bit read2;
+
+	Init_buffer_3_bit(read1);
+	Init_buffer_3_bit(read2);
+
+	int read1_length;
+	int read2_length;
+
+	int C_or_G1;
+	int C_or_G2;
+	int direction1;
+	int direction2;
+
+	bitmapper_bs_iter pos1;
+	bitmapper_bs_iter pos2;
+
+	bitmapper_bs_iter key_pos;
+
+	
+
+
+	while (methy_input_buffer.all_end == 0)
+	{
+
+		///1是拿到一个有效的alignment
+		///0是读到文件末尾了
+		///-1是这个alignment重复了, 拿到了一个空的alignment
+		////2是异常情况, 就是读了个5'-end位置有问题的结果
+		while (return_value = get_alignment_PE_multiple_threads(
+			parameters.read_file, parameters.ref_genome, parameters.start_pos,
+			&read1, &read1_length, &C_or_G1, &direction1, &pos1,
+			&read2, &read2_length, &C_or_G2, &direction2, &pos2,
+			&(parameters.PE_de), parameters.PE_distance, thread_id))
+		{
+
+			parameters.total_read[thread_id]++;
+
+			if (return_value == -1)
+			{
+				parameters.duplicate_read[thread_id]++;
+				continue;
+			}
+			else if (return_value == 1)
+			{
+				parameters.unique_read[thread_id]++;
+			}
+			else   ///这是返回值为2的情况，也是5'端位置异常的情况  ///暂时还没处理
+			{
+
+				parameters.abnormal_read[thread_id]++;
+
+
+				pthread_mutex_lock(&methy_input_buffer.abnormal_file_Mutex);
+
+				///将异常结果写入临时文件
+				write_abnormal_PE_alignment(
+					read1.buffer, read1_length, C_or_G1, direction1, pos1,
+					read2.buffer, read2_length, C_or_G2, direction2, pos2,
+					parameters.abnormal_file);
+
+				pthread_mutex_unlock(&methy_input_buffer.abnormal_file_Mutex);
+
+				continue;
+
+			}
+
+
+
+			key_pos = pos1 <= pos2 ? pos1 : pos2;
+			if (key_pos > methy_input_buffer.each_buffer_interval_end[thread_id] || key_pos < methy_input_buffer.each_buffer_interval_start[thread_id])
+			{
+				fprintf(stderr, "ERROR: process_PE_methy_alignment_multiple_threads\n");
+				exit(0);
+			}
+
+
+			if (pos1 + read1_length - 1 <= methy_input_buffer.each_buffer_interval_end[thread_id])
+			{
+				update_methylation(C_or_G1, parameters.ref_genome + pos1 - parameters.start_pos, read1.buffer, read1_length,
+					parameters.methy + pos1 - parameters.start_pos, parameters.total + pos1 - parameters.start_pos,
+					parameters.correct_methy + pos1 - parameters.start_pos, parameters.correct_total + pos1 - parameters.start_pos);
+			}
+			else
+			{
+				pthread_mutex_lock(&methy_input_buffer.overlap_file_Mutex);
+
+				write_overlap_alignment(read1.buffer, read1_length, C_or_G1, direction1, pos1,
+					parameters.overlap_file);
+
+				pthread_mutex_unlock(&methy_input_buffer.overlap_file_Mutex);
+			}
+			
+			if (pos2 + read2_length - 1 <= methy_input_buffer.each_buffer_interval_end[thread_id])
+			{
+				update_methylation(C_or_G2, parameters.ref_genome + pos2 - parameters.start_pos, read2.buffer, read2_length,
+					parameters.methy + pos2 - parameters.start_pos, parameters.total + pos2 - parameters.start_pos,
+					parameters.correct_methy + pos2 - parameters.start_pos, parameters.correct_total + pos2 - parameters.start_pos);
+			}
+			else
+			{
+				pthread_mutex_lock(&methy_input_buffer.overlap_file_Mutex);
+
+				write_overlap_alignment(read2.buffer, read2_length, C_or_G2, direction2, pos2,
+					parameters.overlap_file);
+
+				pthread_mutex_unlock(&methy_input_buffer.overlap_file_Mutex);
+			}
+			
+
+
+
+		}
+
+		pthread_mutex_lock(&methy_input_buffer.all_completed_Mutex);
+		if (methy_input_buffer.all_completed == THREAD_COUNT)
+		{
+			pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex);
+			pthread_cond_signal(&methy_input_buffer.main_thread_flushCond);
+			pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex);
+		}
+		methy_input_buffer.all_completed++;
+		pthread_mutex_unlock(&methy_input_buffer.all_completed_Mutex);
+
+		
+		
+
+		pthread_mutex_lock(&methy_input_buffer.process_Mutex[thread_id]);
+		pthread_cond_wait(&methy_input_buffer.process_stallCond[thread_id], &methy_input_buffer.process_Mutex[thread_id]);
+		pthread_mutex_unlock(&methy_input_buffer.process_Mutex[thread_id]);
+	}
+
+
+	fprintf(stdout, "thread %d (methy) has been completed\n", thread_id);
+}
+
+
+void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_distance, int* need_context)
+{
+
+	cut_length = _msf_refGenLength / genome_cuts;
+	////if ((_msf_refGenLength * 2) % genome_cuts != 0)
+	if (_msf_refGenLength % genome_cuts != 0)
+	{
+		cut_length = cut_length + 1;
+	}
+
+	/**
+	FILE* read_file;
+	FILE* abnormal_file;
+	**/
+	int i = 0;
+	char tmp_file_name[SEQ_MAX_LENGTH];
+	char abnormal_file_name[SEQ_MAX_LENGTH];
+	char overlap_file_name[SEQ_MAX_LENGTH];
+	
+	bitmapper_bs_iter L_read1[SEQ_MAX_LENGTH];
+	bitmapper_bs_iter L_read2[SEQ_MAX_LENGTH];
+	
+	/**
+	buffer_3_bit read1;
+	buffer_3_bit read2;
+
+	Init_buffer_3_bit(read1);
+	Init_buffer_3_bit(read2);
+
+	bitmapper_bs_iter start_pos, end_pos;
+	bitmapper_bs_iter length;
+	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2 + PE_distance; ///这个是为了处理边界情况
+	**/
+
+
+	/**
+	uint16_t* methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	uint16_t* total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	uint16_t* correct_methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	uint16_t* correct_total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
+	char* ref_genome = (char*)malloc(sizeof(char)*(cut_length + extra_length));
+
+	deduplicate_PE PE_de;
+	///按道理来说, PE_de的长度不该有这个extra_length, 但是多加一点以免出错吧
+	init_deduplicate_PE(&PE_de, PE_distance, cut_length + extra_length);
+	**/
+
+	bitmapper_bs_iter flag;
+	bitmapper_bs_iter pos1;
+	bitmapper_bs_iter pos2;
+	int C_or_G1;
+	int C_or_G2;
+	int direction1;
+	int direction2;
+	bitmapper_bs_iter inner_i;
+	int return_value;
+
+	bitmapper_bs_iter inner_start_pos;
+	int read1_length;
+	int read2_length;
+	char last_two_bases[2];
+
+
+
+
+	long long total_read = 0;
+	long long duplicate_read = 0;
+	long long unique_read = 0;
+	long long abnormal_read = 0;
+	long long overlap_read = 0;
+
+	sprintf(abnormal_file_name, "%s_abnormal%d", file_name, thread_id);
+	sprintf(overlap_file_name, "%s_overlap%d", file_name, thread_id);
+
+	
+
+	bitmapper_bs_iter tmp_genome_cuts;
+	int tmp_maxDistance_pair;
+	int tmp_mode;
+
+
+	///bitmapper_bs_iter tmp_buffer[100];
+
+	double load_time = 0;
+	double start_load_time = 0;
+	double print_time = 0;
+	double start_print_time = 0;
+	double update_methy_time = 0;
+	double start_update_methy_time = 0;
+
+	pthread_t inputReadsHandle;
+
+	pthread_t *_r_threads;
+
+
+	_r_threads = (pthread_t *)malloc(sizeof(pthread_t)*THREAD_COUNT);
+
+	
+	init_PE_methy_parameters(&parameters, PE_distance, cut_length);
+
+	int j;
+
+
+
+	for (i = 0; i < genome_cuts; i++)
+	{
+		/**
+		fprintf(stderr, "i: %d\n", i);
+		fflush(stderr);
+		**/
+
+		sprintf(tmp_file_name, "%s_%d.bmm", file_name, i);
+		parameters.read_file = fopen(tmp_file_name, "r");
+
+		///这里要写异常文件
+		parameters.abnormal_file = fopen(abnormal_file_name, "wb");
+		///这里要写多线程之间的重叠文件
+		parameters.overlap_file = fopen(overlap_file_name, "wb");
+
+		fscanf(parameters.read_file, "%llu\t%d\t%d\t%llu\t%llu\n", &tmp_genome_cuts, 
+			&tmp_maxDistance_pair, &tmp_mode, &parameters.start_pos, &parameters.end_pos);
+
+		parameters.length = parameters.end_pos - parameters.start_pos + 1;
+
+		
+		
+		
+
+
+		start_load_time = Get_T();
+
+		if (!init_genome_cut_PE(parameters.methy, parameters.total, parameters.correct_methy, parameters.correct_total,
+			parameters.ref_genome, parameters.length, i, parameters.extra_length, last_two_bases, &parameters.PE_de))
+		{
+			fprintf(stderr, "ERROR when reading genome!\n");
+			exit(0);
+		}
+
+		load_time += Get_T() - start_load_time;
+
+
+		start_update_methy_time = Get_T();
+
+		init_methy_input_buffer(methylation_size, THREAD_COUNT,
+			parameters.start_pos, parameters.end_pos, i);
+
+
+
+		input_methy_alignment_file = parameters.read_file;
+
+		if (i == 0)
+		{
+			pthread_create(&inputReadsHandle, NULL, input_methy_muti_threads, NULL);
+
+			for (j = 0; j < THREAD_COUNT; j++)
+			{
+				
+				int *arg = (int*)malloc(sizeof(*arg));
+				*arg = j;
+
+				pthread_create(_r_threads + j, NULL, process_PE_methy_alignment_multiple_threads, (void*)arg);
+			
+			}
+
+		}
+		else
+		{
+			pthread_mutex_lock(&methy_input_buffer.input_thread_Mutex);
+			pthread_cond_signal(&methy_input_buffer.input_thread_flushCond);
+			pthread_mutex_unlock(&methy_input_buffer.input_thread_Mutex);
+
+			for (j = 0; j < THREAD_COUNT; j++)
+			{
+				pthread_mutex_lock(&methy_input_buffer.process_Mutex[j]);
+				pthread_cond_signal(&methy_input_buffer.process_stallCond[j]);
+				pthread_mutex_unlock(&methy_input_buffer.process_Mutex[j]);
+			}
+
+		}
+
+		
+
+		pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex);
+		pthread_cond_wait(&methy_input_buffer.main_thread_flushCond, &methy_input_buffer.main_thread_Mutex);
+		pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex);
+		
+		update_methy_time += Get_T() - start_update_methy_time;
+		
+
+		////process_PE_methy_alignment(thread_id);
+
+
+		///要先处理overlap文件，再处理异常文件
+		///这里要关闭overlap文件, 再打开
+		///请注意，这种overlap的alignment已经去过重了
+		fclose(parameters.overlap_file);
+		parameters.overlap_file = fopen(overlap_file_name, "rb");
+		phrase_overlap_alignment(parameters.ref_genome, parameters.start_pos, L_read1, parameters.overlap_file,
+			parameters.methy, parameters.total, parameters.correct_methy, parameters.correct_total, &overlap_read);
+		fclose(parameters.overlap_file);
+		
+
+		///这里要关闭异常文件, 再打开
+		fclose(parameters.abnormal_file);
+		parameters.abnormal_file = fopen(abnormal_file_name, "rb");
+		phrase_abnormal_alignment(parameters.ref_genome, parameters.start_pos, L_read1, L_read2, parameters.abnormal_file, &parameters.PE_de, 
+			parameters.PE_distance,
+			parameters.methy, parameters.total, parameters.correct_methy, parameters.correct_total, &unique_read, &duplicate_read);
+		fclose(parameters.abnormal_file);
+
+		
+		
+
+
+
+		start_print_time = Get_T();
+
+		print_methylation(parameters.methy, parameters.total, parameters.correct_methy, parameters.correct_total,
+			parameters.start_pos, parameters.end_pos, parameters.ref_genome, last_two_bases, need_context);
+
+		print_time += Get_T() - start_print_time;
+
+
+		fclose(parameters.read_file);
+
+
+		last_two_bases[0] = parameters.ref_genome[parameters.length - 2];
+		last_two_bases[1] = parameters.ref_genome[parameters.length - 1];
+
+		///break;
+	}
+
+
+	methy_input_buffer.all_end = 1;
+
+	pthread_mutex_lock(&methy_input_buffer.input_thread_Mutex);
+	pthread_cond_signal(&methy_input_buffer.input_thread_flushCond);
+	pthread_mutex_unlock(&methy_input_buffer.input_thread_Mutex);
+
+	for (j = 0; j < THREAD_COUNT; j++)
+	{
+		pthread_mutex_lock(&methy_input_buffer.process_Mutex[j]);
+		pthread_cond_signal(&methy_input_buffer.process_stallCond[j]);
+		pthread_mutex_unlock(&methy_input_buffer.process_Mutex[j]);
+	}
+
+
+	pthread_join(inputReadsHandle, NULL);
+
+
+	for (j = 0; j < THREAD_COUNT; j++)
+	{
+		pthread_join(_r_threads[j], NULL);
+	}
+
+	///至少要把这个异常文件删除了
+	remove(abnormal_file_name);
+	remove(overlap_file_name);
+
+	for (i = 0; i < THREAD_COUNT; i++)
+	{
+		total_read += parameters.total_read[i];
+		duplicate_read += parameters.duplicate_read[i];
+		unique_read += parameters.unique_read[i];
+		abnormal_read += parameters.abnormal_read[i];
+	}
+
+
+	fprintf(stderr, "total_read: %lld\n", total_read);
+	fprintf(stderr, "duplicate_read: %lld\n", duplicate_read);
+	fprintf(stderr, "unique_read: %lld\n", unique_read);
+	fprintf(stderr, "abnormal_read: %lld\n", abnormal_read);
+	fprintf(stderr, "overlap_read: %lld\n", overlap_read);
+
+	
+
+	fprintf(stdout, "load_time: %f\n", load_time);
+	fprintf(stdout, "print_time: %f\n", print_time);
+	fprintf(stdout, "update_methy_time: %f\n", update_methy_time);
+
+	
+
+
+
+}
+
+
+
+
+
+
+
+
+
 void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need_context)
 {
 
@@ -1967,8 +2787,8 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 	int i = 0;
 	char tmp_file_name[SEQ_MAX_LENGTH];
 	char abnormal_file_name[SEQ_MAX_LENGTH];
-	char read1[SEQ_MAX_LENGTH];
-	char read2[SEQ_MAX_LENGTH];
+	bitmapper_bs_iter read1[SEQ_MAX_LENGTH];
+	bitmapper_bs_iter read2[SEQ_MAX_LENGTH];
 	bitmapper_bs_iter start_pos, end_pos;
 	bitmapper_bs_iter length;
 	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2 + PE_distance; ///这个是为了处理边界情况
@@ -2014,22 +2834,20 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 	int tmp_mode;
 
 
-	bitmapper_bs_iter tmp_buffer[100];
+	///bitmapper_bs_iter tmp_buffer[100];
+
+	double load_time = 0;
+	double start_load_time = 0;
+	double update_methylation_time = 0;
+	double start_update_methylation_time = 0;
+	double print_time = 0;
+	double start_print_time = 0;
 
 
 
 
-	/**
-	uint16_t* back_methy = (uint16_t*)malloc(sizeof(uint16_t)*(extra_length));
-	uint16_t* back_total = (uint16_t*)malloc(sizeof(uint16_t)*(extra_length));
-	uint16_t* back_correct_methy = (uint16_t*)malloc(sizeof(uint16_t)*(extra_length));
-	uint16_t* back_correct_total = (uint16_t*)malloc(sizeof(uint16_t)*(extra_length));
-	memset(back_methy, 0, extra_length*sizeof(uint16_t));
-	memset(back_total, 0, extra_length*sizeof(uint16_t));
-	memset(back_correct_methy, 0, extra_length*sizeof(uint16_t));
-	memset(back_correct_total, 0, extra_length*sizeof(uint16_t));
-	int jki;
-	**/
+
+
 
 	for (i = 0; i < genome_cuts; i++)
 	{
@@ -2037,11 +2855,19 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 		read_file = fopen(tmp_file_name, "r");
 
 		///这里要写异常文件
-		abnormal_file = fopen(abnormal_file_name, "w");
+		abnormal_file = fopen(abnormal_file_name, "wb");
 
 		fscanf(read_file, "%llu\t%d\t%d\t%llu\t%llu\n", &tmp_genome_cuts, &tmp_maxDistance_pair, &tmp_mode, &start_pos, &end_pos);
 
 		length = end_pos - start_pos + 1;
+
+		/**
+		init_methy_input_buffer(methylation_size, THREAD_COUNT,
+			start_pos, end_pos, i);
+		**/
+
+
+		start_load_time = Get_T();
 
 		if (!init_genome_cut_PE(methy, total, correct_methy, correct_total, 
 			ref_genome, length, i, extra_length, last_two_bases, &PE_de))
@@ -2049,22 +2875,7 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 			fprintf(stderr, "ERROR when reading genome!\n");
 			exit(0);
 		}
-
-
-		/**
-		for (jki = 0; jki < extra_length; jki++)
-		{
-			if (!(back_methy[jki] == methy[jki] &&
-				back_total[jki] == total[jki] &&
-				back_correct_methy[jki] == correct_methy[jki] &&
-				back_correct_total[jki] == correct_total[jki]))
-				fprintf(stderr, "ERROR ...., jki:%d \n", jki);
-			else
-			{
-				fprintf(stderr, "very well .... \n");
-			}
-		}
-		**/
+		load_time += Get_T() - start_load_time;
 
 
 		///1是拿到一个有效的alignment
@@ -2074,8 +2885,10 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 		while (return_value = get_alignment_PE(read_file, ref_genome, start_pos, 
 			read1, &read1_length, &C_or_G1, &direction1, &pos1,
 			read2, &read2_length, &C_or_G2, &direction2, &pos2,
-			&PE_de, PE_distance, tmp_buffer))
+			&PE_de, PE_distance))
 		{
+
+
 
 			total_read++;
 
@@ -2092,18 +2905,18 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 			{
 				abnormal_read++;  
 
-				///将异常结果写入临时文件
-				fprintf(abnormal_file, "%s\t%d\t%d\t%d\t%llu\t%s\t%d\t%d\t%d\t%llu\n",
-					read1, read1_length, C_or_G1, direction1, pos1,
-					read2, read2_length, C_or_G2, direction2, pos2);
 
+				///将异常结果写入临时文件
+				write_abnormal_PE_alignment(
+					read1, read1_length, C_or_G1, direction1, pos1,
+					read2, read2_length, C_or_G2, direction2, pos2,
+					abnormal_file);
+
+				continue;
 
 			}
 
-
-			///fprintf(stderr, "C_or_G: %d, pos: %llu, read:%s\n", C_or_G, pos, read);
-
-
+			start_update_methylation_time = Get_T();
 			
 			update_methylation(C_or_G1, ref_genome + pos1 - start_pos, read1, read1_length,
 				methy + pos1 - start_pos, total + pos1 - start_pos,
@@ -2113,7 +2926,7 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 				methy + pos2 - start_pos, total + pos2 - start_pos,
 				correct_methy + pos2 - start_pos, correct_total + pos2 - start_pos);
 			
-
+			update_methylation_time += Get_T() - start_update_methylation_time;
 
 
 		}
@@ -2121,16 +2934,21 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 
 		///这里要关闭异常文件, 再打开
 		fclose(abnormal_file);
-		abnormal_file = fopen(abnormal_file_name, "r");
-
+		abnormal_file = fopen(abnormal_file_name, "rb");
+		
 		phrase_abnormal_alignment(ref_genome, start_pos, read1, read2, abnormal_file, &PE_de, PE_distance,
 			methy, total, correct_methy, correct_total, &unique_read, &duplicate_read);
+		
 
 		fclose(abnormal_file);
 		
+		start_print_time = Get_T();
+
 		print_methylation(methy, total, correct_methy, correct_total,
 			start_pos, end_pos, ref_genome, last_two_bases, need_context);
 	
+		print_time += Get_T() - start_print_time;
+
 
 		fclose(read_file);
 
@@ -2138,16 +2956,7 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 		last_two_bases[0] = ref_genome[length - 2];
 		last_two_bases[1] = ref_genome[length - 1];
 
-		/**
-		for (jki = 0; jki < extra_length; jki++)
-		{
 
-				back_methy[jki] = methy[jki + length];
-				back_total[jki] = total[jki + length];
-				back_correct_methy[jki] = correct_methy[jki + length];
-				back_correct_total[jki] = correct_total[jki + length];
-		}
-		**/
 	}
 
 	///至少要把这个异常文件删除了
@@ -2158,8 +2967,22 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 	fprintf(stderr, "unique_read: %lld\n", unique_read);
 	fprintf(stderr, "abnormal_read: %lld\n", abnormal_read);
 
+	fprintf(stdout, "load_time: %f\n", load_time);
+	fprintf(stdout, "update_methylation_time: %f\n", update_methylation_time);
+	fprintf(stdout, "print_time: %f\n", print_time);
+	
+	
+	
+
 
 }
+
+
+
+
+
+
+
 
 
 
@@ -2221,6 +3044,8 @@ void methy_extract(int thread_id, char* file_name, int* need_context)
 	long long duplicate_read = 0;
 	long long unique_read = 0;
 
+	double tmp_pure_print_time;
+
 	for (i = 0; i < genome_cuts; i++)
 	{
 		sprintf(tmp_file_name, "%s_%d.bmm", file_name, i);
@@ -2261,7 +3086,7 @@ void methy_extract(int thread_id, char* file_name, int* need_context)
 
 
 
-			update_methylation(C_or_G, ref_genome + pos - start_pos, read, read_length,
+			update_methylation(C_or_G, ref_genome + pos - start_pos, (bitmapper_bs_iter*)read, read_length,
 				methy + pos - start_pos, total + pos - start_pos,
 				correct_methy + pos - start_pos, correct_total + pos - start_pos);
 
@@ -23232,7 +24057,7 @@ int Map_Pair_Seq_muti_thread(int thread_id)
 	pthread_t inputReadsHandle;
 	init_Pair_Seq_input_buffer(THREAD_COUNT);
 
-	if (read_format == FASTQ)
+	///if (read_format == FASTQ)
 	{
 		pthread_create(&inputReadsHandle, NULL, input_pe_reads_muti_threads, NULL);
 	}
@@ -23335,7 +24160,7 @@ int Map_Single_Seq_muti_thread(int thread_id)
 
 	init_Single_Seq_input_buffer(THREAD_COUNT);
 
-	if (read_format == FASTQ)
+	///if (read_format == FASTQ)
 	{
 		
 		pthread_create(&inputReadsHandle, NULL, input_single_reads_muti_threads, NULL);
@@ -23434,7 +24259,7 @@ int Map_Single_Seq_pbat_muti_thread(int thread_id)
 
 	init_Single_Seq_input_buffer(THREAD_COUNT);
 
-	if (read_format == FASTQ)
+	///if (read_format == FASTQ)
 	{
 		pthread_create(&inputReadsHandle, NULL, input_single_reads_muti_threads_pbat, NULL);
 	}
@@ -25789,6 +26614,287 @@ void* Map_Single_Seq_split_pbat(void* arg)
 }
 
 
+
+void init_methy_input_buffer(long long each_sub_buffer_size, int number_of_threads,
+	bitmapper_bs_iter total_start, bitmapper_bs_iter total_end, int is_update)
+{
+	int i = 0;
+
+	bitmapper_bs_iter total_length = total_end - total_start + 1;
+
+	int my_methylation_size = methylation_size / 2;
+
+	methy_input_buffer.number_of_intervals = number_of_threads;
+
+	methy_input_buffer.each_interval_length = total_length / number_of_threads + (total_length % number_of_threads != 0);
+
+	methy_input_buffer.end = 0;
+
+	methy_input_buffer.all_end = 0;
+
+	methy_input_buffer.all_completed = 0;
+
+	methy_input_buffer.total_start = total_start;
+	methy_input_buffer.total_end = total_end;
+	
+
+	////如果不是update，那就要初始化，就要分配空间
+	if (is_update == 0)
+	{
+		methy_input_buffer.intervals
+			= (Pair_Methylation*)malloc(sizeof(Pair_Methylation)*methy_input_buffer.number_of_intervals);
+		methy_input_buffer.each_buffer_interval_start
+			= (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*methy_input_buffer.number_of_intervals);
+		methy_input_buffer.each_buffer_interval_end
+			= (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*methy_input_buffer.number_of_intervals);
+
+
+
+		methy_input_buffer.Mutex
+			= (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * methy_input_buffer.number_of_intervals);
+
+		methy_input_buffer.stallCond 
+			= (pthread_cond_t*)malloc(sizeof(pthread_cond_t) * methy_input_buffer.number_of_intervals);
+
+		methy_input_buffer.flushCond
+			= (pthread_cond_t*)malloc(sizeof(pthread_cond_t) * methy_input_buffer.number_of_intervals);
+
+
+		methy_input_buffer.process_Mutex
+			= (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t)* methy_input_buffer.number_of_intervals);
+
+		methy_input_buffer.process_stallCond
+			= (pthread_cond_t*)malloc(sizeof(pthread_cond_t)* methy_input_buffer.number_of_intervals);
+
+		
+
+
+
+
+
+		for (i = 0; i < methy_input_buffer.number_of_intervals; i++)
+		{
+
+			init_pair_methylation(&methy_input_buffer.intervals[i], my_methylation_size);
+		}
+	}
+	else  ///如果不是初次，就不必要分配空间
+	{
+		for (i = 0; i < methy_input_buffer.number_of_intervals; i++)
+		{
+
+			methy_input_buffer.intervals[i].current_size = 0;
+
+		}
+
+	}
+
+
+
+
+	bitmapper_bs_iter tmp_start = total_start;
+	for (i = 0; i < methy_input_buffer.number_of_intervals; i++)
+	{
+		methy_input_buffer.each_buffer_interval_start[i] = tmp_start;
+		if (methy_input_buffer.each_buffer_interval_start[i] > total_end)
+		{
+			methy_input_buffer.each_buffer_interval_start[i] = total_end;
+		}
+
+
+		methy_input_buffer.each_buffer_interval_end[i]
+			= methy_input_buffer.each_buffer_interval_start[i] + methy_input_buffer.each_interval_length - 1;
+		if (methy_input_buffer.each_buffer_interval_end[i] > total_end)
+		{
+			methy_input_buffer.each_buffer_interval_end[i] = total_end;
+		}
+
+		tmp_start = tmp_start + methy_input_buffer.each_interval_length;
+	}
+
+
+
+
+	/**
+	fprintf(stderr, "total_start: %llu\n", total_start);
+	fprintf(stderr, "total_end: %llu\n", total_end);
+
+	
+	for (i = 0; i < methy_input_buffer.number_of_intervals; i++)
+	{
+		fprintf(stderr, "i: %d\n", i);
+		fprintf(stderr, "start: %llu\n", methy_input_buffer.each_buffer_interval_start[i]);
+		fprintf(stderr, "end: %llu\n*************************\n", methy_input_buffer.each_buffer_interval_end[i]);
+	}
+
+	fprintf(stderr, "\n\n");
+	**/
+
+}
+
+
+
+
+
+
+void* input_methy_muti_threads(void*)
+{
+
+	FILE* read_file;
+
+	uint16_t flag1;
+	bitmapper_bs_iter pos1;
+	int seq_length1;
+	bitmapper_bs_iter read1[SEQ_MAX_LENGTH / 10];
+
+	uint16_t flag2;
+	bitmapper_bs_iter pos2;
+	int seq_length2; 
+	bitmapper_bs_iter read2[SEQ_MAX_LENGTH / 10];
+
+	bitmapper_bs_iter key_pos;
+	bitmapper_bs_iter sub_interval_ID;
+
+	
+
+	buffer_3_bit tmp_read1;
+	buffer_3_bit tmp_read2;
+
+	Init_buffer_3_bit(tmp_read1);
+	Init_buffer_3_bit(tmp_read2);
+
+	buffer_3_bit tmp_swap;
+
+
+
+	Pair_Methylation* current_interval;
+
+	int round_ID = 0;
+
+	while (methy_input_buffer.all_end == 0)
+	{
+
+		read_file = input_methy_alignment_file;
+
+		while (1)
+		{
+			if (!input_PE_alignment(read_file,
+				&flag1, &pos1, &seq_length1, read1,
+				&flag2, &pos2, &seq_length2, read2))
+			{
+				break;
+			}
+
+			Check_Space_3_Bit(tmp_read1.buffer, tmp_read1.size, seq_length1);
+			Check_Space_3_Bit(tmp_read2.buffer, tmp_read2.size, seq_length2);
+			memcpy(tmp_read1.buffer, read1, tmp_read1.size * sizeof(bitmapper_bs_iter));
+			memcpy(tmp_read2.buffer, read2, tmp_read2.size * sizeof(bitmapper_bs_iter));
+
+
+			key_pos = pos1<=pos2? pos1:pos2;
+			key_pos = key_pos - methy_input_buffer.total_start;
+			sub_interval_ID = key_pos / methy_input_buffer.each_interval_length;
+			/**
+			if (key_pos > methy_input_buffer.each_buffer_interval_end[sub_interval_ID]
+				||
+				key_pos < methy_input_buffer.each_buffer_interval_start[sub_interval_ID])
+			{
+				fprintf(stdout, "ERROR!\n");
+				exit(0);
+			}
+			**/
+
+			current_interval = methy_input_buffer.intervals + sub_interval_ID;
+
+
+
+			pthread_mutex_lock(&methy_input_buffer.Mutex[sub_interval_ID]);
+			///如果满了，则该线程本身要wait，并通知消费者线程消费数据
+			while (current_interval->current_size
+					== current_interval->total_size)
+			{
+
+				
+
+				///按道理这个信号量似乎不用发
+				///因为队列不可能一边满一边空
+				pthread_cond_signal(&methy_input_buffer.stallCond[sub_interval_ID]);
+
+
+				pthread_cond_wait(&methy_input_buffer.flushCond[sub_interval_ID], 
+					&methy_input_buffer.Mutex[sub_interval_ID]);
+			}
+
+			/**************************read1***********************************/
+			tmp_swap.buffer = current_interval->R[0].reads_3_bit[current_interval->current_size];
+			tmp_swap.size = current_interval->R[0].r_size_3_bit[current_interval->current_size];
+
+			current_interval->R[0].reads_3_bit[current_interval->current_size] = tmp_read1.buffer;
+			current_interval->R[0].r_size_3_bit[current_interval->current_size] = tmp_read1.size;
+
+			tmp_read1 = tmp_swap;
+
+
+			current_interval->R[0].r_length[current_interval->current_size] = flag1;
+			current_interval->R[0].sites[current_interval->current_size] = pos1;
+			current_interval->R[0].r_real_length[current_interval->current_size] = seq_length1;
+			/**************************read1***********************************/
+			 
+			/**************************read2***********************************/
+
+			tmp_swap.buffer = current_interval->R[1].reads_3_bit[current_interval->current_size];
+			tmp_swap.size = current_interval->R[1].r_size_3_bit[current_interval->current_size];
+
+			current_interval->R[1].reads_3_bit[current_interval->current_size] = tmp_read2.buffer;
+			current_interval->R[1].r_size_3_bit[current_interval->current_size] = tmp_read2.size;
+
+			tmp_read2 = tmp_swap;
+
+
+			current_interval->R[1].r_length[current_interval->current_size] = flag2;
+			current_interval->R[1].sites[current_interval->current_size] = pos2;
+			current_interval->R[1].r_real_length[current_interval->current_size] = seq_length2;
+			/**************************read2***********************************/
+			current_interval->current_size++;
+
+
+			pthread_cond_signal(&methy_input_buffer.stallCond[sub_interval_ID]);
+			pthread_mutex_unlock(&methy_input_buffer.Mutex[sub_interval_ID]);
+
+		}
+
+
+		methy_input_buffer.end = 1;
+		int i;
+		for (i = 0; i < methy_input_buffer.number_of_intervals; i++)
+		{
+			pthread_cond_signal(&methy_input_buffer.stallCond[i]);
+		}
+
+
+		pthread_mutex_lock(&methy_input_buffer.all_completed_Mutex);
+		if (methy_input_buffer.all_completed == THREAD_COUNT)
+		{
+			pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex);
+			pthread_cond_signal(&methy_input_buffer.main_thread_flushCond);
+			pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex);
+		}
+		methy_input_buffer.all_completed++;
+		pthread_mutex_unlock(&methy_input_buffer.all_completed_Mutex);
+
+
+		pthread_mutex_lock(&methy_input_buffer.input_thread_Mutex);
+		pthread_cond_wait(&methy_input_buffer.input_thread_flushCond,&methy_input_buffer.input_thread_Mutex);
+		pthread_mutex_unlock(&methy_input_buffer.input_thread_Mutex);
+
+		round_ID++;
+
+	}
+
+	fprintf(stdout, "Input thread has been completed\n");
+
+	
+}
 
 
 

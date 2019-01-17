@@ -68,7 +68,7 @@ extern int CHG;
 extern int CHH;
 extern int unmapped_out;
 extern int ambiguous_out;
-
+extern int mapstats;
 
 double	Get_T(void);
 void	reverseComplement (char *seq, char *rcSeq , int length);
