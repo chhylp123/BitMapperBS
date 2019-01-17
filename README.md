@@ -213,10 +213,10 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 ### Changelog ###
 
-(9) January 17, 2019: version 1.0.0.8 released. 
+(8) January 17, 2019: version 1.0.0.8 released. 
 
     >>Added support of BitMapperBS to report the statistical information of read alignment into file.
-    >>When the input read files are in compressed fastq files (.fq.gz or .fastq.gz), BitMapperBS is sligntly faster at the expense of sligntly higher CPU Usage. 
+    >>When the input read files are in compressed fastq files (.fq.gz or .fastq.gz), BitMapperBS is sligntly faster at the expense of sligntly higher CPU usage. 
 
 (7) January 8, 2019: version 1.0.0.7 released. 
 
