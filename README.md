@@ -157,8 +157,7 @@ We recommd users to first remove the duplicates by Picard or samtools, and then 
 | --pbat | NULL | NULL | NULL | Map the bs-seq from pbat protocol. |
 | --unmapped_out | NULL | NULL | NULL | Report unmapped reads. |
 | --ambiguous_out | NULL | NULL | NULL | Random report one of hit of each ambiguous mapped read. |
-
-
+| --mapstats | NULL | NULL | NULL | Output the statistical information of read alignment into "OUTPUT_FILE.mapstats". Here "OUTPUT_FILE" is the name of output SAM or BAM file (defined by the option "-o")|
 
 
 
@@ -213,6 +212,11 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 
 ### Changelog ###
+
+(9) January 17, 2019: version 1.0.0.8 released. 
+
+    >>Added support of BitMapperBS to report the statistical information of read alignment into file.
+    >>When the input read files are in compressed fastq files (.fq.gz or .fastq.gz), BitMapperBS is sligntly faster at the expense of sligntly higher CPU Usage. 
 
 (7) January 8, 2019: version 1.0.0.7 released. 
 
