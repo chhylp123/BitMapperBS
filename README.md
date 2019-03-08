@@ -213,6 +213,9 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 ### Changelog ###
 
+(9) March 8, 2019: version 1.0.0.9 released. 
+    >> Fixed the bug that may happened with old version of G++.
+
 (8) January 17, 2019: version 1.0.0.8 released. 
 
     >>Added support of BitMapperBS to report the statistical information of read alignment into file.
