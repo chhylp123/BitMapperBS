@@ -60,7 +60,7 @@ char char_to_3bit[128] = {
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.0.8";
+char *versionN = "1.0.0.9";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
@@ -140,6 +140,8 @@ int read_format = 1;
 Methylation_Output methy_out;
 
 
+
+///bitmapper_bs_iter debug_pos;
 
 
 
@@ -851,10 +853,29 @@ inline int remove_dup(char* ref_genome, int direction, bitmapper_bs_iter pos, in
 
 	bitmapper_bs_iter dup_pos;
 
+	
+
+
 	///说明这是rc链
 	if (direction == 2)
 	{
 		dup_pos = pos + seq_length - 1;
+
+		/**
+		if (pos == 976903)
+		{
+			fprintf(stderr, "pos: %llu, dup_pos: %llu, direction: %d\n", pos, dup_pos, direction);
+			fprintf(stderr, "ref_genome[dup_pos]: %u\n", ref_genome[dup_pos]);
+
+		}
+
+		if (dup_pos == 977002)
+		{
+			fprintf(stderr, "***************pos: %llu, seq_length: %llu\n", pos, seq_length);
+		}
+		**/
+
+
 		///这就说明这个是重复
 		if (ref_genome[dup_pos] & RC_DUP_MASK)
 		{
@@ -912,8 +933,7 @@ inline int convert_3bit_to_char(bitmapper_bs_iter* tmp_buffer, int read_length, 
 
 
 inline int input_single_alignment(FILE* read_file,
-uint16_t* flag, bitmapper_bs_iter* pos, int* seq_length, char* read,
-bitmapper_bs_iter* tmp_buffer)
+	uint16_t* flag, bitmapper_bs_iter* pos, int* seq_length, bitmapper_bs_iter* read)
 {
 
 
@@ -933,9 +953,8 @@ bitmapper_bs_iter* tmp_buffer)
 	///read[(*seq_length)] = '\0';
 
 
-	fread(tmp_buffer, sizeof(bitmapper_bs_iter),
+	fread(read, sizeof(bitmapper_bs_iter),
 		((*seq_length) / 21 + ((*seq_length) % 21 != 0)), read_file);
-	convert_3bit_to_char(tmp_buffer, (*seq_length), read);
 	
 	/**********这里要改**********/
 
@@ -946,9 +965,8 @@ bitmapper_bs_iter* tmp_buffer)
 ///1是拿到一个有效的alignment
 ///0是读到文件末尾了
 ///-1是这个alignment重复了, 拿到了一个空的alignment
-inline int get_alignment(FILE* read_file, char* ref_genome, bitmapper_bs_iter start_pos, char* read, 
-	int* g_seq_length, int* g_C_or_G, int* g_direction, bitmapper_bs_iter* g_pos,
-	bitmapper_bs_iter* tmp_buffer)
+inline int get_alignment(FILE* read_file, char* ref_genome, bitmapper_bs_iter start_pos, bitmapper_bs_iter* read,
+	int* g_seq_length, int* g_C_or_G, int* g_direction, bitmapper_bs_iter* g_pos)
 {
 
 
@@ -959,17 +977,58 @@ inline int get_alignment(FILE* read_file, char* ref_genome, bitmapper_bs_iter st
 	int direction;
 	int seq_length;
 
+	
+
 	///if (fscanf(read_file, "%llu\t%llu\t%s\n", &flag, &pos, read) != EOF)
 	if(input_single_alignment(read_file,
-		&flag, &pos, &seq_length, read, tmp_buffer))
+		&flag, &pos, &seq_length, read))
 	{
+		
+
+
 		get_direction(flag, &C_or_G, &direction);
-		seq_length = strlen(read);
+
+		/**
+		if (pos == 976934)
+		{
+			fprintf(stderr, "####################pos: %llu, direction: %d, seq_length: %llu\n", pos, direction, seq_length);
+		}
+		**/
+		/**
+		if (pos >= 976914 - seq_length + 1 && pos <= 976914 + 1)
+		{
+			fprintf(stderr, "+pos: %llu, direction: %d, inner_pos: %llu\n", pos, direction, pos - start_pos);
+			char hahahh_seq[1000];
+			convert_3bit_to_char(read, seq_length, hahahh_seq);
+
+			fprintf(stderr, "%s\n", hahahh_seq);
+		}
+		**/
+		
+		
+
+
+		///seq_length = strlen(read);
 		///如果重复了
 		if (!remove_dup(ref_genome, direction, pos - start_pos, seq_length))
 		{
 			return -1;
 		}
+
+		/**
+		if (pos >= 976914 - seq_length + 1 && pos <= 976914 + 1)
+		{
+			fprintf(stderr, "-pos: %llu, direction: %d\n", pos, direction);
+			
+			char hahahh_seq[1000];
+			convert_3bit_to_char(read, seq_length, hahahh_seq);
+
+			fprintf(stderr, "%s\n", hahahh_seq);
+			
+		}
+		**/
+
+
 		
 		(*g_C_or_G) = C_or_G;
 		(*g_direction) = direction;
@@ -1477,6 +1536,75 @@ inline int input_PE_alignment_multiple_threads(FILE* read_file,
 
 
 
+inline int input_single_alignment_multiple_threads(FILE* read_file,
+	uint16_t* flag, bitmapper_bs_iter* pos, int* seq_length, buffer_3_bit* read,int thread_id)
+{
+
+	buffer_3_bit tmp_swap;
+
+
+	pthread_mutex_lock(&methy_input_buffer.Mutex[thread_id]);
+
+	///如果缓冲区为0且read还没从文件里读完
+	///则消费者要等待，并且通知生成者进行生产
+	while (methy_input_buffer.intervals[thread_id].current_size == 0 && methy_input_buffer.end == 0)
+	{
+		///按道理这个信号量似乎不用发
+		///因为队列不可能一边满一边空
+		pthread_cond_signal(&methy_input_buffer.flushCond[thread_id]);
+		pthread_cond_wait(&methy_input_buffer.stallCond[thread_id], &methy_input_buffer.Mutex[thread_id]);
+	}
+
+	if (methy_input_buffer.intervals[thread_id].current_size > 0)
+	{
+
+		methy_input_buffer.intervals[thread_id].current_size--;
+
+
+		/************************read1*****************************/
+		(*flag) = methy_input_buffer.intervals[thread_id].R[0].r_length[methy_input_buffer.intervals[thread_id].current_size];
+		(*pos) = methy_input_buffer.intervals[thread_id].R[0].sites[methy_input_buffer.intervals[thread_id].current_size];
+		(*seq_length) = methy_input_buffer.intervals[thread_id].R[0].r_real_length[methy_input_buffer.intervals[thread_id].current_size];
+
+
+		tmp_swap.buffer = methy_input_buffer.intervals[thread_id].R[0].reads_3_bit[methy_input_buffer.intervals[thread_id].current_size];
+		tmp_swap.size = methy_input_buffer.intervals[thread_id].R[0].r_size_3_bit[methy_input_buffer.intervals[thread_id].current_size];
+
+		methy_input_buffer.intervals[thread_id].R[0].reads_3_bit[methy_input_buffer.intervals[thread_id].current_size] = read->buffer;
+		methy_input_buffer.intervals[thread_id].R[0].r_size_3_bit[methy_input_buffer.intervals[thread_id].current_size] = read->size;
+
+		*read = tmp_swap;
+		/************************read1*****************************/
+
+		
+
+
+		/*******************代码在这里*********************/
+
+		pthread_cond_signal(&methy_input_buffer.flushCond[thread_id]);
+		pthread_mutex_unlock(&methy_input_buffer.Mutex[thread_id]);
+
+		return 1;
+
+	}
+	else
+	{
+
+		pthread_cond_signal(&methy_input_buffer.stallCond[thread_id]);
+		pthread_mutex_unlock(&methy_input_buffer.Mutex[thread_id]);
+
+		return 0;
+	}
+
+
+
+	return 1;
+
+}
+
+
+
+
 ///1是拿到一个有效的alignment
 ///0是读到文件末尾了
 ///-1是这个alignment重复了, 拿到了一个空的alignment
@@ -1622,6 +1750,65 @@ inline int get_alignment_PE_multiple_threads(FILE* read_file, char* ref_genome, 
 	}
 
 }
+
+
+
+
+
+
+///1是拿到一个有效的alignment
+///0是读到文件末尾了
+///-1是这个alignment重复了, 拿到了一个空的alignment
+inline int get_alignment_single_multiple_threads(FILE* read_file, char* ref_genome, bitmapper_bs_iter start_pos,
+	buffer_3_bit* read, int* g_seq_length, int* g_C_or_G, int* g_direction, bitmapper_bs_iter* g_pos, int thread_id)
+{
+
+
+	uint16_t flag;
+	bitmapper_bs_iter pos;
+	int C_or_G;
+	int direction;
+	int seq_length;
+
+
+
+	int return_value;
+
+
+	if (input_single_alignment_multiple_threads(read_file,
+		&flag, &pos, &seq_length, read, thread_id))
+	{
+
+
+		get_direction(flag, &C_or_G, &direction);
+
+
+
+		if (!remove_dup(ref_genome, direction, pos - start_pos, seq_length))
+		{
+			return -1;
+		}
+
+
+		(*g_C_or_G) = C_or_G;
+		(*g_direction) = direction;
+		(*g_seq_length) = seq_length;
+		(*g_pos) = pos;
+
+
+
+
+		return 1;
+	}
+	else
+	{
+
+
+		return 0;
+	}
+
+}
+
 
 
 
@@ -1796,6 +1983,14 @@ inline void update_methylation(int C_or_G, char* ref_genome, bitmapper_bs_iter* 
 		read_tmp = read_tmp & 7;
 		ref_tmp = ref_genome[i] & POS_MASK;
 
+		/**
+		if (debug_pos + i == 976914)
+		{
+			fprintf(stderr, "debug_pos: %llu\n", debug_pos);
+			fprintf(stderr, "i: %llu\n", i);
+		}
+		**/
+
 		if (ref_tmp == match)
 		{
 			if (read_tmp == convert && total[i] < 65535)
@@ -1898,9 +2093,10 @@ inline int check_CpG(long long ref_pos, long long part_pos,
 		///这个是防止溢出
 		if (part_pos > 0)
 		{
+
 			///第一个判断条件是不能跨染色体
 			///第二个是判断是不是CpG
-			if ((ref_pos - 1 >= _ih_refGenName[chrome_id].start_location)
+			if ((ref_pos >= _ih_refGenName[chrome_id].start_location + 1)
 				&&
 				((ref_genome[part_pos - 1] & POS_MASK) == 1)) //C
 			{
@@ -1911,7 +2107,7 @@ inline int check_CpG(long long ref_pos, long long part_pos,
 		{
 			///第一个判断条件是不能跨染色体
 			///第二个是判断是不是CpG
-			if ((ref_pos - 1 >= _ih_refGenName[chrome_id].start_location)
+			if ((ref_pos >= _ih_refGenName[chrome_id].start_location + 1)
 				&&
 				((last_two_bases[1] & POS_MASK) == 1)) //C
 			{
@@ -1949,25 +2145,30 @@ inline int check_CHG(long long ref_pos, long long part_pos,
 	}
 	else if (direction == 2) ///G
 	{
-		///这个是防止溢出
-		if (part_pos > 0)
+
+
+		///这个是防止溢出, >1就至少是2
+		///if (part_pos > 0)
+		if (part_pos > 1)
 		{
 			///第一个判断条件是不能跨染色体
 			///第二个是判断是不是CpG
-			if ((ref_pos - 2 >= _ih_refGenName[chrome_id].start_location)
+			if ((ref_pos >= _ih_refGenName[chrome_id].start_location + 2)
 				&&
 				((ref_genome[part_pos - 2] & POS_MASK) == 1)) //C
 			{
 				return 1;
 			}
 		}
-		else   ///这个是为了处理part_pos = 0的情况
+		else   ///这个是为了处理part_pos = 0和1的情况
 		{
+
+
 			///第一个判断条件是不能跨染色体
 			///第二个是判断是不是CpG
-			if ((ref_pos - 2 >= _ih_refGenName[chrome_id].start_location)
+			if ((ref_pos >= _ih_refGenName[chrome_id].start_location + 2)
 				&&
-				((last_two_bases[0] & POS_MASK) == 1)) //C
+				((last_two_bases[part_pos] & POS_MASK) == 1)) //C   ///当part_pos = 1时，应该检查last_two_bases[1]; 当part_pos = 0时，应该检查last_two_bases[0]
 			{
 				return 1;
 			}
@@ -2000,8 +2201,687 @@ inline int get_context(long long ref_pos, long long part_pos,
 
 
 
-inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+inline void check_print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
 	bitmapper_bs_iter start_pos, bitmapper_bs_iter end_pos, char* ref_genome, 
+	char* last_two_bases, int* need_context)
+{
+	bitmapper_bs_iter length = end_pos - start_pos + 1;
+
+	bitmapper_bs_iter i;
+	bitmapper_bs_iter tmp_pos;
+	char* chrome_name;
+	int chrome_id = 0;
+
+	unsigned char tmp;
+
+	int current_context;
+
+	for (i = 0; i < length; i++, start_pos++)
+	{
+
+
+		tmp = ref_genome[i] & POS_MASK;
+
+		if (tmp == 1 || tmp == 2) //C或者G
+		{
+			/**
+			///if (correct_methy[i] != correct_total[i])
+			if (correct_total[i] > minVariantDepth && ((double)(correct_methy[i]) / (double)(correct_total[i])) < maxVariantFrac)
+			{
+				continue;
+			}
+
+			if (total[i]==0)
+			{
+				continue;
+			}
+			**/
+
+
+
+
+			tmp_pos = start_pos;
+			get_chrome_position(&tmp_pos, &chrome_name, chrome_id, &chrome_id);
+
+			
+			current_context = 
+				get_context(start_pos, i, chrome_id, ref_genome, tmp, last_two_bases);
+			
+			tmp = ref_genome[i] & CONTEXT_MASK;
+			tmp = tmp >> 4;
+
+			///tmp = (ref_genome[i] & CONTEXT_MASK)>>4;
+
+			if (tmp != current_context)
+			{
+				fprintf(stderr, "tmp: %llu, current_context: %llu, ref_genome[i]: %llu, start_pos: %llu, i: %llu\n", 
+					tmp, current_context, ref_genome[i], start_pos, i);
+
+				fprintf(stderr, "chrome_id: %llu, chrome_name: %s\n",
+					chrome_id, chrome_name);
+
+				fprintf(stderr, "start_location: %llu, end_location: %llu\n",
+					_ih_refGenName[chrome_id].start_location, _ih_refGenName[chrome_id].end_location);
+			}
+
+			///current_context = tmp;
+
+
+			/**
+			if (need_context[current_context])
+			{
+
+				if (current_context == 0)
+				{
+					output_single_methy_CpG(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+				else if (current_context == 1)
+				{
+					output_single_methy_CHG(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+				else if (current_context == 2)
+				{
+					output_single_methy_CHH(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+
+			}
+			**/
+
+			if (need_context[current_context])
+			{
+
+				if (current_context == 0)
+				{
+					output_single_methy_CpG(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+
+				if (current_context == 1)
+				{
+					output_single_methy_CHG(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+
+				if (current_context == 2)
+				{
+					output_single_methy_CHH(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+
+			}
+
+
+		}
+		
+
+
+		
+
+	}
+}
+
+
+
+inline void print_methylation_back(uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+	bitmapper_bs_iter start_pos, bitmapper_bs_iter end_pos, char* ref_genome,
+	char* last_two_bases, int* need_context)
+{
+	bitmapper_bs_iter length = end_pos - start_pos + 1;
+
+	bitmapper_bs_iter i;
+	bitmapper_bs_iter tmp_pos;
+	char* chrome_name;
+	int chrome_id = 0;
+
+	unsigned char tmp;
+
+	int current_context;
+
+	for (i = 0; i < length; i++, start_pos++)
+	{
+
+
+		tmp = ref_genome[i] & POS_MASK;
+
+		if (tmp == 1 || tmp == 2) //C或者G
+		{
+			
+			///if (correct_methy[i] != correct_total[i])
+			if (correct_total[i] > minVariantDepth && ((double)(correct_methy[i]) / (double)(correct_total[i])) < maxVariantFrac)
+			{
+				continue;
+			}
+
+			if (total[i]==0)
+			{
+				continue;
+			}
+				
+
+
+
+
+			tmp_pos = start_pos;
+			get_chrome_position(&tmp_pos, &chrome_name, chrome_id, &chrome_id);
+
+
+			current_context =
+				get_context(start_pos, i, chrome_id, ref_genome, tmp, last_two_bases);
+
+
+
+			if (need_context[current_context])
+			{
+
+				if (current_context == 0)
+				{
+					output_single_methy_CpG(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+
+				if (current_context == 1)
+				{
+					output_single_methy_CHG(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+
+				if (current_context == 2)
+				{
+					output_single_methy_CHH(tmp_pos, chrome_name, methy[i], total[i]);
+				}
+
+			}
+
+
+		}
+
+
+
+
+
+	}
+}
+
+
+
+inline void print_sub_methylation_multiple_thread(uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+	bitmapper_bs_iter start_pos, bitmapper_bs_iter end_pos, char* ref_genome, int* need_context, int thread_id)
+{
+	bitmapper_bs_iter length = end_pos - start_pos + 1;
+
+	bitmapper_bs_iter i;
+	bitmapper_bs_iter tmp_pos;
+	char* chrome_name;
+	int chrome_id = 0;
+
+	unsigned char tmp;
+
+
+	for (i = 0; i < length; i++, start_pos++)
+	{
+
+		tmp = (ref_genome[i] & CONTEXT_MASK) >> 4;
+
+		if (tmp <= 2)
+		{
+
+			if (total[i] == 0)
+			{
+				continue;
+			}
+
+			if (correct_total[i] > minVariantDepth && ((double)(correct_methy[i]) / (double)(correct_total[i])) < maxVariantFrac)
+			{
+				continue;
+			}
+
+
+			if (need_context[tmp])
+			{
+
+				tmp_pos = start_pos;
+				get_chrome_position(&tmp_pos, &chrome_name, chrome_id, &chrome_id);
+
+				switch (tmp)
+				{
+				case 0: ///CpG
+					output_single_methy_multiple_thread(tmp_pos, chrome_name, methy[i], total[i], 
+						&(methy_input_buffer.CpG_buffer[thread_id]));
+					break;
+				case 1: ///CHG
+					output_single_methy_multiple_thread(tmp_pos, chrome_name, methy[i], total[i],
+						&(methy_input_buffer.CHG_buffer[thread_id]));
+					break;
+				case 2:  ///CHH
+					output_single_methy_multiple_thread(tmp_pos, chrome_name, methy[i], total[i],
+						&(methy_input_buffer.CHH_buffer[thread_id]));
+					break;
+
+				}
+
+			}
+		}
+	}
+}
+
+
+
+void* extract_methylation_multiple_thread(void* arg)
+{
+	int thread_id = *((int *)arg);
+	uint16_t* methy;
+	uint16_t* total;
+	uint16_t* correct_methy;
+	uint16_t* correct_total;
+	bitmapper_bs_iter start_pos;
+	bitmapper_bs_iter end_pos;
+	char* ref_genome;
+	bitmapper_bs_iter length;
+
+
+	bitmapper_bs_iter i;
+	bitmapper_bs_iter tmp_pos;
+	char* chrome_name;
+	int chrome_id = 0;
+
+	unsigned char tmp;
+
+	/**
+	fprintf(stderr, "extract1\n");
+	fflush(stderr);
+	**/
+
+	/**
+	///先把自己阻塞住，因为此时数据没准备好
+	pthread_mutex_lock(&methy_input_buffer.process_Mutex_methy[thread_id]);
+	pthread_cond_wait(&methy_input_buffer.process_stallCond_methy[thread_id],
+		&methy_input_buffer.process_Mutex_methy[thread_id]);
+	pthread_mutex_unlock(&methy_input_buffer.process_Mutex_methy[thread_id]);
+	**/
+	/**
+	fprintf(stderr, "extract2\n");
+	fflush(stderr);
+	**/
+
+	while (methy_input_buffer.all_end == 0)
+	{
+		methy = methy_input_buffer.M_methy[thread_id];
+		total = methy_input_buffer.M_total[thread_id];
+		correct_methy = methy_input_buffer.M_correct_methy[thread_id];
+		correct_total = methy_input_buffer.M_correct_total[thread_id];
+		start_pos = methy_input_buffer.M_start_pos[thread_id];
+		end_pos = methy_input_buffer.M_end_pos[thread_id];
+		ref_genome = methy_input_buffer.M_ref_genome[thread_id];
+
+		////这是为了防止溢出啊
+		length = end_pos + 1;
+		length = length - start_pos;
+		////这是为了防止溢出啊
+
+		for (i = 0; i < length; i++, start_pos++)
+		{
+
+			tmp = (ref_genome[i] & CONTEXT_MASK) >> 4;
+
+			if (tmp <= 2)
+			{
+
+				if (total[i] == 0)
+				{
+					continue;
+				}
+
+				if (correct_total[i] > minVariantDepth && ((double)(correct_methy[i]) / (double)(correct_total[i])) < maxVariantFrac)
+				{
+					continue;
+				}
+
+
+				if (methy_input_buffer.need_context[tmp])
+				{
+
+					tmp_pos = start_pos;
+					get_chrome_position(&tmp_pos, &chrome_name, chrome_id, &chrome_id);
+
+					switch (tmp)
+					{
+					case 0: ///CpG
+						output_single_methy_multiple_thread(tmp_pos, chrome_name, methy[i], total[i],
+							&(methy_input_buffer.CpG_buffer[thread_id]));
+						break;
+					case 1: ///CHG
+						output_single_methy_multiple_thread(tmp_pos, chrome_name, methy[i], total[i],
+							&(methy_input_buffer.CHG_buffer[thread_id]));
+						break;
+					case 2:  ///CHH
+						output_single_methy_multiple_thread(tmp_pos, chrome_name, methy[i], total[i],
+							&(methy_input_buffer.CHH_buffer[thread_id]));
+						break;
+
+					}
+
+				}
+			}
+		}
+
+		/**
+		fprintf(stderr, "extract3\n");
+		fflush(stderr);
+		**/
+
+		pthread_mutex_lock(&methy_input_buffer.all_completed_Mutex_methy);
+		///注意这里和methy_input_buffer.all_completed不一样, 那个变量还有个input线程控制
+		///这里要先+1，再判断
+		methy_input_buffer.all_completed_methy++;
+		if (methy_input_buffer.all_completed_methy == THREAD_COUNT)
+		{
+			pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex_methy);
+			pthread_cond_signal(&methy_input_buffer.main_thread_flushCond_methy);
+			pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex_methy);
+		}
+		pthread_mutex_unlock(&methy_input_buffer.all_completed_Mutex_methy);
+
+		/**
+		fprintf(stderr, "extract4\n");
+		fflush(stderr);
+		**/
+
+		pthread_mutex_lock(&methy_input_buffer.process_Mutex_methy[thread_id]);
+		pthread_cond_wait(&methy_input_buffer.process_stallCond_methy[thread_id], 
+			&methy_input_buffer.process_Mutex_methy[thread_id]);
+		pthread_mutex_unlock(&methy_input_buffer.process_Mutex_methy[thread_id]);
+
+		/**
+		fprintf(stderr, "extract5\n");
+		fflush(stderr);
+		**/
+
+	}
+
+	/**
+	fprintf(stderr, "thread_id: %d\n", thread_id);
+	fflush(stderr);
+	**/
+}
+
+
+
+
+inline void print_methylation_multiple_thread(uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+	long long start_pos, long long end_pos, char* ref_genome,
+	char* last_two_bases, int* need_context, pthread_t *_r_threads_output, int is_update)
+{
+	long long length = end_pos - start_pos + 1;
+
+	bitmapper_bs_iter i = 0;
+	bitmapper_bs_iter tmp_pos;
+	char* chrome_name;
+	int chrome_id = 0;
+
+	unsigned char tmp;
+
+	int j;
+	bitmapper_bs_iter sub_step_length = 100000;
+	bitmapper_bs_iter step_length = sub_step_length*THREAD_COUNT;
+
+	long long inner_offset;
+
+
+	/**
+	fprintf(stderr, "******\n");
+
+	fprintf(stderr, "i: %d\n", i);
+	fprintf(stderr, "step_length: %d\n", step_length);
+	**/
+
+	while (i + step_length <= length)
+	{
+		/**
+		fprintf(stderr, "0:inner_i; %d\n", i);
+		fflush(stderr);
+		**/
+
+		///这个一定要有
+		methy_input_buffer.all_completed_methy = 0;
+
+		
+		for (j = 0; j < THREAD_COUNT; j++)
+		{
+			inner_offset = i + j * sub_step_length;
+			///准备数据
+			methy_input_buffer.M_methy[j] = methy + inner_offset;
+			methy_input_buffer.M_total[j] = total + inner_offset;
+			methy_input_buffer.M_correct_methy[j] = correct_methy + inner_offset;
+			methy_input_buffer.M_correct_total[j] = correct_total + inner_offset;
+			methy_input_buffer.M_ref_genome[j] = ref_genome + inner_offset;
+			methy_input_buffer.M_start_pos[j] = start_pos + inner_offset;
+			methy_input_buffer.M_end_pos[j] = methy_input_buffer.M_start_pos[j] + sub_step_length - 1;
+
+			if (is_update == 0)
+			{
+				int *arg = (int*)malloc(sizeof(*arg));
+				*arg = j;
+
+				pthread_create(_r_threads_output + j, NULL, extract_methylation_multiple_thread, (void*)arg);
+			}
+			else
+			{
+				///启动线程
+				pthread_mutex_lock(&methy_input_buffer.process_Mutex_methy[j]);
+				pthread_cond_signal(&methy_input_buffer.process_stallCond_methy[j]);
+				pthread_mutex_unlock(&methy_input_buffer.process_Mutex_methy[j]);
+			}
+
+		
+		}
+
+		/**
+		fprintf(stderr, "1:inner_i; %d\n", i);
+		fflush(stderr);
+		**/
+
+		///阻塞自己
+		pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex_methy);
+		pthread_cond_wait(&methy_input_buffer.main_thread_flushCond_methy, &methy_input_buffer.main_thread_Mutex_methy);
+		pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex_methy);
+
+		/**
+		fprintf(stderr, "2:inner_i; %d\n", i);
+		fflush(stderr);
+		**/
+
+		///输出
+		for (j = 0; j < THREAD_COUNT; j++)
+		{
+			output_methy_directly(&(methy_input_buffer.CpG_buffer[j]), &(methy_input_buffer.CHG_buffer[j]),
+				&(methy_input_buffer.CHH_buffer[j]));
+		}
+		
+
+		i = i + step_length;
+	}
+
+	/**
+	fprintf(stderr, "i: %d\n", i);
+	fprintf(stderr, "length: %d\n", length);
+	**/
+
+	/**
+	if (i < length)
+	{
+		start_pos = start_pos + i;
+
+		print_sub_methylation_multiple_thread(methy + i, total + i, correct_methy + i, correct_total + i,
+			start_pos, start_pos + length -i - 1, ref_genome + i, need_context, 0);
+
+		output_methy_directly(&(methy_input_buffer.CpG_buffer[0]), &(methy_input_buffer.CHG_buffer[0]),
+			&(methy_input_buffer.CHH_buffer[0]));
+	}
+	**/
+	///不管还剩多少数据，都得启动THREAD_COUNT这么多线程
+	if (i < length)
+	{
+		///这个一定要有
+		methy_input_buffer.all_completed_methy = 0;
+
+
+
+		for (j = 0; j < THREAD_COUNT; j++)
+		{
+			inner_offset = i + j * sub_step_length;
+
+			if (inner_offset < length)
+			{
+				///准备数据
+				methy_input_buffer.M_methy[j] = methy + inner_offset;
+				methy_input_buffer.M_total[j] = total + inner_offset;
+				methy_input_buffer.M_correct_methy[j] = correct_methy + inner_offset;
+				methy_input_buffer.M_correct_total[j] = correct_total + inner_offset;
+				methy_input_buffer.M_ref_genome[j] = ref_genome + inner_offset;
+				methy_input_buffer.M_start_pos[j] = start_pos + inner_offset;
+
+				if (length - inner_offset >= sub_step_length)
+				{
+					methy_input_buffer.M_end_pos[j] = methy_input_buffer.M_start_pos[j] + sub_step_length - 1;
+				}
+				else
+				{
+					methy_input_buffer.M_end_pos[j] = methy_input_buffer.M_start_pos[j] + length - inner_offset - 1;
+				}
+				
+
+				if (is_update == 0)
+				{
+					int *arg = (int*)malloc(sizeof(*arg));
+					*arg = j;
+
+					pthread_create(_r_threads_output + j, NULL, extract_methylation_multiple_thread, (void*)arg);
+				}
+				else
+				{
+					///启动线程
+					pthread_mutex_lock(&methy_input_buffer.process_Mutex_methy[j]);
+					pthread_cond_signal(&methy_input_buffer.process_stallCond_methy[j]);
+					pthread_mutex_unlock(&methy_input_buffer.process_Mutex_methy[j]);
+				}
+			}
+			else
+			{
+				///虽然这个线程分不到数据，但是也得启动，否则会死锁
+				///置0和置1就是说明长度为0
+				methy_input_buffer.M_start_pos[j] = 1;
+				methy_input_buffer.M_end_pos[j] = 0;
+
+				if (is_update == 0)
+				{
+					int *arg = (int*)malloc(sizeof(*arg));
+					*arg = j;
+
+					pthread_create(_r_threads_output + j, NULL, extract_methylation_multiple_thread, (void*)arg);
+				}
+				else
+				{
+					///启动线程
+					pthread_mutex_lock(&methy_input_buffer.process_Mutex_methy[j]);
+					pthread_cond_signal(&methy_input_buffer.process_stallCond_methy[j]);
+					pthread_mutex_unlock(&methy_input_buffer.process_Mutex_methy[j]);
+				}
+
+
+			}
+
+			
+
+
+		}
+
+		/**
+		fprintf(stderr, "1:inner_i; %d\n", i);
+		fflush(stderr);
+		**/
+
+		///阻塞自己
+		pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex_methy);
+		pthread_cond_wait(&methy_input_buffer.main_thread_flushCond_methy, &methy_input_buffer.main_thread_Mutex_methy);
+		pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex_methy);
+
+		/**
+		fprintf(stderr, "2:inner_i; %d\n", i);
+		fflush(stderr);
+		**/
+
+		///输出
+		for (j = 0; j < THREAD_COUNT; j++)
+		{
+			output_methy_directly(&(methy_input_buffer.CpG_buffer[j]), &(methy_input_buffer.CHG_buffer[j]),
+				&(methy_input_buffer.CHH_buffer[j]));
+		}
+	}
+
+
+}
+
+
+
+
+inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+	bitmapper_bs_iter start_pos, bitmapper_bs_iter end_pos, char* ref_genome,
+	char* last_two_bases, int* need_context)
+{
+	bitmapper_bs_iter length = end_pos - start_pos + 1;
+
+	bitmapper_bs_iter i;
+	bitmapper_bs_iter tmp_pos;
+	char* chrome_name;
+	int chrome_id = 0;
+
+	unsigned char tmp;
+
+
+	for (i = 0; i < length; i++, start_pos++)
+	{
+
+		tmp = (ref_genome[i] & CONTEXT_MASK) >> 4;
+
+		if (tmp <= 2)
+		{
+
+			if (total[i] == 0)
+			{
+				continue;
+			}
+
+			if (correct_total[i] > minVariantDepth && ((double)(correct_methy[i]) / (double)(correct_total[i])) < maxVariantFrac)
+			{
+				continue;
+			}
+
+
+			if (need_context[tmp])
+			{
+
+				tmp_pos = start_pos;
+				get_chrome_position(&tmp_pos, &chrome_name, chrome_id, &chrome_id);
+
+				switch (tmp)
+				{
+				case 0: ///CpG
+					output_single_methy_CpG(tmp_pos, chrome_name, methy[i], total[i]);
+					break;
+				case 1: ///CHG
+					output_single_methy_CHG(tmp_pos, chrome_name, methy[i], total[i]);
+					break;
+				case 2:  ///CHH
+					output_single_methy_CHH(tmp_pos, chrome_name, methy[i], total[i]);
+					break;
+
+				}
+
+			}
+		}
+	}
+}
+
+
+
+
+inline void check_context(uint16_t* methy, uint16_t* total, uint16_t* correct_methy, uint16_t* correct_total,
+	bitmapper_bs_iter start_pos, bitmapper_bs_iter end_pos, char* ref_genome,
 	char* last_two_bases, int* need_context)
 {
 	bitmapper_bs_iter length = end_pos - start_pos + 1;
@@ -2023,53 +2903,29 @@ inline void print_methylation(uint16_t* methy, uint16_t* total, uint16_t* correc
 
 		if (tmp == 1 || tmp == 2) //C或者G
 		{
-			///if (correct_methy[i] != correct_total[i])
-			if (correct_total[i] > minVariantDepth && ((double)(correct_methy[i]) / (double)(correct_total[i])) < maxVariantFrac)
-			{
-				/**
-				fprintf(stderr, "correct_methy[i]: %d\n", correct_methy[i]);
-				fprintf(stderr, "correct_total[i]: %d\n", correct_total[i]);
-				fprintf(stderr, "F: %f\n\n", ((double)(correct_methy[i]) / (double)(correct_total[i])));
-				**/
-				continue;
-			}
+			
 
-			if (total[i]==0)
-			{
-				continue;
-			}
+
+
 
 			tmp_pos = start_pos;
 			get_chrome_position(&tmp_pos, &chrome_name, chrome_id, &chrome_id);
 
 
-			current_context = 
+			current_context =
 				get_context(start_pos, i, chrome_id, ref_genome, tmp, last_two_bases);
 
-			if (need_context[current_context])
+
+
+			tmp = (ref_genome[i] & CONTEXT_MASK) >> 4;
+
+			if (tmp != current_context)
 			{
-
-				if (current_context == 0)
-				{
-					output_single_methy_CpG(tmp_pos, chrome_name, methy[i], total[i]);
-				}
-
-				if (current_context == 1)
-				{
-					output_single_methy_CHG(tmp_pos, chrome_name, methy[i], total[i]);
-				}
-
-				if (current_context == 2)
-				{
-					output_single_methy_CHH(tmp_pos, chrome_name, methy[i], total[i]);
-				}
-
+				fprintf(stderr, "check***** tmp: %llu, current_context: %llu, ref_genome[i]: %llu\n", tmp, current_context, ref_genome[i]);
 			}
+
+			
 		}
-		
-
-
-		
 
 	}
 }
@@ -2455,8 +3311,11 @@ void* process_PE_methy_alignment_multiple_threads(void* arg)
 		}
 
 		pthread_mutex_lock(&methy_input_buffer.all_completed_Mutex);
+
+		///这个是先判断，然后再+1，是因为除了这些处理线程之外，还有个input线程也要+1
 		if (methy_input_buffer.all_completed == THREAD_COUNT)
 		{
+
 			pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex);
 			pthread_cond_signal(&methy_input_buffer.main_thread_flushCond);
 			pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex);
@@ -2473,8 +3332,110 @@ void* process_PE_methy_alignment_multiple_threads(void* arg)
 	}
 
 
-	fprintf(stdout, "thread %d (methy) has been completed\n", thread_id);
+
+
+
+	///fprintf(stdout, "thread %d (methy) has been completed\n", thread_id);
 }
+
+
+
+void* process_single_methy_alignment_multiple_threads(void* arg)
+{
+	int thread_id = *((int *)arg);
+	int return_value;
+	buffer_3_bit read;
+	Init_buffer_3_bit(read);
+	int read_length;
+	int C_or_G;
+	int direction;
+	bitmapper_bs_iter pos;
+
+
+
+
+	while (methy_input_buffer.all_end == 0)
+	{
+
+		///1是拿到一个有效的alignment
+		///0是读到文件末尾了
+		///-1是这个alignment重复了, 拿到了一个空的alignment
+		while (return_value = get_alignment_single_multiple_threads(
+			parameters.read_file, parameters.ref_genome, parameters.start_pos,
+			&read, &read_length, &C_or_G, &direction, &pos, thread_id))
+		{
+
+			parameters.total_read[thread_id]++;
+
+			if (return_value == -1)
+			{
+				parameters.duplicate_read[thread_id]++;
+				continue;
+			}
+			else if (return_value == 1)
+			{
+				parameters.unique_read[thread_id]++;
+			}
+
+
+
+			if (pos > methy_input_buffer.each_buffer_interval_end[thread_id] || pos < methy_input_buffer.each_buffer_interval_start[thread_id])
+			{
+				fprintf(stderr, "ERROR: process_PE_methy_alignment_multiple_threads\n");
+				fprintf(stderr, "pos: %llu\n", pos);
+				fprintf(stderr, "start: %llu\n", methy_input_buffer.each_buffer_interval_start[thread_id]);
+				fprintf(stderr, "end: %llu\n", methy_input_buffer.each_buffer_interval_end[thread_id]);
+				exit(0);
+			}
+
+
+			if (pos + read_length - 1 <= methy_input_buffer.each_buffer_interval_end[thread_id])
+			{
+				update_methylation(C_or_G, parameters.ref_genome + pos - parameters.start_pos, read.buffer, read_length,
+					parameters.methy + pos - parameters.start_pos, parameters.total + pos - parameters.start_pos,
+					parameters.correct_methy + pos - parameters.start_pos, parameters.correct_total + pos - parameters.start_pos);
+			}
+			else
+			{
+				pthread_mutex_lock(&methy_input_buffer.overlap_file_Mutex);
+
+				write_overlap_alignment(read.buffer, read_length, C_or_G, direction, pos,
+					parameters.overlap_file);
+
+				pthread_mutex_unlock(&methy_input_buffer.overlap_file_Mutex);
+			}
+
+		}
+
+		pthread_mutex_lock(&methy_input_buffer.all_completed_Mutex);
+
+		///这个是先判断，然后再+1，是因为除了这些处理线程之外，还有个input线程也要+1
+		if (methy_input_buffer.all_completed == THREAD_COUNT)
+		{
+
+			pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex);
+			pthread_cond_signal(&methy_input_buffer.main_thread_flushCond);
+			pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex);
+		}
+		methy_input_buffer.all_completed++;
+		pthread_mutex_unlock(&methy_input_buffer.all_completed_Mutex);
+
+
+
+
+		pthread_mutex_lock(&methy_input_buffer.process_Mutex[thread_id]);
+		pthread_cond_wait(&methy_input_buffer.process_stallCond[thread_id], &methy_input_buffer.process_Mutex[thread_id]);
+		pthread_mutex_unlock(&methy_input_buffer.process_Mutex[thread_id]);
+	}
+
+
+
+
+
+	///fprintf(stdout, "thread %d (methy) has been completed\n", thread_id);
+}
+
+
 
 
 void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_distance, int* need_context)
@@ -2487,10 +3448,7 @@ void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_dist
 		cut_length = cut_length + 1;
 	}
 
-	/**
-	FILE* read_file;
-	FILE* abnormal_file;
-	**/
+
 	int i = 0;
 	char tmp_file_name[SEQ_MAX_LENGTH];
 	char abnormal_file_name[SEQ_MAX_LENGTH];
@@ -2499,30 +3457,6 @@ void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_dist
 	bitmapper_bs_iter L_read1[SEQ_MAX_LENGTH];
 	bitmapper_bs_iter L_read2[SEQ_MAX_LENGTH];
 	
-	/**
-	buffer_3_bit read1;
-	buffer_3_bit read2;
-
-	Init_buffer_3_bit(read1);
-	Init_buffer_3_bit(read2);
-
-	bitmapper_bs_iter start_pos, end_pos;
-	bitmapper_bs_iter length;
-	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2 + PE_distance; ///这个是为了处理边界情况
-	**/
-
-
-	/**
-	uint16_t* methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
-	uint16_t* total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
-	uint16_t* correct_methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
-	uint16_t* correct_total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
-	char* ref_genome = (char*)malloc(sizeof(char)*(cut_length + extra_length));
-
-	deduplicate_PE PE_de;
-	///按道理来说, PE_de的长度不该有这个extra_length, 但是多加一点以免出错吧
-	init_deduplicate_PE(&PE_de, PE_distance, cut_length + extra_length);
-	**/
 
 	bitmapper_bs_iter flag;
 	bitmapper_bs_iter pos1;
@@ -2574,6 +3508,11 @@ void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_dist
 
 	_r_threads = (pthread_t *)malloc(sizeof(pthread_t)*THREAD_COUNT);
 
+
+	pthread_t *_r_threads_output;
+
+	_r_threads_output = (pthread_t *)malloc(sizeof(pthread_t)*THREAD_COUNT);
+
 	
 	init_PE_methy_parameters(&parameters, PE_distance, cut_length);
 
@@ -2585,7 +3524,6 @@ void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_dist
 	{
 		/**
 		fprintf(stderr, "i: %d\n", i);
-		fflush(stderr);
 		**/
 
 		sprintf(tmp_file_name, "%s_%d.bmm", file_name, i);
@@ -2620,8 +3558,8 @@ void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_dist
 
 		start_update_methy_time = Get_T();
 
-		init_methy_input_buffer(methylation_size, THREAD_COUNT,
-			parameters.start_pos, parameters.end_pos, i);
+		init_methy_input_buffer(methylation_size/2, THREAD_COUNT,
+			parameters.start_pos, parameters.end_pos, i, 1);
 
 
 
@@ -2689,13 +3627,21 @@ void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_dist
 
 		
 		
-
+		
 
 
 		start_print_time = Get_T();
 
+		
+		print_methylation_multiple_thread(parameters.methy, parameters.total, parameters.correct_methy, parameters.correct_total,
+			parameters.start_pos, parameters.end_pos, parameters.ref_genome, last_two_bases, need_context,
+			_r_threads_output, i);
+		
+
+		/**
 		print_methylation(parameters.methy, parameters.total, parameters.correct_methy, parameters.correct_total,
 			parameters.start_pos, parameters.end_pos, parameters.ref_genome, last_two_bases, need_context);
+		**/
 
 		print_time += Get_T() - start_print_time;
 
@@ -2710,6 +3656,10 @@ void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_dist
 	}
 
 
+	/**
+	fprintf(stderr, "******\n");
+	**/
+
 	methy_input_buffer.all_end = 1;
 
 	pthread_mutex_lock(&methy_input_buffer.input_thread_Mutex);
@@ -2721,16 +3671,44 @@ void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_dist
 		pthread_mutex_lock(&methy_input_buffer.process_Mutex[j]);
 		pthread_cond_signal(&methy_input_buffer.process_stallCond[j]);
 		pthread_mutex_unlock(&methy_input_buffer.process_Mutex[j]);
+
+		pthread_mutex_lock(&methy_input_buffer.process_Mutex_methy[j]);
+		pthread_cond_signal(&methy_input_buffer.process_stallCond_methy[j]);
+		pthread_mutex_unlock(&methy_input_buffer.process_Mutex_methy[j]);
+
 	}
+	/**
+	fprintf(stderr, "1###########\n");
+	**/
 
 
 	pthread_join(inputReadsHandle, NULL);
 
+	/**
+	fprintf(stderr, "2###########\n");
+	**/
 
 	for (j = 0; j < THREAD_COUNT; j++)
 	{
+		///fprintf(stderr, "-j: %d\n", j);
 		pthread_join(_r_threads[j], NULL);
+		///这个join不注释掉程序无法退出。。
+		//pthread_join(_r_threads_output[j], NULL);
 	}
+
+	/**
+	for (j = 0; j < THREAD_COUNT; j++)
+	{
+		fprintf(stderr, "+j: %d\n", j);
+		pthread_join(_r_threads_output[j], NULL);
+	}
+	**/
+
+
+	
+
+	///fprintf(stderr, "3###########\n");
+
 
 	///至少要把这个异常文件删除了
 	remove(abnormal_file_name);
@@ -2845,10 +3823,6 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 
 
 
-
-
-
-
 	for (i = 0; i < genome_cuts; i++)
 	{
 		sprintf(tmp_file_name, "%s_%d.bmm", file_name, i);
@@ -2861,10 +3835,6 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 
 		length = end_pos - start_pos + 1;
 
-		/**
-		init_methy_input_buffer(methylation_size, THREAD_COUNT,
-			start_pos, end_pos, i);
-		**/
 
 
 		start_load_time = Get_T();
@@ -2876,7 +3846,6 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 			exit(0);
 		}
 		load_time += Get_T() - start_load_time;
-
 
 		///1是拿到一个有效的alignment
 		///0是读到文件末尾了
@@ -2930,6 +3899,7 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 
 
 		}
+		
 
 
 		///这里要关闭异常文件, 再打开
@@ -2944,9 +3914,10 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 		
 		start_print_time = Get_T();
 
+		
 		print_methylation(methy, total, correct_methy, correct_total,
 			start_pos, end_pos, ref_genome, last_two_bases, need_context);
-	
+		
 		print_time += Get_T() - start_print_time;
 
 
@@ -2983,6 +3954,274 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 
 
 
+void methy_extract_mutiple_thread(int thread_id, char* file_name, int* need_context)
+{
+
+	cut_length = _msf_refGenLength / genome_cuts;
+	////if ((_msf_refGenLength * 2) % genome_cuts != 0)
+	if (_msf_refGenLength % genome_cuts != 0)
+	{
+		cut_length = cut_length + 1;
+	}
+
+
+	int i = 0;
+	char tmp_file_name[SEQ_MAX_LENGTH];
+	char overlap_file_name[SEQ_MAX_LENGTH];
+
+	bitmapper_bs_iter L_read1[SEQ_MAX_LENGTH];
+
+
+	bitmapper_bs_iter flag;
+	bitmapper_bs_iter pos;
+	int C_or_G;
+	int direction;
+	bitmapper_bs_iter inner_i;
+	int return_value;
+
+	bitmapper_bs_iter inner_start_pos;
+	int read_length;
+	char last_two_bases[2];
+
+
+
+
+	long long total_read = 0;
+	long long duplicate_read = 0;
+	long long unique_read = 0;
+	long long abnormal_read = 0;
+	long long overlap_read = 0;
+
+	sprintf(overlap_file_name, "%s_overlap%d", file_name, thread_id);
+
+
+
+	bitmapper_bs_iter tmp_genome_cuts;
+	int tmp_maxDistance_pair;
+	int tmp_mode;
+
+
+	///bitmapper_bs_iter tmp_buffer[100];
+
+	double load_time = 0;
+	double start_load_time = 0;
+	double print_time = 0;
+	double start_print_time = 0;
+	double update_methy_time = 0;
+	double start_update_methy_time = 0;
+
+	pthread_t inputReadsHandle;
+
+	pthread_t *_r_threads;
+
+
+	_r_threads = (pthread_t *)malloc(sizeof(pthread_t)*THREAD_COUNT);
+
+
+	pthread_t *_r_threads_output;
+
+	_r_threads_output = (pthread_t *)malloc(sizeof(pthread_t)*THREAD_COUNT);
+
+
+	init_single_methy_parameters(&parameters, cut_length);
+
+	int j;
+
+
+
+	for (i = 0; i < genome_cuts; i++)
+	{
+
+		sprintf(tmp_file_name, "%s_%d.bmm", file_name, i);
+		parameters.read_file = fopen(tmp_file_name, "r");
+
+
+		///这里要写多线程之间的重叠文件
+		parameters.overlap_file = fopen(overlap_file_name, "wb");
+
+		fscanf(parameters.read_file, "%llu\t%d\t%d\t%llu\t%llu\n", &tmp_genome_cuts,
+			&tmp_maxDistance_pair, &tmp_mode, &parameters.start_pos, &parameters.end_pos);
+
+		parameters.length = parameters.end_pos - parameters.start_pos + 1;
+
+
+
+
+		start_load_time = Get_T();
+
+		if (!init_genome_cut(parameters.methy, parameters.total, parameters.correct_methy, parameters.correct_total, 
+			parameters.ref_genome, parameters.length, i, parameters.extra_length, last_two_bases))
+		{
+			fprintf(stderr, "ERROR when reading genome!\n");
+			exit(0);
+		}
+
+
+		load_time += Get_T() - start_load_time;
+
+
+		start_update_methy_time = Get_T();
+
+		init_methy_input_buffer(methylation_size, THREAD_COUNT,
+			parameters.start_pos, parameters.end_pos, i, 0);
+
+
+
+		input_methy_alignment_file = parameters.read_file;
+
+		if (i == 0)
+		{
+			pthread_create(&inputReadsHandle, NULL, input_methy_muti_threads_single_end, NULL);
+
+			for (j = 0; j < THREAD_COUNT; j++)
+			{
+
+				int *arg = (int*)malloc(sizeof(*arg));
+				*arg = j;
+
+				pthread_create(_r_threads + j, NULL, process_single_methy_alignment_multiple_threads, (void*)arg);
+
+			}
+
+		}
+		else
+		{
+			pthread_mutex_lock(&methy_input_buffer.input_thread_Mutex);
+			pthread_cond_signal(&methy_input_buffer.input_thread_flushCond);
+			pthread_mutex_unlock(&methy_input_buffer.input_thread_Mutex);
+
+			for (j = 0; j < THREAD_COUNT; j++)
+			{
+				pthread_mutex_lock(&methy_input_buffer.process_Mutex[j]);
+				pthread_cond_signal(&methy_input_buffer.process_stallCond[j]);
+				pthread_mutex_unlock(&methy_input_buffer.process_Mutex[j]);
+			}
+
+		}
+
+
+
+		pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex);
+		pthread_cond_wait(&methy_input_buffer.main_thread_flushCond, &methy_input_buffer.main_thread_Mutex);
+		pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex);
+
+		update_methy_time += Get_T() - start_update_methy_time;
+
+
+		////process_PE_methy_alignment(thread_id);
+
+
+		///要先处理overlap文件，再处理异常文件
+		///这里要关闭overlap文件, 再打开
+		///请注意，这种overlap的alignment已经去过重了
+		fclose(parameters.overlap_file);
+		parameters.overlap_file = fopen(overlap_file_name, "rb");
+		phrase_overlap_alignment(parameters.ref_genome, parameters.start_pos, L_read1, parameters.overlap_file,
+			parameters.methy, parameters.total, parameters.correct_methy, parameters.correct_total, &overlap_read);
+		fclose(parameters.overlap_file);
+
+
+
+
+
+
+
+
+
+		start_print_time = Get_T();
+
+
+		print_methylation_multiple_thread(parameters.methy, parameters.total, parameters.correct_methy, parameters.correct_total,
+			parameters.start_pos, parameters.end_pos, parameters.ref_genome, last_two_bases, need_context,
+			_r_threads_output, i);
+
+
+		print_time += Get_T() - start_print_time;
+
+
+		fclose(parameters.read_file);
+
+
+		last_two_bases[0] = parameters.ref_genome[parameters.length - 2];
+		last_two_bases[1] = parameters.ref_genome[parameters.length - 1];
+
+		///break;
+	}
+
+
+
+
+	methy_input_buffer.all_end = 1;
+
+	pthread_mutex_lock(&methy_input_buffer.input_thread_Mutex);
+	pthread_cond_signal(&methy_input_buffer.input_thread_flushCond);
+	pthread_mutex_unlock(&methy_input_buffer.input_thread_Mutex);
+
+	for (j = 0; j < THREAD_COUNT; j++)
+	{
+		pthread_mutex_lock(&methy_input_buffer.process_Mutex[j]);
+		pthread_cond_signal(&methy_input_buffer.process_stallCond[j]);
+		pthread_mutex_unlock(&methy_input_buffer.process_Mutex[j]);
+
+		pthread_mutex_lock(&methy_input_buffer.process_Mutex_methy[j]);
+		pthread_cond_signal(&methy_input_buffer.process_stallCond_methy[j]);
+		pthread_mutex_unlock(&methy_input_buffer.process_Mutex_methy[j]);
+
+	}
+
+
+
+	pthread_join(inputReadsHandle, NULL);
+
+
+
+	for (j = 0; j < THREAD_COUNT; j++)
+	{
+		///fprintf(stderr, "-j: %d\n", j);
+		pthread_join(_r_threads[j], NULL);
+		///这个join不注释掉程序无法退出。。
+		//pthread_join(_r_threads_output[j], NULL);
+	}
+
+
+
+
+
+
+	///fprintf(stderr, "3###########\n");
+
+
+
+	remove(overlap_file_name);
+
+	for (i = 0; i < THREAD_COUNT; i++)
+	{
+		total_read += parameters.total_read[i];
+		duplicate_read += parameters.duplicate_read[i];
+		unique_read += parameters.unique_read[i];
+		////abnormal_read += parameters.abnormal_read[i];
+	}
+
+
+	fprintf(stderr, "total_read: %lld\n", total_read);
+	fprintf(stderr, "duplicate_read: %lld\n", duplicate_read);
+	fprintf(stderr, "unique_read: %lld\n", unique_read);
+	////fprintf(stderr, "abnormal_read: %lld\n", abnormal_read);
+	fprintf(stderr, "overlap_read: %lld\n", overlap_read);
+
+
+
+	fprintf(stdout, "load_time: %f\n", load_time);
+	fprintf(stdout, "print_time: %f\n", print_time);
+	fprintf(stdout, "update_methy_time: %f\n", update_methy_time);
+
+
+
+
+
+}
+
+
 
 
 
@@ -3002,12 +4241,13 @@ void methy_extract(int thread_id, char* file_name, int* need_context)
 	FILE* read_file;
 	int i = 0;
 	char tmp_file_name[SEQ_MAX_LENGTH];
-	char read[SEQ_MAX_LENGTH];
+	bitmapper_bs_iter read[SEQ_MAX_LENGTH];
 	bitmapper_bs_iter start_pos, end_pos;
 	bitmapper_bs_iter length;
-	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2 + maxDistance_pair; ///这个是为了处理边界情况
+	bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2; ///这个是为了处理边界情况
+	///bitmapper_bs_iter extra_length = SEQ_MAX_LENGTH * 2 + maxDistance_pair; ///这个是为了处理边界情况
 
-	bitmapper_bs_iter tmp_buffer[100];
+	///bitmapper_bs_iter tmp_buffer[100];
 
 	uint16_t* methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + extra_length));
 	total_memory_size = total_memory_size + sizeof(uint16_t)*(cut_length + extra_length);
@@ -3062,10 +4302,12 @@ void methy_extract(int thread_id, char* file_name, int* need_context)
 		}
 
 
+		///fprintf(stderr, "ref_genome[977002]: %llu\n", ref_genome[977002]);
+
 		///return_value=0则读到文件末尾
 		///return_value = -1读到了一个重复的alignment
 		while (return_value = get_alignment(read_file, ref_genome, start_pos, read,
-			&read_length, &C_or_G, &direction, &pos, tmp_buffer))
+			&read_length, &C_or_G, &direction, &pos))
 		{
 
 			total_read++;
@@ -3083,6 +4325,12 @@ void methy_extract(int thread_id, char* file_name, int* need_context)
 
 
 			///fprintf(stderr, "C_or_G: %d, pos: %llu, read:%s\n", C_or_G, pos, read);
+
+
+
+			///debug_pos = pos;
+
+
 
 
 
@@ -3104,6 +4352,11 @@ void methy_extract(int thread_id, char* file_name, int* need_context)
 
 		last_two_bases[0] = ref_genome[length - 2];
 		last_two_bases[1] = ref_genome[length - 1];
+
+
+
+
+		//break;
 
 	}
 
@@ -10491,13 +11744,10 @@ inline void output_methy_end_to_end(char* name, char* read, char* r_read, char* 
 			{
 				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
 				{
-					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
 
 					///bitmapper_bs_iter r_length = end_site - start_site + 1;
 					///end_site - start_site + 1这个是read在基因组上的alignment长度
-					///map_location此刻是1-based
-					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
-					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name].end_location)
 					{
 						(*map_among_references) = 1;
 						return;
@@ -10536,13 +11786,10 @@ inline void output_methy_end_to_end(char* name, char* read, char* r_read, char* 
 			{
 				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
 				{
-					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
 
 					///bitmapper_bs_iter r_length = end_site - start_site + 1;
 					///end_site - start_site + 1这个是read在基因组上的alignment长度
-					///map_location此刻是1-based
-					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
-					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name].end_location)
 					{
 						(*map_among_references) = 1;
 						return;
@@ -10573,6 +11820,11 @@ inline void output_methy_end_to_end(char* name, char* read, char* r_read, char* 
 		(*methy).sites[(*methy).current_size] = site;
 
 		(*methy).cut_index[get_cut_id(methy, site)]++;
+
+		/**
+		fprintf(stderr, "cut_length: %d\n", (*methy).cut_length);
+		fprintf(stderr, "get_cut_id(methy, site): %d\n", get_cut_id(methy, site));
+		**/
 
 		(*methy).current_size++;
 
@@ -10663,13 +11915,10 @@ inline void output_methy_end_to_end_output_buffer(char* name, char* read, char* 
 			{
 				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
 				{
-					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
 
 					///bitmapper_bs_iter r_length = end_site - start_site + 1;
 					///end_site - start_site + 1这个是read在基因组上的alignment长度
-					///map_location此刻是1-based
-					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
-					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name].end_location)
 					{
 						(*map_among_references) = 1;
 						return;
@@ -10712,13 +11961,10 @@ inline void output_methy_end_to_end_output_buffer(char* name, char* read, char* 
 			{
 				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
 				{
-					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
 
 					///bitmapper_bs_iter r_length = end_site - start_site + 1;
 					///end_site - start_site + 1这个是read在基因组上的alignment长度
-					///map_location此刻是1-based
-					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
-					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name].end_location)
 					{
 						(*map_among_references) = 1;
 						return;
@@ -12301,13 +13547,10 @@ inline void output_methy_end_to_end_pbat(char* name, char* read, char* r_read, c
 			{
 				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
 				{
-					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
 
 					///bitmapper_bs_iter r_length = end_site - start_site + 1;
 					///end_site - start_site + 1这个是read在基因组上的alignment长度
-					///map_location此刻是1-based
-					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
-					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name].end_location)
 					{
 						(*map_among_references) = 1;
 						return;
@@ -12352,13 +13595,10 @@ inline void output_methy_end_to_end_pbat(char* name, char* read, char* r_read, c
 			{
 				if ((site >= _ih_refGenName[now_ref_name].start_location) && (site <= _ih_refGenName[now_ref_name].end_location))
 				{
-					site = site + 1 - _ih_refGenName[now_ref_name].start_location;
 
 					///bitmapper_bs_iter r_length = end_site - start_site + 1;
 					///end_site - start_site + 1这个是read在基因组上的alignment长度
-					///map_location此刻是1-based
-					///所以原来应该是if ((map_location -1) + (end_site - start_site + 1) < _ih_refGenName[now_ref_name]._rg_chrome_length )
-					if (site + end_site - start_site > _ih_refGenName[now_ref_name]._rg_chrome_length)
+					if (site + end_site - start_site > _ih_refGenName[now_ref_name].end_location)
 					{
 						(*map_among_references) = 1;
 						return;
@@ -12370,7 +13610,6 @@ inline void output_methy_end_to_end_pbat(char* name, char* read, char* r_read, c
 
 			}
 			/**************************这个是加的东西*******************************/
-
 
 
 
@@ -17517,7 +18756,7 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 	}
 
 
-	if (methy.current_size != 0)
+	if (output_methy == 1 && methy.current_size != 0)
 	{
 		/**
 		assign_cuts(&methy);
@@ -17953,10 +19192,20 @@ read1_end:
 ///和一端unique一端不匹配的结果
 int Map_Pair_Seq_end_to_end(int thread_id)
 {
+	/**
+	FILE* debug_f = fopen("sb_debug.txt", "w");
+	**/
 
 	int my_methylation_size = methylation_size;
 
 	Pair_Methylation methy;
+	/**
+	fprintf(debug_f, "methy.current_size: %d\n", methy.current_size);
+	fflush(debug_f);
+
+	fprintf(debug_f, "output_methy: %d\n", output_methy);
+	fflush(debug_f);
+	**/
 
 	if (output_methy == 1)
 	{
@@ -18325,6 +19574,8 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 	int output_mask;
 
 
+	
+
 	//正向模式
 	i = 0;
 	while (1)
@@ -18403,9 +19654,22 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 
 		best_sum_err = 2 * large_error_threshold + 1;
 
+		/**
+		if (i < 246982327)
+		{
+			fprintf(debug_f, "i: %llu, %s\n", i, current_read1.name);
+			fflush(debug_f);
 
+			i++;
+			continue;
+		}
+		**/
 
-
+		/**
+		fprintf(debug_f, "i:%llu, %s\n", i, current_read1.name);
+		fflush(debug_f);
+		**/
+		
 
 		/*****************************有变化*********************************/
 		max_length = current_read1.length;
@@ -19366,15 +20630,26 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 		i++;
 	}
 
+	/**
+	fprintf(debug_f, "1********************************\n");
+	fflush(debug_f);
 
-	if (methy.current_size != 0)
+	fprintf(debug_f, "methy.current_size: %d\n", methy.current_size);
+	fflush(debug_f);
+	**/
+
+
+	if (output_methy == 1 && methy.current_size != 0)
 	{
 		assign_cuts_pair(&methy);
 		output_methylation_pair(&methy);
 		clear_methylation_pair(&methy);
 
 	}
-
+	/**
+	fprintf(debug_f, "2********************************\n");
+	fflush(debug_f);
+	**/
 
 	double totalMappingTime;
 	totalMappingTime = Get_T() - startTime;
@@ -19382,13 +20657,17 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 	completedSeqCnt[thread_id] = enq_i;
 	unique_mapped_read[thread_id] = unique_matched_read;
 	ambiguous_mapped_read[thread_id] = ambious_matched_read;
-
+	/**
+	fprintf(debug_f, "3********************************\n");
+	fflush(debug_f);
+	**/
 
 	mapped_bases[thread_id] = total_bases;
 	error_mapped_bases[thread_id] = error_bases;
-
-
-
+	/**
+	fprintf(debug_f, "4********************************\n");
+	fflush(debug_f);
+	**/
 	/**
 	fprintf(stderr, "debug_1: %lld\n", debug_1);
 	fprintf(stderr, "debug_2: %lld\n", debug_2);
@@ -20308,7 +21587,7 @@ void* Map_Pair_Seq_split_fast(void* arg)
 
 	}
 
-	if (methy.current_size != 0)
+	if (output_methy == 1 && methy.current_size != 0)
 	{
 		assign_cuts_pair(&methy);
 
@@ -20672,6 +21951,7 @@ void* Map_Pair_Seq_split(void* arg)
 	
 
 	Pair_Methylation methy;
+
 
 
 	if (output_methy == 1)
@@ -21788,8 +23068,7 @@ void* Map_Pair_Seq_split(void* arg)
 
 
 
-
-	if (methy.current_size != 0)
+	if (output_methy == 1 && methy.current_size != 0)
 	{
 		assign_cuts_pair(&methy);
 
@@ -22865,7 +24144,7 @@ int Map_Single_Seq_end_to_end(int thread_id)
 	}
 
 	
-	if (methy.current_size != 0)
+	if (output_methy == 1 && methy.current_size != 0)
 	{
 		assign_cuts(&methy);
 		output_methylation(&methy);
@@ -23983,7 +25262,7 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 		i++;
 	}
 
-	if (methy.current_size != 0)
+	if (output_methy == 1 && methy.current_size != 0)
 	{
 		assign_cuts(&methy);
 		output_methylation(&methy);
@@ -25443,7 +26722,7 @@ void* Map_Single_Seq_split(void* arg)
 	}
 
 
-	if (methy.current_size != 0)
+	if (output_methy == 1 && methy.current_size != 0)
 	{
 		assign_cuts(&methy);
 
@@ -26555,7 +27834,7 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 	}
 
-	if (methy.current_size != 0)
+	if (output_methy == 1 && methy.current_size != 0)
 	{
 		assign_cuts(&methy);
 
@@ -26616,13 +27895,14 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 
 void init_methy_input_buffer(long long each_sub_buffer_size, int number_of_threads,
-	bitmapper_bs_iter total_start, bitmapper_bs_iter total_end, int is_update)
+	bitmapper_bs_iter total_start, bitmapper_bs_iter total_end, int is_update, int is_paired)
 {
 	int i = 0;
 
 	bitmapper_bs_iter total_length = total_end - total_start + 1;
 
-	int my_methylation_size = methylation_size / 2;
+	///int my_methylation_size = methylation_size / 2;
+	int my_methylation_size = methylation_size;
 
 	methy_input_buffer.number_of_intervals = number_of_threads;
 
@@ -26649,6 +27929,44 @@ void init_methy_input_buffer(long long each_sub_buffer_size, int number_of_threa
 			= (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*methy_input_buffer.number_of_intervals);
 
 
+		methy_input_buffer.M_methy
+			= (uint16_t**)malloc(sizeof(uint16_t*)*methy_input_buffer.number_of_intervals);
+		methy_input_buffer.M_total
+			= (uint16_t**)malloc(sizeof(uint16_t*)*methy_input_buffer.number_of_intervals);
+		methy_input_buffer.M_correct_methy
+			= (uint16_t**)malloc(sizeof(uint16_t*)*methy_input_buffer.number_of_intervals);
+		methy_input_buffer.M_correct_total
+			= (uint16_t**)malloc(sizeof(uint16_t*)*methy_input_buffer.number_of_intervals);
+		methy_input_buffer.M_ref_genome
+			= (char**)malloc(sizeof(char*)*methy_input_buffer.number_of_intervals);
+		methy_input_buffer.M_start_pos
+			= (long long*)malloc(sizeof(long long)*methy_input_buffer.number_of_intervals);
+		methy_input_buffer.M_end_pos
+			= (long long*)malloc(sizeof(long long)*methy_input_buffer.number_of_intervals);
+
+		methy_input_buffer.need_context[0] = CpG;
+		methy_input_buffer.need_context[1] = CHG;
+		methy_input_buffer.need_context[2] = CHH;
+
+		if (CpG)
+		{
+			methy_input_buffer.CpG_buffer
+				= (Output_buffer_sub_block*)malloc(sizeof(Output_buffer_sub_block)*methy_input_buffer.number_of_intervals);
+		}
+
+		if (CHG)
+		{
+			methy_input_buffer.CHG_buffer
+				= (Output_buffer_sub_block*)malloc(sizeof(Output_buffer_sub_block)*methy_input_buffer.number_of_intervals);
+		}
+
+		if (CHH)
+		{
+			methy_input_buffer.CHH_buffer
+				= (Output_buffer_sub_block*)malloc(sizeof(Output_buffer_sub_block)*methy_input_buffer.number_of_intervals);
+		}
+		
+
 
 		methy_input_buffer.Mutex
 			= (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t) * methy_input_buffer.number_of_intervals);
@@ -26667,7 +27985,11 @@ void init_methy_input_buffer(long long each_sub_buffer_size, int number_of_threa
 			= (pthread_cond_t*)malloc(sizeof(pthread_cond_t)* methy_input_buffer.number_of_intervals);
 
 		
+		methy_input_buffer.process_Mutex_methy
+			= (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t)* methy_input_buffer.number_of_intervals);
 
+		methy_input_buffer.process_stallCond_methy
+			= (pthread_cond_t*)malloc(sizeof(pthread_cond_t)* methy_input_buffer.number_of_intervals);
 
 
 
@@ -26675,7 +27997,28 @@ void init_methy_input_buffer(long long each_sub_buffer_size, int number_of_threa
 		for (i = 0; i < methy_input_buffer.number_of_intervals; i++)
 		{
 
-			init_pair_methylation(&methy_input_buffer.intervals[i], my_methylation_size);
+			if (is_paired)
+			{
+				init_pair_methylation(&methy_input_buffer.intervals[i], my_methylation_size);
+			}
+			else
+			{
+				init_single_methylation(&methy_input_buffer.intervals[i], my_methylation_size);
+			}
+
+			
+			if (CpG)
+			{
+				init_buffer_sub_block(&methy_input_buffer.CpG_buffer[i]);
+			}
+			if (CHG)
+			{
+				init_buffer_sub_block(&methy_input_buffer.CHG_buffer[i]);
+			}
+			if (CHH)
+			{
+				init_buffer_sub_block(&methy_input_buffer.CHH_buffer[i]);
+			}
 		}
 	}
 	else  ///如果不是初次，就不必要分配空间
@@ -26711,25 +28054,6 @@ void init_methy_input_buffer(long long each_sub_buffer_size, int number_of_threa
 
 		tmp_start = tmp_start + methy_input_buffer.each_interval_length;
 	}
-
-
-
-
-	/**
-	fprintf(stderr, "total_start: %llu\n", total_start);
-	fprintf(stderr, "total_end: %llu\n", total_end);
-
-	
-	for (i = 0; i < methy_input_buffer.number_of_intervals; i++)
-	{
-		fprintf(stderr, "i: %d\n", i);
-		fprintf(stderr, "start: %llu\n", methy_input_buffer.each_buffer_interval_start[i]);
-		fprintf(stderr, "end: %llu\n*************************\n", methy_input_buffer.each_buffer_interval_end[i]);
-	}
-
-	fprintf(stderr, "\n\n");
-	**/
-
 }
 
 
@@ -26745,12 +28069,12 @@ void* input_methy_muti_threads(void*)
 	uint16_t flag1;
 	bitmapper_bs_iter pos1;
 	int seq_length1;
-	bitmapper_bs_iter read1[SEQ_MAX_LENGTH / 10];
+	bitmapper_bs_iter read1[SEQ_MAX_LENGTH];
 
 	uint16_t flag2;
 	bitmapper_bs_iter pos2;
 	int seq_length2; 
-	bitmapper_bs_iter read2[SEQ_MAX_LENGTH / 10];
+	bitmapper_bs_iter read2[SEQ_MAX_LENGTH];
 
 	bitmapper_bs_iter key_pos;
 	bitmapper_bs_iter sub_interval_ID;
@@ -26891,11 +28215,163 @@ void* input_methy_muti_threads(void*)
 
 	}
 
-	fprintf(stdout, "Input thread has been completed\n");
+	///fprintf(stdout, "Input thread has been completed\n");
 
 	
 }
 
 
+
+
+
+
+void* input_methy_muti_threads_single_end(void*)
+{
+
+	FILE* read_file;
+
+	uint16_t flag;
+	bitmapper_bs_iter pos;
+	int seq_length;
+	bitmapper_bs_iter read[SEQ_MAX_LENGTH];
+
+	
+
+	bitmapper_bs_iter key_pos;
+	bitmapper_bs_iter sub_interval_ID;
+
+
+
+	buffer_3_bit tmp_read;
+
+	Init_buffer_3_bit(tmp_read);
+
+	buffer_3_bit tmp_swap;
+
+
+
+	Pair_Methylation* current_interval;
+
+	int round_ID = 0;
+
+	while (methy_input_buffer.all_end == 0)
+	{
+
+		read_file = input_methy_alignment_file;
+
+		while (1)
+		{
+			
+
+			if (!input_single_alignment(read_file,
+				&flag, &pos, &seq_length, read))
+			{
+				break;
+			}
+
+			Check_Space_3_Bit(tmp_read.buffer, tmp_read.size, seq_length);
+			memcpy(tmp_read.buffer, read, tmp_read.size * sizeof(bitmapper_bs_iter));
+
+			/**
+			if (pos == 33955283)
+			{
+				pos = pos - methy_input_buffer.total_start;
+				sub_interval_ID = pos / methy_input_buffer.each_interval_length;
+				current_interval = methy_input_buffer.intervals + sub_interval_ID;
+
+				fprintf(stderr, "total_start: %llu\n", methy_input_buffer.total_start);
+				fprintf(stderr, "each_interval_length: %llu\n", methy_input_buffer.each_interval_length);
+				fprintf(stderr, "sub_interval_ID: %llu\n", sub_interval_ID);
+			}
+			else
+			{
+				pos = pos - methy_input_buffer.total_start;
+				sub_interval_ID = pos / methy_input_buffer.each_interval_length;
+				current_interval = methy_input_buffer.intervals + sub_interval_ID;
+			}
+			**/
+			/**
+			fprintf(stderr, "each_interval_length: %llu\n", methy_input_buffer.each_interval_length);
+			fprintf(stderr, "sub_interval_ID: %llu\n", sub_interval_ID);
+			**/
+
+
+			///pos = pos - methy_input_buffer.total_start;
+			sub_interval_ID = (pos - methy_input_buffer.total_start) / methy_input_buffer.each_interval_length;
+			current_interval = methy_input_buffer.intervals + sub_interval_ID;
+
+			///fprintf(stderr, "sub_interval_ID: %d\n", sub_interval_ID);
+
+
+
+			pthread_mutex_lock(&methy_input_buffer.Mutex[sub_interval_ID]);
+			///如果满了，则该线程本身要wait，并通知消费者线程消费数据
+			while (current_interval->current_size
+				== current_interval->total_size)
+			{
+
+
+
+				///按道理这个信号量似乎不用发
+				///因为队列不可能一边满一边空
+				pthread_cond_signal(&methy_input_buffer.stallCond[sub_interval_ID]);
+
+
+				pthread_cond_wait(&methy_input_buffer.flushCond[sub_interval_ID],
+					&methy_input_buffer.Mutex[sub_interval_ID]);
+			}
+
+			/**************************read1***********************************/
+			tmp_swap.buffer = current_interval->R[0].reads_3_bit[current_interval->current_size];
+			tmp_swap.size = current_interval->R[0].r_size_3_bit[current_interval->current_size];
+
+			current_interval->R[0].reads_3_bit[current_interval->current_size] = tmp_read.buffer;
+			current_interval->R[0].r_size_3_bit[current_interval->current_size] = tmp_read.size;
+
+			tmp_read = tmp_swap;
+
+
+			current_interval->R[0].r_length[current_interval->current_size] = flag;
+			current_interval->R[0].sites[current_interval->current_size] = pos;
+			current_interval->R[0].r_real_length[current_interval->current_size] = seq_length;
+			/**************************read1***********************************/
+
+			
+			current_interval->current_size++;
+
+
+			pthread_cond_signal(&methy_input_buffer.stallCond[sub_interval_ID]);
+			pthread_mutex_unlock(&methy_input_buffer.Mutex[sub_interval_ID]);
+
+		}
+
+
+		methy_input_buffer.end = 1;
+		int i;
+		for (i = 0; i < methy_input_buffer.number_of_intervals; i++)
+		{
+			pthread_cond_signal(&methy_input_buffer.stallCond[i]);
+		}
+
+
+		pthread_mutex_lock(&methy_input_buffer.all_completed_Mutex);
+		if (methy_input_buffer.all_completed == THREAD_COUNT)
+		{
+			pthread_mutex_lock(&methy_input_buffer.main_thread_Mutex);
+			pthread_cond_signal(&methy_input_buffer.main_thread_flushCond);
+			pthread_mutex_unlock(&methy_input_buffer.main_thread_Mutex);
+		}
+		methy_input_buffer.all_completed++;
+		pthread_mutex_unlock(&methy_input_buffer.all_completed_Mutex);
+
+
+		pthread_mutex_lock(&methy_input_buffer.input_thread_Mutex);
+		pthread_cond_wait(&methy_input_buffer.input_thread_flushCond, &methy_input_buffer.input_thread_Mutex);
+		pthread_mutex_unlock(&methy_input_buffer.input_thread_Mutex);
+
+		round_ID++;
+
+	}
+}
 
 

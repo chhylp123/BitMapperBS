@@ -35,6 +35,7 @@ extern char				*Read_File2;
 extern char				*seqUnmapped;
 extern char				*Mapped_File;
 extern char 			*Mapped_FilePath;
+extern char                *folder_path;
 extern char				*Un_Mapped_File;
 extern unsigned char	thread_e;
 extern double thread_e_f;

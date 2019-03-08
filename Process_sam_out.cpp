@@ -47,11 +47,9 @@ Pair_Methylation tmp_methy_sub_block_PE;
 Output_methy_buffer_pair buffer_methy_out_PE;
 
 
+
 void output_single_methy_CpG
-(bitmapper_bs_iter tmp_pos,
-char* chrome_name,
-int nmethyl,
-int total)
+(bitmapper_bs_iter tmp_pos, char* chrome_name, int nmethyl, int total)
 {
 	int nunmethyl = total - nmethyl;
 
@@ -71,12 +69,97 @@ int total)
 		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
 	
 
-	/**
-	fprintf(_out_fp_methy1, "%s\t%llu\t%llu\t%f\t%d\t%d\n",
-		chrome_name, tmp_pos, tmp_pos + 1, precent * 100, nmethyl, nunmethyl);
-	**/
+
 }
 
+
+void output_methy_directly(Output_buffer_sub_block* CpG_buffer, Output_buffer_sub_block* CHG_buffer, Output_buffer_sub_block* CHH_buffer)
+{
+	if (CpG)
+	{
+		/**
+		CpG_buffer->buffer[CpG_buffer->length] = '\0';
+		fprintf(_out_fp_methy1, "%s", CpG_buffer->buffer);
+		**/
+		fwrite(CpG_buffer->buffer, 1, CpG_buffer->length, _out_fp_methy1);
+		CpG_buffer->length = 0;
+	}
+
+	if (CHG)
+	{
+		/**
+		CHG_buffer->buffer[CHG_buffer->length] = '\0';
+		fprintf(_out_fp_methy2, "%s", CHG_buffer->buffer);
+		**/
+		fwrite(CHG_buffer->buffer, 1, CHG_buffer->length, _out_fp_methy2);
+		CHG_buffer->length = 0;
+	}
+
+	if (CHH)
+	{
+		/**
+		CHH_buffer->buffer[CHH_buffer->length] = '\0';
+		fprintf(_out_fp_methy3, "%s", CHH_buffer->buffer);
+		**/
+		fwrite(CHH_buffer->buffer, 1, CHH_buffer->length, _out_fp_methy3);
+		CHH_buffer->length = 0;
+	}
+}
+
+void output_single_methy_multiple_thread
+(bitmapper_bs_iter tmp_pos, char* chrome_name, int nmethyl, int total, Output_buffer_sub_block* buffer)
+{
+	int nunmethyl = total - nmethyl;
+
+	double precent;
+
+	if (total == 0)
+	{
+		precent = 0;
+	}
+	else
+	{
+		precent = (double)nmethyl / (double)total;
+	}
+
+	/**
+	fprintf(_out_fp_methy1, "%s\t%llu\t%llu\t%d\t%d\t%d\n",
+		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
+	**/
+
+	output_to_buffer_char_no_length(buffer, chrome_name);
+	//上面扩容时有32的余量，所以下面\t不需要检查了
+	buffer->buffer[buffer->length] = '\t';
+	buffer->length++;
+
+
+	output_to_buffer_int(buffer, tmp_pos);
+	//上面扩容时有32的余量，所以下面\t不需要检查了
+	buffer->buffer[buffer->length] = '\t';
+	buffer->length++;
+
+	output_to_buffer_int(buffer, tmp_pos + 1);
+	//上面扩容时有32的余量，所以下面\t不需要检查了
+	buffer->buffer[buffer->length] = '\t';
+	buffer->length++;
+
+
+	output_to_buffer_int(buffer, (int)(precent * 100));
+	//上面扩容时有32的余量，所以下面\t不需要检查了
+	buffer->buffer[buffer->length] = '\t';
+	buffer->length++;
+
+	output_to_buffer_int(buffer, nmethyl);
+	//上面扩容时有32的余量，所以下面\t不需要检查了
+	buffer->buffer[buffer->length] = '\t';
+	buffer->length++;
+
+	output_to_buffer_int(buffer, nunmethyl);
+	//上面扩容时有32的余量，所以下面\t不需要检查了
+	buffer->buffer[buffer->length] = '\n';
+	buffer->length++;
+
+}
 
 
 void output_single_methy_CHG
@@ -102,11 +185,6 @@ int total)
 	fprintf(_out_fp_methy2, "%s\t%llu\t%llu\t%d\t%d\t%d\n",
 		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
 	
-
-	/**
-	fprintf(_out_fp_methy2, "%s\t%llu\t%llu\t%f\t%d\t%d\n",
-		chrome_name, tmp_pos, tmp_pos + 1, precent * 100, nmethyl, nunmethyl);
-		**/
 }
 
 
@@ -134,10 +212,6 @@ int total)
 		chrome_name, tmp_pos, tmp_pos + 1, (int)(precent * 100), nmethyl, nunmethyl);
 	
 
-	/**
-	fprintf(_out_fp_methy3, "%s\t%llu\t%llu\t%f\t%d\t%d\n",
-		chrome_name, tmp_pos, tmp_pos + 1, precent * 100, nmethyl, nunmethyl);
-		**/
 }
 
 
@@ -913,6 +987,7 @@ void* pop_buffer(void*)
 
 		if (tmp_buffer_sub_block.length != 0)
 		{
+			///这种fwrite和fprintf几乎没区别....速度上
 			fprintf(output_file, "%s", tmp_buffer_sub_block.buffer);
 		}
 
@@ -923,7 +998,6 @@ void* pop_buffer(void*)
 	{
 		buffer_out.sub_block_number--;
 		fprintf(output_file, "%s", buffer_out.sub_buffer[buffer_out.sub_block_number].buffer);
-
 	}
 
 }

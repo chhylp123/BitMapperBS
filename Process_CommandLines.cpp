@@ -31,6 +31,7 @@ char				*Read_File1;
 char				*Read_File2;
 char				*Mapped_File = "output";
 char				*Mapped_FilePath = "";
+char                *folder_path = NULL;
 char				*Un_Mapped_File = "unmapped";
 char				fileName[2][NAME_LENGTH];
 unsigned char			thread_e=255;
@@ -70,6 +71,7 @@ int CommandLine_process (int argc, char *argv[])
   int o;
   int index;
   char *fastaFile = NULL;
+  folder_path = NULL;
 
   static struct option longOptions[] =
     {
@@ -104,6 +106,7 @@ int CommandLine_process (int argc, char *argv[])
 	  { "query", required_argument, 0, 'q' },
 	  { "maxVariantFrac", required_argument, 0, 'a' },
 	  { "minVariantDepth", required_argument, 0, 'b' },
+	  { "index_folder", required_argument, 0, 'd' },
       {0,  0,  0, 0},
     };
 
@@ -112,27 +115,36 @@ int CommandLine_process (int argc, char *argv[])
     Print_H();
     return 0;
   }
-  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:b:d:g:p:r:s:t:q:", longOptions, &index)) != -1 )
+  
+  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:b:d:g:p:r:s:t:q:d:", longOptions, &index)) != -1 )
     {
       switch (o)
-	  {/**
-	case 's':
-		bs_score_threshold = atof(optarg);
-		break;**/
+	  {
 	case 'd':
-		bs_edit_distance_threshold = atof(optarg);
+		folder_path = (char*)malloc(NAME_LENGTH);
+		strcpy(folder_path, optarg);
+		if (folder_path[strlen(folder_path)-1] == '/')
+		{
+			folder_path[strlen(folder_path) - 1] = 0;
+		}
 		break;
 	case 'i':
 	  is_index = 1;
-	  fastaFile = optarg;
+	  fastaFile = (char*)malloc(NAME_LENGTH);
+	  strcpy(fastaFile, optarg);
+	  ///fastaFile = optarg;
 	  break;
 	case 'f':
 		is_methy = 1;
-		fastaFile = optarg;
+		fastaFile = (char*)malloc(NAME_LENGTH);
+		strcpy(fastaFile, optarg);
+		///fastaFile = optarg;
 		break;
 	case 'g':
 	  is_search = 1;
-	  fastaFile = optarg;
+	  fastaFile = (char*)malloc(NAME_LENGTH);
+	  strcpy(fastaFile, optarg);
+	  ///fastaFile = optarg;
 	  break;
 	case 'c':
 	  cropSize = atoi(optarg);
@@ -296,9 +308,41 @@ int CommandLine_process (int argc, char *argv[])
 	  }
   }
 
+  if (fastaFile[strlen(fastaFile)-1] == '/')
+  {
+	  fastaFile[strlen(fastaFile) - 1] = '\0';
+  }
+  if (is_index)
+  {
 
-  sprintf(fileName[0], "%s", fastaFile);
-  sprintf(fileName[1], "%s.index", fileName[0]);
+	  if (folder_path != NULL)
+	  {
+		  char command[NAME_LENGTH];
+		  sprintf(command, "mkdir %s", folder_path);
+		  system(command);
+		  sprintf(fileName[0], "%s", fastaFile);
+		  sprintf(fileName[1], "%s/%s.index", folder_path, folder_path);
+		 
+	  }
+	  else
+	  {
+		  sprintf(fileName[0], "%s", fastaFile);
+		  sprintf(fileName[1], "%s.index", fileName[0]);
+	  }
+
+  }
+  else
+  {
+	  sprintf(fileName[0], "%s", fastaFile);
+	  sprintf(fileName[1], "%s.index", fileName[0]);
+  }
+
+ 
+  /**
+  fprintf(stderr, "fileName[0]: %s\n", fileName[0]);
+  fprintf(stderr, "fileName[1]: %s\n", fileName[1]);
+  **/
+  
 
   return 1;
 }
@@ -322,12 +366,12 @@ void Print_H()
   fprintf(stdout,"Options of indexing step:\n");
   ///fprintf(stdout, "Usage: bitmapperBS --index <ref.fa>\n\n");
   fprintf(stdout," --index [file]\t\tGenerate an index from the specified fasta file. \n");
-  ///fprintf(stdout," --ws [int]\t\tSet window size for indexing (default:11 max:14).\n");
+  fprintf(stdout," --index_folder [folder]Set the folder that stores the genome indexes. If this option is not set, \n\t\t\tthe indexes would be stores in the same folder of genome (input fasta file). \n");
   fprintf(stdout,"\n\n");
 
   fprintf(stdout,"Options of read mapping step:\n");
   ///fprintf(stdout, "Usage: bitmapperBS --search <ref.fa> --seq1 --seq1\n\n");
-  fprintf(stdout," --search [file]\tSearch in the specified genome. Provide the path to the fasta file. \n\t\t\tIndex file should be in the same directory.\n");
+  fprintf(stdout," --search [file/folder]\tSearch in the specified genome. If the indexes of this genome are built without \"--index_folder\", \n\t\t\tplease provide the path to the fasta file of genome (index files should be in the same folder). \n\t\t\tOtherwise please provide the path to the index folder (set by \"--index_folder\" during indexing).\n");
   fprintf(stdout," --fast \t\tSet bitmapperBS in fast mode (default). This option is only available in paired-end mode.\n");
   fprintf(stdout," --sensitive \t\tSet bitmapperBS in sensitive mode. This option is only available in paired-end mode.\n");
   fprintf(stdout," --pe \t\t\tSearch will be done in paired-end mode.\n");

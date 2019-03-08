@@ -104,7 +104,9 @@ int main(int argc, char *argv[])
              //loadHashTable = &Load_Index;
             fprintf(stdout,"Start load hash table!\n");
 
-			fprintf(stdout, "%d\n", READS_QUENUE_MAX_LENGTH);
+			///fprintf(stdout, "%d\n", READS_QUENUE_MAX_LENGTH);
+
+			fprintf(stderr, "%s\n", fileName[1]);
 
              // loadHashTable = &Load_Index;
 			Load_Index(thread_e, &chhy_ih_refGenName, &refChromeCont, fileName[1]);
@@ -362,7 +364,15 @@ int main(int argc, char *argv[])
 		{
 			
 			fprintf(stdout, "Extract from single-end alignment ...\n");
-			methy_extract(0, Read_File1, need_context);
+
+			if (THREAD_COUNT == 1)
+			{
+				methy_extract(0, Read_File1, need_context);
+			}
+			else
+			{
+				methy_extract_mutiple_thread(0, Read_File1, need_context);
+			}
 		}
 		else
 		{

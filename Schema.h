@@ -65,7 +65,7 @@ N-4
 
 
 #define POS_MASK 15
-
+#define CONTEXT_MASK 48
 
 extern char char_to_3bit[128];
 
@@ -339,6 +339,10 @@ typedef struct
 	bitmapper_bs_iter* tmp_index; ///这个就是移位用的
 
 }Pair_Methylation;
+
+
+
+
 
 
 typedef struct
@@ -942,6 +946,53 @@ inline void init_pair_methylation(Pair_Methylation* methy, int size)
 
 }
 
+
+
+inline void init_single_methylation(Pair_Methylation* methy, int size)
+{
+	methy->total_size = size;
+	methy->current_size = 0;
+	(*methy).genome_cut = genome_cuts;
+	(*methy).cut_length = cut_length;
+	(*methy).cut_index = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*(genome_cuts + 1));
+	(*methy).tmp_index = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*(genome_cuts + 1));
+
+
+	memset((*methy).cut_index, 0, sizeof(bitmapper_bs_iter)*((*methy).genome_cut + 1));
+
+
+
+	/**read1**/
+	(*methy).R[0].r_length = (uint16_t*)malloc(sizeof(uint16_t)*size);
+	(*methy).R[0].sites = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*size);
+	/******************这里改了********************/
+	/**
+	(*methy).R[0].r_size = (uint16_t*)malloc(sizeof(uint16_t)*size);
+	(*methy).R[0].reads = (char**)malloc(sizeof(char*)*size);
+	**/
+	(*methy).R[0].r_real_length = (uint16_t*)malloc(sizeof(uint16_t)*size);
+	(*methy).R[0].r_size_3_bit = (uint16_t*)malloc(sizeof(uint16_t)*size);
+	(*methy).R[0].reads_3_bit = (bitmapper_bs_iter**)malloc(sizeof(bitmapper_bs_iter*)*size);
+	/******************这里改了********************/
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		/******************这里改了********************/
+		/**
+		(*methy).R[0].reads[i] = (char*)malloc(sizeof(char)*INIT_READ_LENGTH);
+		(*methy).R[0].r_size[i] = INIT_READ_LENGTH;
+		(*methy).R[0].r_length[i] = 0;
+		**/
+		(*methy).R[0].reads_3_bit[i] = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*INIT_READ_3_BIT_LENGTH);
+		(*methy).R[0].r_size_3_bit[i] = INIT_READ_3_BIT_LENGTH;
+		(*methy).R[0].r_length[i] = 0;
+		(*methy).R[0].r_real_length[i] = 0;
+
+		/******************这里改了********************/
+	}
+	/**read1**/
+
+}
 
 
 
@@ -1601,8 +1652,24 @@ void get_genome_cuts(char* file_name);
 
 
 
+typedef struct
+{
+	///只负责尾部区域的锁
+	pthread_mutex_t tail_Mutex;
+	bitmapper_bs_iter head_zone_start;
+	bitmapper_bs_iter head_zone_end;
+	bitmapper_bs_iter tail_zone_start;
+	bitmapper_bs_iter tail_zone_end;
+}
+Block_overlap_Mutex;
 
+typedef struct
+{
+	char* buffer;
+	long long size;
+	long long length;
 
+} Output_buffer_sub_block;
 
 
 
@@ -1613,6 +1680,24 @@ typedef struct
 	bitmapper_bs_iter each_interval_length;
 	bitmapper_bs_iter* each_buffer_interval_start;
 	bitmapper_bs_iter* each_buffer_interval_end;
+	Output_buffer_sub_block* CpG_buffer;
+	Output_buffer_sub_block* CHG_buffer;
+	Output_buffer_sub_block* CHH_buffer;
+
+
+
+
+	uint16_t** M_methy;
+	uint16_t** M_total;
+	uint16_t** M_correct_methy;
+	uint16_t** M_correct_total;
+	char** M_ref_genome;
+	long long* M_start_pos;
+	long long* M_end_pos;
+	int need_context[3];
+
+
+
 
 	pthread_mutex_t* Mutex;
 	pthread_cond_t* stallCond;
@@ -1639,6 +1724,20 @@ typedef struct
 
 	bitmapper_bs_iter total_start;
 	bitmapper_bs_iter total_end;
+
+
+
+	/*************methy_extract**************/
+	pthread_mutex_t all_completed_Mutex_methy;
+	pthread_mutex_t main_thread_Mutex_methy;
+	pthread_cond_t main_thread_flushCond_methy;
+	int all_completed_methy;
+
+	pthread_mutex_t* process_Mutex_methy;
+	pthread_cond_t* process_stallCond_methy;
+
+	/*************methy_extract**************/
+
 
 } Inpute_PE_methy_alignment_buffer;
 
@@ -1709,14 +1808,51 @@ inline void init_PE_methy_parameters(PE_methy_parameters *parameters, int PE_dis
 }
 
 
+
+
+inline void init_single_methy_parameters(PE_methy_parameters *parameters, bitmapper_bs_iter cut_length)
+{
+	parameters->extra_length = SEQ_MAX_LENGTH * 2;
+
+
+	parameters->methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + parameters->extra_length));
+	parameters->total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + parameters->extra_length));
+	parameters->correct_methy = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + parameters->extra_length));
+	parameters->correct_total = (uint16_t*)malloc(sizeof(uint16_t)*(cut_length + parameters->extra_length));
+	parameters->ref_genome = (char*)malloc(sizeof(char)*(cut_length + parameters->extra_length));
+
+
+
+	parameters->total_read = (long long*)malloc(sizeof(long long)*THREAD_COUNT);
+	parameters->duplicate_read = (long long*)malloc(sizeof(long long)*THREAD_COUNT);
+	parameters->unique_read = (long long*)malloc(sizeof(long long)*THREAD_COUNT);
+	parameters->abnormal_read = (long long*)malloc(sizeof(long long)*THREAD_COUNT);
+
+
+	int i = 0;
+
+	for (i = 0; i < THREAD_COUNT; i++)
+	{
+		parameters->total_read[i] = 0;
+		parameters->duplicate_read[i] = 0;
+		parameters->unique_read[i] = 0;
+		parameters->abnormal_read[i] = 0;
+	}
+}
+
+
 #define Init_buffer_3_bit(b) b.size = INIT_READ_3_BIT_LENGTH; b.buffer = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*b.size);
 
 
 void init_methy_input_buffer(long long each_sub_buffer_size, int number_of_threads,
-	bitmapper_bs_iter total_start, bitmapper_bs_iter total_end, int is_init);
+	bitmapper_bs_iter total_start, bitmapper_bs_iter total_end, int is_update, int is_paired);
 
 void* input_methy_muti_threads(void* arg);
+void* input_methy_muti_threads_single_end(void*);
+
 void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_distance, int* need_context);
+
+void methy_extract_mutiple_thread(int thread_id, char* file_name, int* need_context);
 
 
 #endif

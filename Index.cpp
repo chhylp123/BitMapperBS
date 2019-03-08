@@ -10,10 +10,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <dirent.h>
+#include <errno.h>
 #include "Auxiliary.h"
 #include "Ref_Genome.h"
 #include "Index.h"
 #include "bwt.h"
+
 
 /**********************************************/
 
@@ -235,6 +238,131 @@ int Load_Methy_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapp
 }
 
 
+
+inline int check_CpG_index(bitmapper_bs_iter ref_pos, bitmapper_bs_iter chrome_min_pos, bitmapper_bs_iter chrome_max_pos,
+	char* ref_genome)
+{
+
+	if (ref_genome[ref_pos] == 'C') ///C
+	{
+		///第一个判断条件是不能跨染色体
+		///第二个是判断是不是CpG
+		///不用担心左边会不会超过当前block的长度, 因为后面会多取一点出来(注意反方向需要考虑这个问题)
+		///即使是最后一个block, 也受第一个条件限制
+		if ((ref_pos + 1 <= chrome_max_pos)
+			&&
+			(ref_genome[ref_pos + 1] == 'G'))  ///G
+		{
+			return 1;
+		}
+	}
+	else if (ref_genome[ref_pos] == 'G') ///G
+	{
+
+		///第一个判断条件是不能跨染色体
+		///第二个是判断是不是CpG
+		if ((ref_pos >= chrome_min_pos + 1)
+			&&
+			(ref_genome[ref_pos - 1] == 'C')) //C
+		{
+			return 1;
+		}
+
+	}
+
+	return 0;
+
+}
+
+
+////这个必须和check_CpG_index连在一起用才正确
+inline int check_CHG_index(bitmapper_bs_iter ref_pos, bitmapper_bs_iter chrome_min_pos, bitmapper_bs_iter chrome_max_pos,
+	char* ref_genome)
+{
+
+	if (ref_genome[ref_pos] == 'C') ///C
+	{
+		///第一个判断条件是不能跨染色体
+		///第二个是判断是不是CpG
+		///不用担心左边会不会超过当前block的长度, 因为后面会多取一点出来(注意反方向需要考虑这个问题)
+		///即使是最后一个block, 也受第一个条件限制
+		if ((ref_pos + 2 <= chrome_max_pos)
+			&&
+			(ref_genome[ref_pos + 2] == 'G'))  ///G
+		{
+			return 1;
+		}
+	}
+	else if (ref_genome[ref_pos] == 'G') ///G
+	{
+
+		///第一个判断条件是不能跨染色体
+		///第二个是判断是不是CpG
+		if ((ref_pos >= chrome_min_pos + 2)
+			&&
+			(ref_genome[ref_pos - 2] == 'C')) //C
+		{
+			return 1;
+		}
+	}
+
+	return 0;
+
+}
+
+
+
+///返回值0是CpG, 返回值1是CHG, 返回值2是CHH，返回值3什么都不是
+inline int get_context_index(bitmapper_bs_iter map_location, char* ref_genome, _rg_name_l **refChromeName1,
+	bitmapper_bs_iter refChromeCont, int* current_chrome_id)
+{
+
+	if (ref_genome[map_location] != 'C' && ref_genome[map_location] != 'G')
+	{
+		return 3;   ///这说明既不是CpG, 也不是CHG，也不是CHH
+	}
+
+	int current_context;
+
+	
+
+	for (; (*current_chrome_id) < refChromeCont; ++(*current_chrome_id))
+	{
+		if ((map_location >= (*refChromeName1)[(*current_chrome_id)].start_location) 
+			&& 
+			(map_location <= (*refChromeName1)[(*current_chrome_id)].end_location))
+			break;
+	}
+
+	if ((*current_chrome_id) >= refChromeCont)
+	{
+		for ((*current_chrome_id) = 0; (*current_chrome_id) < refChromeCont; ++(*current_chrome_id))
+		{
+			if ((map_location >= (*refChromeName1)[(*current_chrome_id)].start_location) 
+				&& 
+				(map_location <= (*refChromeName1)[(*current_chrome_id)].end_location))
+				break;
+		}
+	}
+	
+
+	if (check_CpG_index(map_location, (*refChromeName1)[(*current_chrome_id)].start_location, 
+		(*refChromeName1)[(*current_chrome_id)].end_location, ref_genome))
+	{
+		return 0;   ///CpG
+	}
+	else if (check_CHG_index(map_location, (*refChromeName1)[(*current_chrome_id)].start_location, 
+		(*refChromeName1)[(*current_chrome_id)].end_location, ref_genome))
+	{
+		return 1;  ///CHG
+	}
+	else
+	{
+		return 2;  ///CHH
+	}
+}
+
+
 void SavingMethyIndex(char *fileName, bitmapper_bs_iter reference_length, _rg_name_l **refChromeName1,
 	bitmapper_bs_iter refChromeCont, char* refGen)
 {
@@ -251,8 +379,12 @@ void SavingMethyIndex(char *fileName, bitmapper_bs_iter reference_length, _rg_na
 
 	bitmapper_bs_iter len = 0;
 	bitmapper_bs_iter i = 0;
+	int current_chrome_id = 0;
+	
+	
 
-
+	bitmapper_bs_iter tmp_start = 0;
+	bitmapper_bs_iter tmp_end = 0;
 	for (i = 0; i < refChromeCont; i++)
 	{
 		len = strlen((*refChromeName1)[i]._rg_chrome_name);
@@ -260,17 +392,29 @@ void SavingMethyIndex(char *fileName, bitmapper_bs_iter reference_length, _rg_na
 		tmp = fwrite((*refChromeName1)[i]._rg_chrome_name, sizeof(char), len, methy_ih_fp);
 		tmp = fwrite(&((*refChromeName1)[i]._rg_chrome_length),
 			sizeof(((*refChromeName1)[i]._rg_chrome_length)), 1, methy_ih_fp);
+
+
+		(*refChromeName1)[i].start_location = tmp_start;
+		tmp_end = tmp_start + (*refChromeName1)[i]._rg_chrome_length - 1;
+		(*refChromeName1)[i].end_location = tmp_end;
+		tmp_start = tmp_end + 1;
 	}
 
 
 	//写入参考基因组与参考基因组长度
 	tmp = fwrite(&reference_length, sizeof(reference_length), 1, methy_ih_fp);
 
-	char tmp_char;
+	unsigned char tmp_char;
+	unsigned char context;
 
 	for (i = 0; i < reference_length; i++)
 	{
-		refGen[i] = toupper(refGen[i]);
+		///不需要，因为再读入的时候已经全部转成大写了
+		///refGen[i] = toupper(refGen[i]);
+
+		context = get_context_index(i, refGen, refChromeName1,
+			refChromeCont, &current_chrome_id);
+		context = context << 4;
 
 		switch (refGen[i])
 		{
@@ -290,6 +434,8 @@ void SavingMethyIndex(char *fileName, bitmapper_bs_iter reference_length, _rg_na
 			tmp_char = 4;
 			break;
 		}
+
+		tmp_char = tmp_char | context;
 		tmp = fwrite(&tmp_char, sizeof(tmp_char), 1, methy_ih_fp);
 	}
 
@@ -764,6 +910,7 @@ void createIndex(char *fileName, char *indexName)
   
 
   fprintf(stdout, "command_string: %s\n", command_string);
+  ///fflush(stdout);
 
   int error = system(command_string);
   error = system("rm *.sa5");
@@ -801,6 +948,7 @@ int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs
    //读入染色体数目
    tmp = fread(&refChromeCont, sizeof(refChromeCont), 1, _ih_fp);
 
+
    ///接下来是读入各染色体信息
    _rg_name_l* _ih_refGenName = (_rg_name_l*)malloc(sizeof(_rg_name_l)*refChromeCont);
 
@@ -827,6 +975,7 @@ int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs
 	}
 
 
+
   ///染色体的各种信息
   *msf_ih_refGenName=_ih_refGenName;
   ///有多少条染色体
@@ -838,6 +987,7 @@ int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs
   tmp = fread(&refGenLength, sizeof(refGenLength), 1, _ih_fp);
 
   fprintf(stdout, "refGenLength = %llu \n", refGenLength);
+ 
 
 
   ///这一块是索引的名字
@@ -888,26 +1038,83 @@ int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs
 }
 
 
-
+/**
 int Start_Load_Index(char *fileName)
 {
+	int path_length = strlen(fileName);
+	fileName[path_length - 6] = '_';
+	
 
+	DIR* dir = opendir(fileName);
 
-  _ih_fp = fopen (fileName, "r");
+	if (dir)
+	{
+		/// Directory exists. 
+		char directory_path[NAME_LENGTH];
+		strcpy(directory_path, fileName);
+		directory_path[path_length - 6] = '.';
+		fileName[path_length] = '/';
+		strcpy(fileName + path_length, directory_path);
+		///fprintf(stderr, "fileName: %s\n", fileName);
+	}
+	else if (ENOENT == errno)
+	{
+		/// Directory does not exist. 
+		fileName[path_length - 6] = '.';
+	}
 
-  if (_ih_fp == NULL)
-  {
-	  fprintf(stdout, "Cannot open %s!\n", fileName);
-	  return 0;
-  }
-  else
-  {
-	  fprintf(stdout, "Open %s sucessfully!\n", fileName);
-  }
+	_ih_fp = fopen(fileName, "r");
+
+	if (_ih_fp == NULL)
+	{
+		fprintf(stdout, "Cannot open %s!\n", fileName);
+		return 0;
+	}
+	else
+	{
+		fprintf(stdout, "Open %s sucessfully!\n", fileName);
+	}
+  
 
   return 1;
 }
+**/
 
+int Start_Load_Index(char *fileName)
+{
+	int path_length = strlen(fileName);
+	fileName[path_length - 6] = '\0';
+
+	DIR* dir = opendir(fileName);
+
+	if (dir)
+	{
+
+		char directory_path[NAME_LENGTH];
+		sprintf(directory_path, "%s/%s.index", fileName, fileName);
+		strcpy(fileName, directory_path);
+		
+	}
+	///else if (ENOENT == errno)
+	else
+	{
+		fileName[path_length - 6] = '.';
+		
+	}
+
+	_ih_fp = fopen(fileName, "r");
+	if (_ih_fp == NULL)
+	{
+		fprintf(stdout, "Cannot open %s!\n", fileName);
+		return 0;
+	}
+	else
+	{
+		fprintf(stdout, "Open %s sucessfully!\n", fileName);
+	}
+
+	return 1;
+}
 
 
 unsigned char *getRefGenome()

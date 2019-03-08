@@ -71,13 +71,6 @@ void OutPutSAM_Nounheader(_rg_name_l  *_ih_refGenName, int refChromeCont, int ar
 #define MUTIREAD 128
 
 
-typedef struct
-{
-	char* buffer;
-	long long size;
-	long long length;
-
-} Output_buffer_sub_block;
 
 
 typedef struct Output_buffer
@@ -266,6 +259,9 @@ void output_single_methy_CHG(bitmapper_bs_iter tmp_pos, char* chrome_name, int n
 
 void output_single_methy_CHH(bitmapper_bs_iter tmp_pos, char* chrome_name, int nmethyl, int total);
 
+void output_single_methy_multiple_thread
+(bitmapper_bs_iter tmp_pos, char* chrome_name, int nmethyl, int total, Output_buffer_sub_block* buffer);
 
+void output_methy_directly(Output_buffer_sub_block* CpG_buffer, Output_buffer_sub_block* CHG_buffer, Output_buffer_sub_block* CHH_buffer);
 
 #endif
