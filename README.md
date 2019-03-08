@@ -132,6 +132,7 @@ We recommd users to first remove the duplicates by Picard or samtools, and then 
 | Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
 | --index | -i | String | NULL | Generate an index from the specified fasta file. |
+| --index_folder | NULL | String | NULL | Set the folder that stores the genome indexes. If this option is not set, the indexes would be stores in the same folder of genome (input fasta file). |
 
 
 ### Mapping Options ###
@@ -140,7 +141,7 @@ We recommd users to first remove the duplicates by Picard or samtools, and then 
 
 | Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
-| --search | NULL| String | NULL | If the indexes of this genome are built without "--index_folder", provide the path to the fasta file when aligning. Otherwise please provide the path to the index folder (set by "--index_folder" during indexing).|
+| --search | NULL| String | NULL | Search in the specified genome. If the indexes of this genome are built without "--index_folder", please provide the path to the fasta file when aligning. Otherwise please provide the path to the index folder (set by "--index_folder" during indexing).|
 | --fast | NULL| String | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
 | --sensitive | NULL| String | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
 | --pe | NULL| NULL | NULL | Searching will be done in paired-end mode. |
