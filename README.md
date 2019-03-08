@@ -140,7 +140,7 @@ We recommd users to first remove the duplicates by Picard or samtools, and then 
 
 | Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
-| --search | NULL| String | NULL | Provide the path to the fasta file when aligning.|
+| --search | NULL| String | NULL | If the indexes of this genome are built without "--index_folder", provide the path to the fasta file when aligning. Otherwise please provide the path to the index folder (set by "--index_folder" during indexing).|
 | --fast | NULL| String | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
 | --sensitive | NULL| String | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
 | --pe | NULL| NULL | NULL | Searching will be done in paired-end mode. |
@@ -214,7 +214,8 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 ### Changelog ###
 
 (9) March 8, 2019: version 1.0.0.9 released. 
-    >> Fixed the bug that may happened with old version of G++.
+
+    >> Fixed the bug that may be happened with old version of G++.
 
 (8) January 17, 2019: version 1.0.0.8 released. 
 
