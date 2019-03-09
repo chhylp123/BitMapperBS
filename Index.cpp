@@ -567,6 +567,7 @@ void build_inde_from_disk(char* file_name)
 
 	bitmapper_bs_iter compress_build_sa = 8;
 
+
 	indenpendent_creadte_index(text_length, &refer, compress_build_sa, file_name);
 
 

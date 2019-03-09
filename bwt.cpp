@@ -1009,18 +1009,18 @@ void indenpendent_get_sa_fromFILE(unsigned int **sa, unsigned int cc, char *refe
 
 
 
-void new_version_pSAscan_build_sa(bitmapper_bs_iter text_length, char *refer)
+void new_version_pSAscan_build_sa(bitmapper_bs_iter text_length, char **refer)
 {
 
 	FILE* tmp_SA = fopen("tmp_ref.tmp", "w");
 
-	fwrite(refer, sizeof(char), text_length, tmp_SA);
+	fwrite(*refer, sizeof(char), text_length, tmp_SA);
 
 	fflush(tmp_SA);
 
 	fclose(tmp_SA);
 
-	free(refer);
+	free(*refer);
 
 	int error;
 	
@@ -1029,8 +1029,8 @@ void new_version_pSAscan_build_sa(bitmapper_bs_iter text_length, char *refer)
 
 
 	tmp_SA = fopen("tmp_ref.tmp", "r");
-	refer = (char*)malloc(sizeof(char)*(text_length + 1));
-	fread(refer, sizeof(char), text_length, tmp_SA);
+	*refer = (char*)malloc(sizeof(char)*(text_length + 1));
+	fread(*refer, sizeof(char), text_length, tmp_SA);
 	fclose(tmp_SA);
 
 
@@ -1223,7 +1223,7 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 
 	///printf("first SA has been generated!\n");
-	new_version_pSAscan_build_sa(text_length, refer);
+	new_version_pSAscan_build_sa(text_length, &refer);
 
 
 

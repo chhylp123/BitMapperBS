@@ -214,6 +214,10 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 ### Changelog ###
 
+(11) March 9, 2019: version 1.0.1.1 released. 
+
+    >> Fixed the bug when indexing in extreme cases.
+
 (10) March 9, 2019: version 1.0.1.0 released. 
 
     >> Fixed the bug about the optopn "--index_folder" when indexing.
