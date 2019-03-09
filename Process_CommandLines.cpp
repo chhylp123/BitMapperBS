@@ -321,7 +321,8 @@ int CommandLine_process (int argc, char *argv[])
 		  sprintf(command, "mkdir %s", folder_path);
 		  system(command);
 		  sprintf(fileName[0], "%s", fastaFile);
-		  sprintf(fileName[1], "%s/%s.index", folder_path, folder_path);
+		  ///sprintf(fileName[1], "%s/%s.index", folder_path, folder_path);
+		  sprintf(fileName[1], "%s/genome.index", folder_path);
 		 
 	  }
 	  else
@@ -338,10 +339,10 @@ int CommandLine_process (int argc, char *argv[])
   }
 
  
-  /**
+  
   fprintf(stderr, "fileName[0]: %s\n", fileName[0]);
   fprintf(stderr, "fileName[1]: %s\n", fileName[1]);
-  **/
+  
   
 
   return 1;

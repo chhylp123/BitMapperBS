@@ -1091,7 +1091,7 @@ int Start_Load_Index(char *fileName)
 	{
 
 		char directory_path[NAME_LENGTH];
-		sprintf(directory_path, "%s/%s.index", fileName, fileName);
+		sprintf(directory_path, "%s/genome.index", fileName);
 		strcpy(fileName, directory_path);
 		
 	}
