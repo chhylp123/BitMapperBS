@@ -1,11 +1,6 @@
 BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequencing
 ============
 
-
-
-
-
-
 ### Introduction ###
 -------  
 
@@ -82,8 +77,6 @@ BitMapperBS has been successfully tested using six CPU threads on a computer wit
 
 If you have problem with the "make" part described above, please contact us (chhy@mail.ustc.edu.cn).
 
-    
-
 ### Indexing Genome ###
     
     ./bitmapperBS --index <genome file name>
@@ -95,7 +88,7 @@ The suffix of the index file should be '.index.*'.
 
 ### Quality and Adapter Trimming ###
 
-We recommd users to use Trim_Galore to perform the quality and adapter trimming. Please see https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/. 
+We recommed users to use Trim_Galore to perform the quality and adapter trimming. Please see https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/. 
 
 ### Bisulfite Mapping ###
 
@@ -116,7 +109,7 @@ output mapping results in BAM format
 ### Methylation Extracting ###
 
 
-We recommd users to first remove the duplicates by Picard or samtools, and then use MethylDackel to extract methylation information. Please see https://github.com/dpryan79/methyldackel. 
+We recommend users to first remove the duplicates by Picard or samtools, and then use MethylDackel to extract methylation information. Please see https://github.com/dpryan79/methyldackel. 
 
 
 ### General Options ###
