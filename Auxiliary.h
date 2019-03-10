@@ -13,7 +13,7 @@
 
 #define READS_QUENUE_MAX_LENGTH		10000
 #define SEQ_MAX_LENGTH		1000			// Seq Max Length
-#define NAME_LENGTH	400			// Filename Max Length
+#define NAME_LENGTH	1000			// Filename Max Length
 #define MAX_Thread 1024
 
 
