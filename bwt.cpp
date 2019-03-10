@@ -2509,7 +2509,7 @@ unsigned int init_locate_queue_muti_thread(bwt_locate_queue* get_queue)
 
 unsigned int load_index(char* filename_prefix)
 {
-	char filename[100], filename1[100], filenames[100], filenameo[100], filenameb[100];
+	char filename[1000], filename1[1000], filenames[1000], filenameo[1000], filenameb[1000];
 	long long i, j, t;
 
 	FILE *f1, *f2, *fs, *fb, *fout, *fo;

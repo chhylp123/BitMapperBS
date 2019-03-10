@@ -992,7 +992,7 @@ int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs
 
 
   ///这一块是索引的名字
-  char file_name[1000];
+  char file_name[NAME_LENGTH];
   strcpy(file_name, indexName);
   strcpy(file_name + strlen(indexName), ".bs");
 
@@ -1023,6 +1023,7 @@ int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs
 
   ///读入FM-index
   load_index(file_name);
+
 
 
   bitmapper_bs_iter site_0, length_0;

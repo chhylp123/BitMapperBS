@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
             loadingTime = 0;
              //loadHashTable = &Load_Index;
             fprintf(stdout,"Start load hash table!\n");
+			
 
 			///fprintf(stdout, "%d\n", READS_QUENUE_MAX_LENGTH);
 
