@@ -55,6 +55,9 @@ If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.ed
 BitMapperBS has been successfully tested using six CPU threads on a computer with a six-core Intel Core i7-8770k processor and 64GB RAM, running Ubuntu 16.04. The indexes, reference genomes and reads were stored in a Solid State Drive (SSD) to minimize the loading time.
 
 
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `BitMapperBS has already been utilized in BGI Genomics to analyze the WGBS
+data.`
+
 ### Installation ###
 (1) Download the source code from Github
 
