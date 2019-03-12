@@ -14,6 +14,7 @@
 #include "bwt.h"
 #include<stdint.h>
 #include<ctype.h>
+#include <unistd.h>
 ///#include <nmmintrin.h>
 
 bwt_index bitmapper_index_params;
@@ -1025,7 +1026,22 @@ void new_version_pSAscan_build_sa(bitmapper_bs_iter text_length, char **refer)
 	int error;
 	
 	error = system("rm tmp_ref.tmp.sa5");
-	error = system("./psascan tmp_ref.tmp -m 8192");
+
+
+	if (access("psascan", F_OK) == 0)
+	{
+		///文件存在
+		fprintf(stdout, "the binary of psascan exists...\n");
+		error = system("./psascan tmp_ref.tmp -m 8192");
+	}
+	else
+	{
+		///文件不存在
+		fprintf(stdout, "the binary of psascan does not exist...\n");
+		error = system("psascan tmp_ref.tmp -m 8192");
+	}
+
+	
 
 
 	tmp_SA = fopen("tmp_ref.tmp", "r");
