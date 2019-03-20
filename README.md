@@ -33,13 +33,15 @@ It is also actively used by Computational Biology of Aging Group and BGI Genomic
 
 ### Docker container ###
 
-BitMapper can be run as binary or as a docker container.
+BitMapper can be run as binary or as a docker container. For example, if we assume that reference genomes and samples are in /data/indexes and /data/samples folders, then:
+* to build index of the reference genome:
 ```
-docker run -v /data:/data quay.io/comp-bio-aging/bit_mapper_bs:latest /opt/BitMapperBS/bitmapperBS --search /data/cromwell-executions/bs_map/df55dbe3-5f2d-4d6e-9b16-52b1ecb44150/call-bitmapper/inputs/-240390738/human_bs_index --seq1 /data/cromwell-executions/bs_map/df55dbe3-5f2d-4d6e-9b16-52b1ecb44150/call-bitmapper/inputs/-834119892/SRR948855_1.fastq_cleaned.fastq.gz --seq2 /data/cromwell-executions/bs_map/df55dbe3-5f2d-4d6e-9b16-52b1ecb44150/call-bitmapper/inputs/-834119892/SRR948855_2.fastq_cleaned.fastq.gz --sensitive --pe -t 1 --mapstats 
+docker run -v /data:/data quay.io/comp-bio-aging/bit_mapper_bs:latest /opt/BitMapperBS/bitmapperBS --index /data/indexes/HUMAN/29/GRCh38.primary_assembly.genome.fa  --index_folder human_bs_index
 ```
-
-- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `BitMapperBS has already been utilized in BGI Genomics to analyze the WGBS
-data.`
+* to align sequence to bitmapper index:
+```
+docker run -v /data:/data quay.io/comp-bio-aging/bit_mapper_bs:latest /opt/BitMapperBS/bitmapperBS --search /data/indexes/human_bs_index  --seq1 /data/samples/SRR948855/SRR948855_1.fastq.gz --seq2 /data/samples/SRR948855/SRR948855_2.fastq.gz --sensitive --pe -t 8 --mapstats --bam -o SRR948855.bam
+```
 
 ### Installation ###
 (1) Download the source code from Github
