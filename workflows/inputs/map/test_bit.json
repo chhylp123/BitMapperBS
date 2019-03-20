@@ -1,0 +1,9 @@
+{
+  "bs_map.destination": "/data/samples/test",
+  "bs_map.reads": [
+    "/data/samples/bs-seq/SRR948855/reads/SRR948855_1.fastq_cleaned.fastq.gz",
+    "/data/samples/bs-seq/SRR948855/reads/SRR948855_2.fastq_cleaned.fastq.gz"],
+  "bs_map.filename": "SRR948855",
+  "bs_map.genome_index": "/data/indexes/HUMAN/29/human_bs_index",
+  "bs_map.map_threads": 8
+}

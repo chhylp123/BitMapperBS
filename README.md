@@ -8,30 +8,6 @@ Here are the implementations of "BitMapperBS: a fast and accurate read aligner f
 BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads from directional protocol. 
 
 
-### - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Please Note!!!` ###
-
->1. (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually, and copy it (binary file of psascan) to the folder of BitMapperBS. The detailed steps are listed as follows: 
-
- >> (1) Download psascan from https://www.cs.helsinki.fi/group/pads/pSAscan.html, and complie it from source code.
-
- >> (2) Copy psascan (binary file) to the folder of BitMapperBS.
-
-
->2. (update on November 28, 2018)  When compiling BitMapperBS, if you get the error message "fatal error: zlib.h: no such file or directory" or "fatal error: bzlib.h: No such file or directory" or "fatal error: lzma.h: No such file or directory", please install zlib, libbz2 and liblzma libraries. In Ubuntu, please try:
-   >> sudo apt-get install liblzma-dev zlib1g-dev libbz2-dev
-
-
->3. (update on November 28, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
-   >> (1) To reduce the amount of disk I/O, you can use the compressed fastq files (.fastq.gz or .fq.gz format) rather than the uncompressed raw files (.fastq or .fq format).
-
-   >> (2) To reduce the amount of disk I/O, you can output the mapping results in BAM format (using the option --bam) rather than SAM format.
-
-   
-   >> (3) The input files and output files of BitMapperBS (e.g., the read files and the output SAM or BAM files) can be saved in fast solid state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
-
-
-If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
-
 ### Build Requirements ###
 
 (1) G++.
@@ -53,7 +29,14 @@ If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.ed
 ### Supported platforms ###
 
 BitMapperBS has been successfully tested using six CPU threads on a computer with a six-core Intel Core i7-8770k processor and 64GB RAM, running Ubuntu 16.04. The indexes, reference genomes and reads were stored in a Solid State Drive (SSD) to minimize the loading time.
+It is also actively used by Computational Biology of Aging Group and BGI Genomics to analyze WGBS data.
 
+### Docker container ###
+
+BitMapper can be run as binary or as a docker container.
+```
+docker run -v /data:/data quay.io/comp-bio-aging/bit_mapper_bs:latest /opt/BitMapperBS/bitmapperBS --search /data/cromwell-executions/bs_map/df55dbe3-5f2d-4d6e-9b16-52b1ecb44150/call-bitmapper/inputs/-240390738/human_bs_index --seq1 /data/cromwell-executions/bs_map/df55dbe3-5f2d-4d6e-9b16-52b1ecb44150/call-bitmapper/inputs/-834119892/SRR948855_1.fastq_cleaned.fastq.gz --seq2 /data/cromwell-executions/bs_map/df55dbe3-5f2d-4d6e-9b16-52b1ecb44150/call-bitmapper/inputs/-834119892/SRR948855_2.fastq_cleaned.fastq.gz --sensitive --pe -t 1 --mapstats 
+```
 
 - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `BitMapperBS has already been utilized in BGI Genomics to analyze the WGBS
 data.`
@@ -76,9 +59,32 @@ data.`
 
 (3) (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS. 
 
+### - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Please Note!!!` ###
+
+>1. (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually, and copy it (binary file of psascan) to the folder of BitMapperBS. The detailed steps are listed as follows: 
+
+ >> (1) Download psascan from https://www.cs.helsinki.fi/group/pads/pSAscan.html, and complie it from source code.
+
+ >> (2) Copy psascan (binary file) to the folder of BitMapperBS.
+
+
+>2. (update on November 28, 2018)  When compiling BitMapperBS, if you get the error message "fatal error: zlib.h: no such file or directory" or "fatal error: bzlib.h: No such file or directory" or "fatal error: lzma.h: No such file or directory", please install zlib, libbz2 and liblzma libraries. In Ubuntu, please try:
+   >> sudo apt-get install liblzma-dev zlib1g-dev libbz2-dev
+
+
+>3. (update on November 28, 2018) Although BitMapperBS itself is significantly faster than other methods, the slow disk I/O cannot be accelerated. In practice, the most serious bottleneck of BitMapperBS is the poor performance of disk I/O, especially when using multiple CPU threads. Thus, if you want to run BitMapperBS using many CPU threads, we suggest you to adopt at least one of the following strategies: 
+   >> (1) To reduce the amount of disk I/O, you can use the compressed fastq files (.fastq.gz or .fq.gz format) rather than the uncompressed raw files (.fastq or .fq format).
+
+   >> (2) To reduce the amount of disk I/O, you can output the mapping results in BAM format (using the option --bam) rather than SAM format.
+
+   
+   >> (3) The input files and output files of BitMapperBS (e.g., the read files and the output SAM or BAM files) can be saved in fast solid state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
 
 
 If you have problem with the "make" part described above, please contact us (chhy@mail.ustc.edu.cn).
+
+Usage
+=====
 
 ### Indexing Genome ###
     
