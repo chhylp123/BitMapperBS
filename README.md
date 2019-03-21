@@ -8,6 +8,59 @@ Here are the implementations of "BitMapperBS: a fast and accurate read aligner f
 BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads from directional protocol. 
 
 
+### Build Requirements ###
+
+(1) G++.
+
+(2) CMake.
+
+(3) CMake-supported build tool.
+
+(4) zlib, libbz2 and liblzma libraries. In Ubuntu, please try: sudo apt-get install liblzma-dev zlib1g-dev libbz2-dev.
+
+### Hardware&software requirements ###
+
+(1) CPU must support AVX2 or SSE4.2 instructions.
+
+(2) When building the index for the human genome, BitMapperBS requires about 10GB RAM and 60GB disk space.
+
+(3) When aligning the bs-seq to the human genome, BitMapperBS requires about 7GB RAM. 
+
+### Supported platforms ###
+
+BitMapperBS has been successfully tested using six CPU threads on a computer with a six-core Intel Core i7-8770k processor and 64GB RAM, running Ubuntu 16.04. The indexes, reference genomes and reads were stored in a Solid State Drive (SSD) to minimize the loading time.
+It is also actively used by Computational Biology of Aging Group and BGI Genomics to analyze WGBS data.
+
+### Docker container ###
+
+BitMapper can be run as binary or as a docker container. For example, if we assume that reference genomes and samples are in /data/indexes and /data/samples folders, then:
+* to build index of the reference genome:
+```
+docker run -v /data:/data quay.io/comp-bio-aging/bit_mapper_bs:latest /opt/BitMapperBS/bitmapperBS --index /data/indexes/HUMAN/29/GRCh38.primary_assembly.genome.fa  --index_folder human_bs_index
+```
+* to align sequence to bitmapper index:
+```
+docker run -v /data:/data quay.io/comp-bio-aging/bit_mapper_bs:latest /opt/BitMapperBS/bitmapperBS --search /data/indexes/human_bs_index  --seq1 /data/samples/SRR948855/SRR948855_1.fastq.gz --seq2 /data/samples/SRR948855/SRR948855_2.fastq.gz --sensitive --pe -t 8 --mapstats --bam -o SRR948855.bam
+```
+
+### Installation ###
+(1) Download the source code from Github
+
+    git clone https://github.com/chhylp123/BitMapperBS.git
+
+(2) Build (CPU must support AVX2 instructions or SSE4.2 instructions)
+    
+    cd BitMapperBS
+    make
+    
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If system reports: "cmake: not found" or "psascan_src/inmem_psascan_src/divsufsort_template.h:42:24: fatal error: divsufsort.h: not found", please install CMake in your system.`
+
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on November 28, 2018) If system reports: "fatal error: zlib.h: no such file or directory" or "fatal error: bzlib.h: No such file or directory" or "fatal error: lzma.h: No such file or directory", please install zlib, libbz2 and liblzma libraries. In Ubuntu, please try: sudo apt-get install liblzma-dev zlib1g-dev libbz2-dev. `
+
+
+
+(3) (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS. 
+
 ### - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `Please Note!!!` ###
 
 >1. (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually, and copy it (binary file of psascan) to the folder of BitMapperBS. The detailed steps are listed as follows: 
@@ -30,55 +83,10 @@ BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for W
    >> (3) The input files and output files of BitMapperBS (e.g., the read files and the output SAM or BAM files) can be saved in fast solid state drives (SSD) storage devices, rather than slow hard disk drive (HDD) storage devices.
 
 
-If you still have problem with BitMapperBS, please contact us (chhy@mail.ustc.edu.cn).
-
-### Build Requirements ###
-
-(1) G++.
-
-(2) CMake.
-
-(3) CMake-supported build tool.
-
-(4) zlib, libbz2 and liblzma libraries. In Ubuntu, please try: sudo apt-get install liblzma-dev zlib1g-dev libbz2-dev.
-
-### Hardware&software requirements ###
-
-(1) CPU must support AVX2 or SSE4.2 instructions.
-
-(2) When building the index for the human genome, BitMapperBS requires about 10GB RAM and 60GB disk space.
-
-(3) When aligning the bs-seq to the human genome, BitMapperBS requires about 7GB RAM. 
-
-### Supported platforms ###
-
-BitMapperBS has been successfully tested using six CPU threads on a computer with a six-core Intel Core i7-8770k processor and 64GB RAM, running Ubuntu 16.04. The indexes, reference genomes and reads were stored in a Solid State Drive (SSD) to minimize the loading time.
-
-
-- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `BitMapperBS has already been utilized in BGI Genomics to analyze the WGBS
-data.`
-
-### Installation ###
-(1) Download the source code from Github
-
-    git clone https://github.com/chhylp123/BitMapperBS.git
-
-(2) Build (CPU must support AVX2 instructions or SSE4.2 instructions)
-    
-    cd BitMapperBS
-    make
-    
-- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on October 10, 2018) If system reports: "cmake: not found" or "psascan_src/inmem_psascan_src/divsufsort_template.h:42:24: fatal error: divsufsort.h: not found", please install CMake in your system.`
-
-- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on November 28, 2018) If system reports: "fatal error: zlib.h: no such file or directory" or "fatal error: bzlib.h: No such file or directory" or "fatal error: lzma.h: No such file or directory", please install zlib, libbz2 and liblzma libraries. In Ubuntu, please try: sudo apt-get install liblzma-dev zlib1g-dev libbz2-dev. `
-
-
-
-(3) (update on October 10, 2018) In most cases, BitMapperBS can be compiled from source code automatically, and is able to be implemented successfully. However, in some rare cases (e.g, old version of Linux operating system), BitMapperBS may report error message when building index. For example, report: "sh: 1: ./psascan: not found". This is because BitMapperBS utlizes psascan to build FM-index, and psascan (binary file) cannot be compiled from source code automatically. In this case, please compile psascan manually (https://www.cs.helsinki.fi/group/pads/pSAscan.html), and copy it (binary file of psascan) to the folder of BitMapperBS. 
-
-
-
 If you have problem with the "make" part described above, please contact us (chhy@mail.ustc.edu.cn).
+
+Usage
+=====
 
 ### Indexing Genome ###
     

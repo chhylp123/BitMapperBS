@@ -1,0 +1,5 @@
+{
+  "bitmapper_index.index_name": "worm_bs_index",
+  "bitmapper_index.genome": "/data/indexes/WORM/95/Caenorhabditis_elegans.WBcel235.cdna.all.fa",
+  "bitmapper_index.destination": "/data/indexes/WORM/95"
+}

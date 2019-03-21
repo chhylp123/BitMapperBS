@@ -1,0 +1,5 @@
+{
+  "bitmapper_index.index_name": "fly_bs_index",
+  "bitmapper_index.genome": "/data/indexes/FLY/95/Drosophila_melanogaster.BDGP6.cdna.all.fa",
+  "bitmapper_index.destination": "/data/indexes/FLY/95"
+}

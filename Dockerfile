@@ -14,4 +14,5 @@ WORKDIR /opt/BitMapperBS
 RUN chmod +x /opt/BitMapperBS/htslib/version.sh
 RUN make
 ENV LD_LIBRARY_PATH="/opt/BitMapperBS/htslib_aim/lib"
+ENV PATH="$PATH:/opt/BitMapperBS:/opt/BitMapperBS/pSAscan-0.1.0"
 CMD /opt/BitMapperBS/bitmapperBS
