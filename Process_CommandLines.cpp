@@ -32,6 +32,7 @@ char				*Read_File2;
 char				*Mapped_File = "output";
 char				*Mapped_FilePath = "";
 char                *folder_path = NULL;
+char                *bmm_folder_path = NULL;
 char				*Un_Mapped_File = "unmapped";
 char				fileName[2][NAME_LENGTH];
 unsigned char			thread_e=255;
@@ -72,6 +73,7 @@ int CommandLine_process (int argc, char *argv[])
   int index;
   char *fastaFile = NULL;
   folder_path = NULL;
+  bmm_folder_path = NULL;
 
   static struct option longOptions[] =
     {
@@ -107,6 +109,7 @@ int CommandLine_process (int argc, char *argv[])
 	  { "maxVariantFrac", required_argument, 0, 'a' },
 	  { "minVariantDepth", required_argument, 0, 'b' },
 	  { "index_folder", required_argument, 0, 'd' },
+	  { "bmm_folder", required_argument, 0, 'z' },
       {0,  0,  0, 0},
     };
 
@@ -116,10 +119,18 @@ int CommandLine_process (int argc, char *argv[])
     return 0;
   }
   
-  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:b:d:g:p:r:s:t:q:d:", longOptions, &index)) != -1 )
+  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:b:d:g:p:r:s:t:q:d:z:", longOptions, &index)) != -1 )
     {
       switch (o)
 	  {
+	case 'z':
+		bmm_folder_path = (char*)malloc(NAME_LENGTH);
+		strcpy(bmm_folder_path, optarg);
+		if (bmm_folder_path[strlen(bmm_folder_path) - 1] == '/')
+		{
+			bmm_folder_path[strlen(bmm_folder_path) - 1] = 0;
+		}
+		break;
 	case 'd':
 		folder_path = (char*)malloc(NAME_LENGTH);
 		strcpy(folder_path, optarg);
@@ -290,12 +301,13 @@ int CommandLine_process (int argc, char *argv[])
 		  return 0;
 	  }
 
-
+	  /**
 	  if (Read_File1 == NULL)
 	  {
-		  fprintf(stdout, "Please indicate the alignment files for extracting!\n");
+		  fprintf(stdout, "Please indicate the bmm files for extracting!\n");
 		  return 0;
 	  }
+	  **/
   }
 
   if (unmapped_out == 1 || ambiguous_out == 1)
@@ -338,7 +350,44 @@ int CommandLine_process (int argc, char *argv[])
 	  sprintf(fileName[1], "%s.index", fileName[0]);
   }
 
- 
+
+  if (output_methy == 1 || is_methy == 1)
+  {
+	  if (bmm_folder_path != NULL)
+	  {
+		  if (output_methy == 1)
+		  {
+			  char command[NAME_LENGTH];
+			  sprintf(command, "mkdir %s", bmm_folder_path);
+			  system(command);
+			  Mapped_File = (char*)malloc(NAME_LENGTH);
+			  Mapped_FilePath = (char*)malloc(NAME_LENGTH);
+			  sprintf(Mapped_File, "%s", "output");
+			  sprintf(Mapped_FilePath, "%s/", bmm_folder_path);
+		  }
+		  else if (is_methy == 1)
+		  {
+			  Read_File1 = (char*)malloc(NAME_LENGTH);
+			  sprintf(Read_File1, "%s/output", bmm_folder_path);
+		  }
+		  
+	  }
+	  else
+	  {
+		  fprintf(stdout, "Please indicate the folder of .bmm files by '--bmm_folder'!\n");
+		  return 0;
+	  }
+  }
+
+
+  if (is_methy == 1)
+  {
+	  if (Read_File1 == NULL)
+	  {
+		  fprintf(stdout, "Please indicate the bmm files for extracting!\n");
+		  return 0;
+	  }
+  }
   
   fprintf(stderr, "fileName[0]: %s\n", fileName[0]);
   fprintf(stderr, "fileName[1]: %s\n", fileName[1]);
