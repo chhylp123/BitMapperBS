@@ -168,6 +168,24 @@ FILE* get_index_file()
 int Load_Methy_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs_iter* msf_refChromeCont, char* indexName)
 {
 
+	int path_length = strlen(indexName);
+	indexName[path_length - 12] = '\0';
+
+
+	DIR* dir = opendir(indexName);
+
+	if (dir)
+	{
+		char directory_path[NAME_LENGTH];
+		sprintf(directory_path, "%s/genome.index.methy", indexName);
+		strcpy(indexName, directory_path);
+	}
+	else
+	{
+		indexName[path_length - 12] = '.';
+	}
+
+
 
 	_ih_fp = fopen(indexName, "r");
 
