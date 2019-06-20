@@ -120,7 +120,7 @@ output mapping results in BAM format
 ### Methylation Extracting ###
 
 
-We recommend users to first remove the duplicates by Picard or samtools, and then use MethylDackel to extract methylation information. Please see https://github.com/dpryan79/methyldackel. 
+We recommend users to first remove the duplicates by Picard or samtools, and then use MethylDackel to extract methylation information. Please see https://github.com/dpryan79/methyldackel. Please note that MethylDackel maybe quite slow when using too many CPU threads. So we personally recommend users to use 2, 3 or 4 CPU threads for MethylDackel. Too many threads cannot accelerate methylation extracting step.
 
 
 ### General Options ###
@@ -213,7 +213,7 @@ The default maximum allowed edit distance is 8% of read length (0.08). This opti
 
 (4) **Methylation Extracting**
 
-The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM file by utilizing samtools. After that, duplicate alignments should be removed by Picard or samtools. At last, the methylation information is extracted using MethylDackel (see https://github.com/dpryan79/methyldackel). Please note that MethylDackel maybe quite slow when using too many CPU threads. So I personally recommend users to use 2, 3 or 4 CPU threads for MethylDackel. Too many threads cannot accelerate methylation extracting step.
+The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM file by utilizing samtools. After that, duplicate alignments should be removed by Picard or samtools. At last, the methylation information is extracted using MethylDackel (see https://github.com/dpryan79/methyldackel). Please note that MethylDackel maybe quite slow when using too many CPU threads. So we personally recommend users to use 2, 3 or 4 CPU threads for MethylDackel. Too many threads cannot accelerate methylation extracting step.
 
 
 ### Changelog ###
