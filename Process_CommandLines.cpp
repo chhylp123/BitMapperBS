@@ -30,6 +30,7 @@ unsigned int			THREAD_COUNT = 1;
 char				*Read_File1;
 char				*Read_File2;
 char				*Mapped_File = "output";
+///char				*Mapped_File = NULL;
 char				*Mapped_FilePath = "";
 char                *folder_path = NULL;
 char                *bmm_folder_path = NULL;
@@ -209,7 +210,7 @@ int CommandLine_process (int argc, char *argv[])
 	  return 0;
 	  break;
 	case 'v':
-	  fprintf(stdout, "BitMapper %s\n", versionN);
+	  fprintf(stderr, "BitMapper %s\n", versionN);
 	  return 0;
 	  break;
     case 't':
@@ -228,15 +229,13 @@ int CommandLine_process (int argc, char *argv[])
 
   if (is_index + is_search + is_methy!= 1)
     {
-      fprintf(stdout, "Please select indexing or searching mode!\n");
+      fprintf(stderr, "Please select indexing or searching mode!\n");
       return 0;
     }
 
   if (WINDOW_SIZE > 16 || WINDOW_SIZE < 11)
     {
-      ///fprintf(stdout, "Please set window size in [11..16]\n");
-      ///return 0;
-	  fprintf(stdout, "Warning: we strongly recommend users to set window size in [11..16]!\n");
+	  fprintf(stderr, "Warning: we strongly recommend users to set window size in [11..16]!\n");
     }
 
 
@@ -244,7 +243,7 @@ int CommandLine_process (int argc, char *argv[])
     {
         if (fastaFile == NULL)
         {
-          fprintf(stdout, "Please indicate the reference file for indexing!\n");
+          fprintf(stderr, "Please indicate the reference file for indexing!\n");
           return 0;
         }
     }
@@ -254,7 +253,7 @@ int CommandLine_process (int argc, char *argv[])
 
 	  if (is_local == -1)
 	  {
-		  fprintf(stdout, "Please indicate the alignment mode. 1. local mode: --local. 2. end-to-end mode: --end-to-end.\n");
+		  fprintf(stderr, "Please indicate the alignment mode. 1. local mode: --local. 2. end-to-end mode: --end-to-end.\n");
 		  return 0;
 	  }
 	  
@@ -262,32 +261,32 @@ int CommandLine_process (int argc, char *argv[])
 
     if (fastaFile == NULL)
 	{
-	  fprintf(stdout, "Please indicate the reference file for searching!\n");
+	  fprintf(stderr, "Please indicate the reference file for searching!\n");
 	  return 0;
 	}
 
     if (Read_File1 == NULL && Read_File2 == NULL)
 	{
-	  fprintf(stdout, "Please indicate the read files for searching!\n");
+	  fprintf(stderr, "Please indicate the read files for searching!\n");
 	  return 0;
 	}
 
 
       if (!is_pairedEnd && Read_File2 != NULL)
 	{
-	  fprintf(stdout, "Please not indicate the read2 files for single-end mode!\n");
+	  fprintf(stderr, "Please not indicate the read2 files for single-end mode!\n");
 	  return 0;
 	}
 
       if (is_pairedEnd && (minDistance_pair <0 || maxDistance_pair < 0 || minDistance_pair > maxDistance_pair))
 	{
-	  fprintf(stdout, "Please set a valid range for paired-end mode.\n");
+	  fprintf(stderr, "Please set a valid range for paired-end mode.\n");
 	  return 0;
 	}
 
       if (is_pairedEnd && Read_File1 == NULL)
 	{
-	  fprintf(stdout, "Please indicate the read1 file for single-end mode.\n");
+	  fprintf(stderr, "Please indicate the read1 file for single-end mode.\n");
 	  return 0;
 	}
 
@@ -297,25 +296,18 @@ int CommandLine_process (int argc, char *argv[])
   {
 	  if (fastaFile == NULL)
 	  {
-		  fprintf(stdout, "Please indicate the reference file for extracting!\n");
+		  fprintf(stderr, "Please indicate the reference file for extracting!\n");
 		  return 0;
 	  }
 
-	  /**
-	  if (Read_File1 == NULL)
-	  {
-		  fprintf(stdout, "Please indicate the bmm files for extracting!\n");
-		  return 0;
-	  }
-	  **/
   }
 
   if (unmapped_out == 1 || ambiguous_out == 1)
   {
 	  if (output_methy == 1)
 	  {
-		  fprintf(stdout, "Only unique mapped reads can be processed by methylation extraction!\n");
-		  fprintf(stdout, "Please do not use '--unmapped_out' or '--ambiguous_out'!\n");
+		  fprintf(stderr, "Only unique mapped reads can be processed by methylation extraction!\n");
+		  fprintf(stderr, "Please do not use '--unmapped_out' or '--ambiguous_out'!\n");
 		  return 0;
 	  }
   }
@@ -374,7 +366,7 @@ int CommandLine_process (int argc, char *argv[])
 	  }
 	  else
 	  {
-		  fprintf(stdout, "Please indicate the folder of .bmm files by '--bmm_folder'!\n");
+		  fprintf(stderr, "Please indicate the folder of .bmm files by '--bmm_folder'!\n");
 		  return 0;
 	  }
   }
@@ -384,7 +376,7 @@ int CommandLine_process (int argc, char *argv[])
   {
 	  if (Read_File1 == NULL)
 	  {
-		  fprintf(stdout, "Please indicate the bmm files for extracting!\n");
+		  fprintf(stderr, "Please indicate the bmm files for extracting!\n");
 		  return 0;
 	  }
   }
@@ -403,64 +395,42 @@ void Print_H()
   char *errorType;
 
 
-  fprintf(stdout,"BitMapperBS: a fast and accurate read aligner for whole-genome bisulte sequencing.\n\n");
-  fprintf(stdout,"Usage: bitmapperBS [options]\n\n");
+  fprintf(stderr,"BitMapperBS: a fast and accurate read aligner for whole-genome bisulte sequencing.\n\n");
+  fprintf(stderr,"Usage: bitmapperBS [options]\n\n");
   errorType="edit distance";
 
 
-  fprintf(stdout,"General Options:\n");
-  fprintf(stdout," -v|--version\t\tCurrent Version.\n");
-  fprintf(stdout," -h\t\t\tShow the help file.\n");
-  fprintf(stdout,"\n\n");
+  fprintf(stderr,"General Options:\n");
+  fprintf(stderr," -v|--version\t\tCurrent Version.\n");
+  fprintf(stderr," -h\t\t\tShow the help file.\n");
+  fprintf(stderr,"\n\n");
 
-  fprintf(stdout,"Options of indexing step:\n");
-  ///fprintf(stdout, "Usage: bitmapperBS --index <ref.fa>\n\n");
-  fprintf(stdout," --index [file]\t\tGenerate an index from the specified fasta file. \n");
-  fprintf(stdout," --index_folder [folder]Set the folder that stores the genome indexes. If this option is not set, \n\t\t\tthe indexes would be stores in the same folder of genome (input fasta file). \n");
-  fprintf(stdout,"\n\n");
+  fprintf(stderr,"Options of indexing step:\n");
+  fprintf(stderr," --index [file]\t\tGenerate an index from the specified fasta file. \n");
+  fprintf(stderr," --index_folder [folder]Set the folder that stores the genome indexes. If this option is not set, \n\t\t\tthe indexes would be stores in the same folder of genome (input fasta file). \n");
+  fprintf(stderr,"\n\n");
 
-  fprintf(stdout,"Options of read mapping step:\n");
-  ///fprintf(stdout, "Usage: bitmapperBS --search <ref.fa> --seq1 --seq1\n\n");
-  fprintf(stdout," --search [file/folder]\tSearch in the specified genome. If the indexes of this genome are built without \"--index_folder\", \n\t\t\tplease provide the path to the fasta file of genome (index files should be in the same folder). \n\t\t\tOtherwise please provide the path to the index folder (set by \"--index_folder\" during indexing).\n");
-  fprintf(stdout," --fast \t\tSet bitmapperBS in fast mode (default). This option is only available in paired-end mode.\n");
-  fprintf(stdout," --sensitive \t\tSet bitmapperBS in sensitive mode. This option is only available in paired-end mode.\n");
-  fprintf(stdout," --pe \t\t\tSearch will be done in paired-end mode.\n");
-  fprintf(stdout," --seq [file]\t\tInput sequences in fastq/fastq.gz format [file]. This option is used  \n\t\t\tfor single-end reads.\n");
-  fprintf(stdout," --seq1 [file]\t\tInput sequences in fastq/fastq.gz format [file] (First file). \n\t\t\tUse this option to indicate the first file of \n\t\t\tpaired-end reads. \n");
-  fprintf(stdout," --seq2 [file]\t\tInput sequences in fastq/fastq.gz format [file] (Second file). \n\t\t\tUse this option to indicate the second file of \n\t\t\tpaired-end reads.  \n");
-  fprintf(stdout," -o [file]\t\tOutput of the mapped sequences in SAM or BAM format. The default is \"output\" in SAM format.\n");
-  fprintf(stdout, " --sam \t\t\tOutput mapping results in SAM format (default).\n");
-  fprintf(stdout, " --bam \t\t\tOutput mapping results in BAM format.\n");
-  fprintf(stdout, " --methy_out \t\tOutput the intermediate methylation result files, instead of SAM or BAM files.\n");
-  ///fprintf(stdout," -u [file]\t\tSave unmapped sequences in fasta/fastq format.\n");
-  ///fprintf(stdout," --seqcomp \t\tIndicates that the input sequences are compressed (gz).\n");
-  ///fprintf(stdout," --outcomp \t\tIndicates that output file should be compressed (gz).\n");
-  fprintf(stdout," -e [float]\t\tSet the edit distance rate of read length. This value is between 0 and 1 (default: 0.08 = 8%% of read length).\n");
-  //fprintf(stdout, " -s [double]\t\tbs_score_threshold (default 0.3 of the read length).\n");
-  //fprintf(stdout, " -d [double]\t\tbs_edit_distance_threshold (default 0.1 of the read length).\n");
-  ///fprintf(stdout," --min [int]\t\tMin distance allowed between a pair of end sequences (default: 0).\n");
-  ///fprintf(stdout," --max [int]\t\tMax distance allowed between a pair of end sequences (default: 500).\n");
-  fprintf(stdout, " --min [int]\t\tMin observed template length between a pair of end sequences (default: 0).\n");
-  fprintf(stdout, " --max [int]\t\tMax observed template length between a pair of end sequences (default: 500).\n");
-  ///fprintf(stdout," --crop [int]\t\tTrim the reads to the given length.\n");
-  fprintf(stdout," --threads, -t [int]\tSet the number of CPU threads (default: 1).\n");
-  ///fprintf(stdout, " --seed, -s [int]\tSet the length of seed.\n");
-  fprintf(stdout, " --pbat \t\tMapping the BS-seq from pbat protocol.\n");
-  fprintf(stdout, " --unmapped_out \tReport unmapped reads.\n");
-  fprintf(stdout, " --ambiguous_out \tRandom report one of hit of each ambiguous mapped read.\n");
-  fprintf(stdout, " --mapstats \t\tOutput the statistical information of read alignment into file named \"OUTPUT_FILE.mapstats\", \n\t\t\twhere \"OUTPUT_FILE\" is the name of output SAM or BAM file (defined by the option \"-o\").\n");
-  
-  fprintf(stdout,"\n\n");
+  fprintf(stderr,"Options of read mapping step:\n");
+  fprintf(stderr," --search [file/folder]\tSearch in the specified genome. If the indexes of this genome are built without \"--index_folder\", \n\t\t\tplease provide the path to the fasta file of genome (index files should be in the same folder). \n\t\t\tOtherwise please provide the path to the index folder (set by \"--index_folder\" during indexing).\n");
+  fprintf(stderr," --fast \t\tSet bitmapperBS in fast mode (default). This option is only available in paired-end mode.\n");
+  fprintf(stderr," --sensitive \t\tSet bitmapperBS in sensitive mode. This option is only available in paired-end mode.\n");
+  fprintf(stderr," --pe \t\t\tSearch will be done in paired-end mode.\n");
+  fprintf(stderr," --seq [file]\t\tInput sequences in fastq/fastq.gz format [file]. This option is used  \n\t\t\tfor single-end reads.\n");
+  fprintf(stderr," --seq1 [file]\t\tInput sequences in fastq/fastq.gz format [file] (First file). \n\t\t\tUse this option to indicate the first file of \n\t\t\tpaired-end reads. \n");
+  fprintf(stderr," --seq2 [file]\t\tInput sequences in fastq/fastq.gz format [file] (Second file). \n\t\t\tUse this option to indicate the second file of \n\t\t\tpaired-end reads.  \n");
+  fprintf(stderr," -o [file]\t\tOutput of the mapped sequences in SAM or BAM format. The default is \"output\" in SAM format.\n");
+  fprintf(stderr, " --sam \t\t\tOutput mapping results in SAM format (default).\n");
+  fprintf(stderr, " --bam \t\t\tOutput mapping results in BAM format.\n");
+  fprintf(stderr, " --methy_out \t\tOutput the intermediate methylation result files, instead of SAM or BAM files.\n");
+  fprintf(stderr," -e [float]\t\tSet the edit distance rate of read length. This value is between 0 and 1 (default: 0.08 = 8%% of read length).\n");
+  fprintf(stderr, " --min [int]\t\tMin observed template length between a pair of end sequences (default: 0).\n");
+  fprintf(stderr, " --max [int]\t\tMax observed template length between a pair of end sequences (default: 500).\n");
+  fprintf(stderr," --threads, -t [int]\tSet the number of CPU threads (default: 1).\n");
+  fprintf(stderr, " --pbat \t\tMapping the BS-seq from pbat protocol.\n");
+  fprintf(stderr, " --unmapped_out \tReport unmapped reads.\n");
+  fprintf(stderr, " --ambiguous_out \tRandom report one of hit of each ambiguous mapped read.\n");
+  fprintf(stderr, " --mapstats \t\tOutput the statistical information of read alignment into file named \"OUTPUT_FILE.mapstats\", \n\t\t\twhere \"OUTPUT_FILE\" is the name of output SAM or BAM file (defined by the option \"-o\").\n");
+  fprintf(stderr,"\n\n");
 
-
-  /**
-  fprintf(stdout, "Options of methylation extracting step:\n");
-  fprintf(stdout, " --methy_extract [file]\tExtract in the specified genome. Provide the path to the fasta file. \n\t\t\tIndex file should be in the same directory.\n");
-  fprintf(stdout, " --seq [file]\t\tInput the intermediate methylation result files. Theses files must be generated by option '--methy_out' in read mapping step.\n\t\t\tFor example, if you use the option '-o output_methy' in read mapping step, here you must use the option '--seq output_methy'.\n");
-  fprintf(stdout, " --CpG \t\t\tOutput CpG context methylation metrics (default).\n");
-  fprintf(stdout, " --CHG \t\t\tOutput CHG context methylation metrics.\n");
-  fprintf(stdout, " --CHH \t\t\tOutput CHH context methylation metrics.\n");
-  fprintf(stdout, "\n\n");
-  **/
   
 }

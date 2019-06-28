@@ -249,11 +249,8 @@ int Calcu_Cigar_MD(int Peq_i,char *pattern,int p_length,char *text,int t_length,
 
             if(pre_char!='M')
             {
-                ///fprintf(stdout,"j=%d\n",j);
                 Route_Size_Whole[j]=pre_size;
-                ///fprintf(stdout,"j=%d\n",j);
                 Route_Char_Whole[j++]=pre_char;
-                ///fprintf(stdout,"j=%d\n",j);
                 pre_size=1;
                 pre_char='M';
 
@@ -344,7 +341,6 @@ int Calcu_Cigar_MD(int Peq_i,char *pattern,int p_length,char *text,int t_length,
         Route_Char_Whole[j++]='M';
     }
 
-    ///fprintf(stdout,"j=%d\n",j);
     Route_Size_Whole[0]=j-1;
     char pre_cigar=0;
     ///这里要修改
@@ -358,7 +354,6 @@ int Calcu_Cigar_MD(int Peq_i,char *pattern,int p_length,char *text,int t_length,
     int pre_length=0;
     for(j--;j>=1;--j)
     {
-        ///fprintf(stdout,"j=%d\n",j);
         if(Route_Char_Whole[j]=='M')
         {
             pre_length=pre_length+Route_Size_Whole[j];
@@ -376,8 +371,6 @@ int Calcu_Cigar_MD(int Peq_i,char *pattern,int p_length,char *text,int t_length,
             }
             for(ijk=0;ijk<Route_Size_Whole[j];++ijk)
             {
-                ///fprintf(stdout,"ijk=%d\n",ijk);
-                ///fprintf(stdout,"err_char_i=%d\n",err_char_i);
                 sprintf(MD_Z+strlen(MD_Z),"%c",err_match[err_char_i]);
                 err_char_i--;      ///这里要改
             }
@@ -392,8 +385,6 @@ int Calcu_Cigar_MD(int Peq_i,char *pattern,int p_length,char *text,int t_length,
             sprintf(MD_Z+strlen(MD_Z),"%c",'^');
             for(ijk=0;ijk<Route_Size_Whole[j];++ijk)
             {
-                ///fprintf(stdout,"ijk=%d\n",ijk);
-                ///fprintf(stdout,"err_char_i=%d\n",err_char_i);
                 sprintf(MD_Z+strlen(MD_Z),"%c",err_match[err_char_i]);
                 err_char_i--;       ///这里要改
             }
@@ -646,7 +637,6 @@ int Start_location_Calcu_Cigar_MD(char *pattern,int p_length,char *text,int t_le
 
         if(((D0_arry_64[i]>>search_site)&Mask_1)&&(pattern[match_site]==text[i]))   ///对角方向(匹配)
         {
-            ///fprintf(stdout,"M");
 
             i++;
             match_site++;
@@ -665,7 +655,6 @@ int Start_location_Calcu_Cigar_MD(char *pattern,int p_length,char *text,int t_le
         }
         else if(!((D0_arry_64[i]>>search_site)&Mask_1)&&(pattern[match_site]!=text[i]))                         ///对角方向(替换)
         {
-            ///fprintf(stdout,"S");
 
             MD_Z_match[MD_Z_char_i]=pattern[match_site];
             MD_Z_char_i++;
@@ -691,7 +680,6 @@ int Start_location_Calcu_Cigar_MD(char *pattern,int p_length,char *text,int t_le
         }
         else if((HP_arry_64[i]>>search_site)&Mask_1)    ///水平方向过来
         {
-            ///fprintf(stdout,"I");
 
             i++;
 
@@ -713,13 +701,11 @@ int Start_location_Calcu_Cigar_MD(char *pattern,int p_length,char *text,int t_le
             {
                 err_match_length[err_char_i]++;
             }
-            /// fprintf(stdout,"L!\n");
 
         }
         else  ///上方过来到
         {
-            /// fprintf(stdout,"U!\n");
-            ///fprintf(stdout,"D");
+
 
             MD_Z_match[MD_Z_char_i]=pattern[match_site];
             MD_Z_char_i++;
@@ -744,8 +730,7 @@ int Start_location_Calcu_Cigar_MD(char *pattern,int p_length,char *text,int t_le
             }
 
             continue;
-             ///fprintf(stdout,"U!\n");
-            ///j--;
+
         }
 
     }
@@ -777,7 +762,6 @@ int Start_location_Calcu_Cigar_MD(char *pattern,int p_length,char *text,int t_le
     MD_Z_char_i=0;
     for(i=1;i<=err_char_i;i++)
     {
-        ///fprintf(stdout,"j=%d\n",j);
         if(err_match_char[i]=='M')
         {
             pre_length=pre_length+err_match_length[i];
@@ -795,8 +779,6 @@ int Start_location_Calcu_Cigar_MD(char *pattern,int p_length,char *text,int t_le
             }
             for(ijk=0;ijk<err_match_length[i];++ijk)
             {
-                ///fprintf(stdout,"ijk=%d\n",ijk);
-                ///fprintf(stdout,"err_char_i=%d\n",err_char_i);
                 sprintf(MD_Z+strlen(MD_Z),"%c",MD_Z_match[MD_Z_char_i]);
                 MD_Z_char_i++;      ///这里要改
             }
@@ -811,8 +793,6 @@ int Start_location_Calcu_Cigar_MD(char *pattern,int p_length,char *text,int t_le
             sprintf(MD_Z+strlen(MD_Z),"%c",'^');
             for(ijk=0;ijk<err_match_length[i];++ijk)
             {
-                ///fprintf(stdout,"ijk=%d\n",ijk);
-                ///fprintf(stdout,"err_char_i=%d\n",err_char_i);
                 sprintf(MD_Z+strlen(MD_Z),"%c",MD_Z_match[MD_Z_char_i]);
                 MD_Z_char_i++;       ///这里要改
             }
@@ -870,308 +850,7 @@ int Start_location_Calcu_Cigar_MD(char *pattern,int p_length,char *text,int t_le
 
 
     }
-        /**
-        sprintf(cigar+strlen(cigar),"#");
-        for(i=0;i<p_length;i++)
-        {
-            sprintf(cigar+strlen(cigar),"%c",pattern[i]);
-        }
-        **/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   /// fprintf(stdout,"err_char_i=%d\n",err_char_i);
-
-
-
-/**
-    if(sum_err!=pre_err)
-        fprintf(stdout,"hahah!\n");
-**/
-
-    /**
-    int site=last_high;
-    int return_site=-1;
-    if((err<=errthold)&&(err<*return_err))
-    {
-            *return_err=err;
-            return_site=site;
-    }
-    int i_last=i;
-    i=0;
-    while(i<last_high)
-    {
-        err=err+((VP>>i)&(Word)1);
-        err=err-((VN>>i)&(Word)1);
-        ++i;
-
-        if((err<=errthold)&&(err<*return_err))
-        {
-                *return_err=err;
-                return_site=site-i;
-        }
-    }
-
-    return return_site;
-**/
-
-
-
-
-
-
-        /**
-    Word Peq[128];
-    char Peq_index[4]= {'A','C','G','T'};
-    int symbol = 0;
-    int r;
-    Word tmp_Peq_1=(Word)1;
-
-
-    Peq['A']=(Word)0;
-    Peq['T']=(Word)0;
-    Peq['G']=(Word)0;
-    Peq['C']=(Word)0;
-    Word Peq_A;
-    Word Peq_T;
-    Word Peq_C;
-    Word Peq_G;
-
-    for (r =0; r<band_length; r++)
-    {
-        Peq[pattern[r]]=Peq[pattern[r]]|tmp_Peq_1;
-        tmp_Peq_1=tmp_Peq_1<<1;
-    }
-    Peq_A=Peq['A'];
-    Peq_C=Peq['C'];
-    Peq_T=Peq['T'];
-    Peq_G=Peq['G'];
-
-    for(symbol = 0; symbol < 128; symbol++)
-    {
-        Peq[symbol]=(Word)0;
-        //jump_c[symbol]=128;
-    }
-    Peq['A']=Peq_A;
-    Peq['C']=Peq_C;
-    Peq['T']=Peq_T;
-    Peq['G']=Peq_G;
-
-    Word Mask_Pre=(Word)1<<(band_length-2);
-    Word Mask=(Word)1<<(band_length-1);
-    Word VP=0;
-    Word VN=0;
-    Word X=0;
-    Word D0=0;
-    Word HN=0;
-    Word HP=0;
-    int s=0;
-    int i = 0;
-    int j=0;
-
-    int bound=band_length-2-band_down;
-    int err=0;
-
-    Word err_mask=(Word)1;
-    int s1=band_length-2;
-    int i_bd=i+band_down;
-    int last_high=band_length-t_length+p_length-band_down-1;
-
-    int sum_err=0;
-    int search_site=errthold;
-    int match_site=errthold;
-    int err_char_i=0;
-    char err_match_char[1000];
-    err_match_char[0]='\0';
-    int err_match_length[100];
-    err_match_length[0]=0;
-
-
-    FILE* test_file=fopen("pair_cigar","w");
-
-    fprintf(test_file,"err=%d\n",pre_err);
-
-
-    Word Mask_1=(Word)1;
-    while(i<t_length)
-    {
-
-         if(sum_err==pre_err)
-        {
-            break;
-        }
-
-
-        X=Peq[text[i]]|VN;
-        D0=((VP+(X&VP))^VP)|X;
-        HN=VP&D0;
-        HP=VN|~(VP|D0);
-        X=D0>>1;
-        VN=X&HP;
-        VP=HN|~(X|HP);
-
-
-        fprintf(test_file,"i=%d\n",i);
-        fprintf(test_file,"match_site=%d\n",match_site);
-        fprintf(test_file,"D0=%u\n",D0);
-        fprintf(test_file,"HP=%u\n",HP);
-        fprintf(test_file,"HN=%u\n",HN);
-        fprintf(test_file,"search_site=%d\n",search_site);
-
-        fprintf(test_file,"***************\n");
-
-
-
-        if(((D0>>search_site)&Mask_1)&&(pattern[match_site]==text[i]))   ///对角方向(匹配)
-        {
-            ///fprintf(stdout,"M");
-
-            i++;
-            match_site++;
-            if(err_match_char[err_char_i]!='M')
-            {
-                err_char_i++;
-                err_match_char[err_char_i]='M';
-                err_match_length[err_char_i]=1;
-                err_match_length[0]++;
-            }
-            else
-            {
-                err_match_length[err_char_i]++;
-            }
-            ///j--;
-        }
-        else if(!((D0>>search_site)&Mask_1)&&(pattern[match_site]!=text[i]))                         ///对角方向(替换)
-        {
-            ///fprintf(stdout,"S");
-            i++;
-            match_site++;
-            sum_err++;
-
-            if(err_match_char[err_char_i]!='M')
-            {
-                err_char_i++;
-                err_match_char[err_char_i]='M';
-                err_match_length[err_char_i]=1;
-                err_match_length[0]++;
-            }
-            else
-            {
-                err_match_length[err_char_i]++;
-            }
-
-        }
-        else if((HP>>search_site)&Mask_1)    ///水平方向过来
-        {
-            ///fprintf(stdout,"I");
-
-            i++;
-
-
-            search_site--;
-
-
-            sum_err++;
-
-
-            if(err_match_char[err_char_i]!='I')
-            {
-                err_char_i++;
-                err_match_char[err_char_i]='I';
-                err_match_length[err_char_i]=1;
-                err_match_length[0]++;
-            }
-            else
-            {
-                err_match_length[err_char_i]++;
-            }
-            /// fprintf(stdout,"L!\n");
-
-        }
-        else  ///上方过来到
-        {
-            /// fprintf(stdout,"U!\n");
-            ///fprintf(stdout,"D");
-
-            search_site++;
-            match_site++;
-            sum_err++;
-
-
-            if(err_match_char[err_char_i]!='D')
-            {
-                err_char_i++;
-                err_match_char[err_char_i]='D';
-                err_match_length[err_char_i]=1;
-                err_match_length[0]++;
-            }
-            else
-            {
-                err_match_length[err_char_i]++;
-            }
-
-            continue;
-             ///fprintf(stdout,"U!\n");
-            ///j--;
-        }
-
-
-        for (symbol = 0; symbol < 4; symbol++)
-        {
-            Peq[Peq_index[symbol]]=Peq[Peq_index[symbol]]>>1;
-        }
-        ///++i;
-        ++i_bd;
-            Peq[pattern[i_bd]]=Peq[pattern[i_bd]]|Mask;
-    }
-
-
-    if(i<t_length)
-    {
-        if(err_match_char[err_char_i]=='M')
-        {
-            err_match_length[err_char_i]+=t_length-i;
-        }
-        else
-        {
-            err_char_i++;
-            err_match_char[err_char_i]='M';
-            err_match_length[err_char_i]=t_length-i;
-            err_match_length[0]++;
-        }
-
-    }
-
-   /// fprintf(stdout,"err_char_i=%d\n",err_char_i);
-
-    for(i=1;i<=err_char_i;i++)
-    {
-        sprintf(cigar+strlen(cigar),"%d%c",err_match_length[i],err_match_char[i]);
-
-    }
-
-    fclose(test_file);
-
-**/
 }
 
 

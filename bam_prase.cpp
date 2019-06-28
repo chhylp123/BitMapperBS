@@ -64,8 +64,8 @@ void init_bam_header(char* tmp_sam_file_name, char* bam_file_name)
 
 	samFile* in;
 	in = sam_open(tmp_sam_file_name, "r");
-	///bitmapperBS_bam.bam_file = sam_open(bam_file_name, "wb");
 	bitmapperBS_bam.bam_file = sam_open_format(bam_file_name, "wb", NULL);
+	///bitmapperBS_bam.bam_file = sam_open_format("stdout", "wb", NULL);
 	bitmapperBS_bam.bam_header = NULL;
 
 
@@ -94,7 +94,6 @@ void init_bam_file_from_sam(char* file_name, char* outputFileName)
 {
 	finalizeOutput();
 
-	
 
 	init_bam_header(file_name, outputFileName);
 

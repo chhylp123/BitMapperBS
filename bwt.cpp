@@ -929,15 +929,15 @@ void init_SA_block(bitmapper_bs_iter text_length)
 
 	if (text_length == file_length)
 	{
-		fprintf(stdout, "text_length =%llu, file_length=%llu\n", text_length, file_length);
-		fprintf(stdout, "text_length = file_length...sucess...\n");
-		fflush(stdout);
+		fprintf(stderr, "text_length =%llu, file_length=%llu\n", text_length, file_length);
+		fprintf(stderr, "text_length = file_length...sucess...\n");
+		fflush(stderr);
 	}
 	else
 	{
-		fprintf(stdout, "text_length =%llu, file_length=%llu\n", text_length, file_length);
-		fprintf(stdout, "ERROR: text_length != file_length...exit...\n");
-		fflush(stdout);
+		fprintf(stderr, "text_length =%llu, file_length=%llu\n", text_length, file_length);
+		fprintf(stderr, "ERROR: text_length != file_length...exit...\n");
+		fflush(stderr);
 		exit(0);
 	}
 
@@ -958,10 +958,10 @@ void indenpendent_get_sa_fromFILE(unsigned int **sa, unsigned int cc, char *refe
 	unsigned int n;
 	n = cc-1;
 
-	fprintf(stdout, "r_n=%u\n", n);
+	fprintf(stderr, "r_n=%u\n", n);
 
 	n++; // append the virtual sentinel
-	fprintf(stdout, "Allocating input and output space: %u bytes = %.2lf MB", 5 * n, (double)5 * n / 1024 / 1024);
+	fprintf(stderr, "Allocating input and output space: %u bytes = %.2lf MB", 5 * n, (double)5 * n / 1024 / 1024);
 	unsigned char *s_ch = new unsigned char[n];
 	//unsigned char *s_ch;
 	unsigned int *SA = new unsigned int[n];
@@ -969,13 +969,13 @@ void indenpendent_get_sa_fromFILE(unsigned int **sa, unsigned int cc, char *refe
 	///SA = (unsigned int*)malloc(sizeof(unsigned int)*n+10);
 	if (s_ch == NULL || SA == NULL) {
 		delete[] s_ch; delete[] SA;
-		fprintf(stdout, "\nInsufficient memory, exit!");
+		fprintf(stderr, "\nInsufficient memory, exit!");
 		return;
 	}
 
 
 	// read the string into buffer.
-	fprintf(stdout, "\nReading input string...");
+	fprintf(stderr, "\nReading input string...");
 	fseek(stdin, 0, SEEK_SET);
 	for(i=0;i<n;i++) s_ch[i]=refer[i];
 	// set the virtual sentinel
@@ -992,13 +992,13 @@ void indenpendent_get_sa_fromFILE(unsigned int **sa, unsigned int cc, char *refe
 	double  duration;
 	start = clock();
 
-	fprintf(stdout, "\nConstructing the suffix array...");
+	fprintf(stderr, "\nConstructing the suffix array...");
 	SACA_K(s_ch, SA, n, 256, n, 0);
 
 	finish = clock();
 	duration = (double)(finish - start) / CLOCKS_PER_SEC;
 
-	fprintf(stdout, "\nSize: %u bytes, Time: %5.3f seconds\n", n - 1, duration);
+	fprintf(stderr, "\nSize: %u bytes, Time: %5.3f seconds\n", n - 1, duration);
 
 	SA[0] = n - 1;
 	printf("sa_n=%d\n",n);
@@ -1031,13 +1031,13 @@ void new_version_pSAscan_build_sa(bitmapper_bs_iter text_length, char **refer)
 	if (access("psascan", F_OK) == 0)
 	{
 		///文件存在
-		fprintf(stdout, "the binary of psascan exists...\n");
+		fprintf(stderr, "the binary of psascan exists...\n");
 		error = system("./psascan tmp_ref.tmp -m 8192");
 	}
 	else
 	{
 		///文件不存在
-		fprintf(stdout, "the binary of psascan does not exist...\n");
+		fprintf(stderr, "the binary of psascan does not exist...\n");
 		error = system("psascan tmp_ref.tmp -m 8192");
 	}
 
@@ -1192,7 +1192,6 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 	for (i = 0; i < text_length; i++)
 	{
 
-		///fprintf(stdout, "i=%llu, refer[i]=%c\n", i, refer[i]);
 
 		ch = refer[i];
 
@@ -1209,7 +1208,7 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
         }
         else
         {
-            fprintf(stdout, "Text includes character which dose not belong to {A, G, T, a, g, t}! FMtree will exit ...\n");
+            fprintf(stderr, "Text includes character which dose not belong to {A, G, T, a, g, t}! FMtree will exit ...\n");
             return 1;
         }
 
@@ -1275,7 +1274,7 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 	}
 
 
-	fprintf(stdout, "bwt_length=%llu,occ_byte_length=%llu, bwt_length+occ_byte_length=%llu\n",
+	fprintf(stderr, "bwt_length=%llu,occ_byte_length=%llu, bwt_length+occ_byte_length=%llu\n",
 		bwt_length, occ_byte_length, bwt_length + occ_byte_length);
 
 
@@ -1451,53 +1450,6 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 		///我们实际上只存T和G的counter值
 		if (bwt_iter_i % bitmapper_index_params.high_compress_occ == 0)
 		{
-			/**
-			///这个实际上存的是两个40-bit的counter值，记住这里bitmapper_index_params.bwt_length肯定要+2
-			high_occ_iter = ((bwt_iter_i / bitmapper_index_params.high_compress_occ)*bitmapper_index_params.acctuall_bwt_gap)
-				/ bitmapper_index_params.bwt_warp_number;
-
-
-
-			if (high_occ_iter != bitmapper_index_params.bwt_length)
-			{
-				fprintf(stdout, "high_occ_iter is error ...\n");
-				return 1;
-
-			}
-
-
-			bitmapper_bs_iter tmp_counter_high32 = (bwt_string_type)0;
-			bitmapper_bs_iter tmp_counter_low8 = (bwt_string_type)0;
-			bitmapper_bs_iter mode_low8 = ((bwt_string_type)-1) >> 56;
-			bitmapper_bs_iter mode_low32 = ((bwt_string_type)-1) >> 32;
-
-			///先处理T的counter
-			///T存在高32-bit和高8-bit，T实际上被转成了数字1，所以T的counter值实际是存在了nacgt[2]中
-			tmp_counter_high32 = nacgt[2] >> 8;
-			tmp_counter_high32 = tmp_counter_high32 & mode_low32;
-			tmp_counter_low8 = nacgt[2] & mode_low8;
-
-			tmp_counter_high32 = tmp_counter_high32 << 32;
-			bwt[high_occ_iter] = bwt[high_occ_iter] | tmp_counter_high32;
-			tmp_counter_low8 = tmp_counter_low8 << 56;
-			bwt[high_occ_iter + 1] = bwt[high_occ_iter + 1] | tmp_counter_low8;
-
-
-			///再处理G的counter
-			///G存在低32-bit和低8-bit，G实际上被转成了数字2，所以G的counter值实际是存在了nacgt[3]中
-			tmp_counter_high32 = nacgt[3] >> 8;
-			tmp_counter_high32 = tmp_counter_high32 & mode_low32;
-			tmp_counter_low8 = nacgt[3] & mode_low8;
-
-			bwt[high_occ_iter] = bwt[high_occ_iter] | tmp_counter_high32;
-			tmp_counter_low8 = tmp_counter_low8 << 48;
-			bwt[high_occ_iter + 1] = bwt[high_occ_iter + 1] | tmp_counter_low8;
-
-
-			////注意这里一定要+2
-			bitmapper_index_params.bwt_length = bitmapper_index_params.bwt_length + 2;
-			**/
-
 			////注意这里实际上就是要+1而已
 			bitmapper_index_params.bwt_length++;
 		}
@@ -1594,25 +1546,9 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 
 
-	fprintf(stdout, "write SA_length=%u, shapline=%u\n", bitmapper_index_params.SA_length, bitmapper_index_params.shapline);
+	fprintf(stderr, "write SA_length=%u, shapline=%u\n", bitmapper_index_params.SA_length, bitmapper_index_params.shapline);
 
 
-
-
-	/**
-	long long debug_i_i = 0;
-
-	for (debug_i_i = 0; debug_i_i < bitmapper_index_params.bwt_length; debug_i_i++)
-	{
-		dec_bit_bwt(bwt[debug_i_i]);
-		fprintf(stdout, "#\n");
-	}
-
-	for (debug_i_i = 0; debug_i_i < bitmapper_index_params.SA_length; debug_i_i++)
-	{
-		fprintf(stdout, "%llu\n", uint64_t(get_sa_block(debug_i_i)));
-	}
-	**/
 
 
 
@@ -1759,8 +1695,8 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 	///这里SA要改,为了防止后面计算时溢出
 	bitmapper_index_params.SA_flag_iterater++;
 
-	fprintf(stdout, "SA_flag has been built\n");
-	fflush(stdout);
+	fprintf(stderr, "SA_flag has been built\n");
+	fflush(stderr);
 
 
 	
@@ -1879,13 +1815,9 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 	}
 
-	fprintf(stdout, "sparse_suffix_array_length=%llu\n", bitmapper_index_params.sparse_suffix_array_length);
-	///fprintf(stdout, "i=%llu, ijkijkijkijk=%llu\n", i, ijkijkijkijk);
+	fprintf(stderr, "sparse_suffix_array_length=%llu\n", bitmapper_index_params.sparse_suffix_array_length);
 
-
-
-
-	fprintf(stdout, "SA_flag_iterater=%llu\n", bitmapper_index_params.SA_flag_iterater);
+	fprintf(stderr, "SA_flag_iterater=%llu\n", bitmapper_index_params.SA_flag_iterater);
 
 
 	fwrite(&bitmapper_index_params.SA_flag_iterater, sizeof(bitmapper_index_params.SA_flag_iterater), 1, fs);
@@ -2242,7 +2174,7 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 		if (get_value != nacgt[2])
 		{
-			fprintf(stdout, "i=%llu, get_value=%llu, nacgt[2]=%llu, find_occ_fm_index T is error ...\n",
+			fprintf(stderr, "i=%llu, get_value=%llu, nacgt[2]=%llu, find_occ_fm_index T is error ...\n",
 				i, get_value, nacgt[2]);
 			return 1;
 		}
@@ -2254,7 +2186,7 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 		if (get_value != nacgt[3])
 		{
-			fprintf(stdout, "i=%llu, get_value=%llu, nacgt[3]=%llu, find_occ_fm_index G is error ...\n",
+			fprintf(stderr, "i=%llu, get_value=%llu, nacgt[3]=%llu, find_occ_fm_index G is error ...\n",
 				i, get_value, nacgt[3]);
 			return 1;
 		}
@@ -2265,7 +2197,7 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 		if (get_value != nacgt[1])
 		{
-			fprintf(stdout, "i=%llu, get_value=%llu, nacgt[1]=%llu, find_occ_fm_index A is error ...\n",
+			fprintf(stderr, "i=%llu, get_value=%llu, nacgt[1]=%llu, find_occ_fm_index A is error ...\n",
 				i, get_value, nacgt[1]);
 			return 1;
 		}
@@ -2278,17 +2210,17 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 
 
-	fprintf(stdout, "bitmapper_index_params.nacgt[0] = %llu \n", bitmapper_index_params.nacgt[0]);
-	fprintf(stdout, "bitmapper_index_params.nacgt[1] = %llu \n", bitmapper_index_params.nacgt[1]);
-	fprintf(stdout, "bitmapper_index_params.nacgt[2] = %llu \n", bitmapper_index_params.nacgt[2]);
-	fprintf(stdout, "bitmapper_index_params.nacgt[3] = %llu \n", bitmapper_index_params.nacgt[3]);
-	fprintf(stdout, "bitmapper_index_params.nacgt[4] = %llu \n", bitmapper_index_params.nacgt[4]);
+	fprintf(stderr, "bitmapper_index_params.nacgt[0] = %llu \n", bitmapper_index_params.nacgt[0]);
+	fprintf(stderr, "bitmapper_index_params.nacgt[1] = %llu \n", bitmapper_index_params.nacgt[1]);
+	fprintf(stderr, "bitmapper_index_params.nacgt[2] = %llu \n", bitmapper_index_params.nacgt[2]);
+	fprintf(stderr, "bitmapper_index_params.nacgt[3] = %llu \n", bitmapper_index_params.nacgt[3]);
+	fprintf(stderr, "bitmapper_index_params.nacgt[4] = %llu \n", bitmapper_index_params.nacgt[4]);
 
-	fprintf(stdout, "nacgt[0] = %llu \n", nacgt[0]);
-	fprintf(stdout, "nacgt[1] = %llu \n", nacgt[1]);
-	fprintf(stdout, "nacgt[2] = %llu \n", nacgt[2]);
-	fprintf(stdout, "nacgt[3] = %llu \n", nacgt[3]);
-	fprintf(stdout, "nacgt[4] = %llu \n", nacgt[4]);
+	fprintf(stderr, "nacgt[0] = %llu \n", nacgt[0]);
+	fprintf(stderr, "nacgt[1] = %llu \n", nacgt[1]);
+	fprintf(stderr, "nacgt[2] = %llu \n", nacgt[2]);
+	fprintf(stderr, "nacgt[3] = %llu \n", nacgt[3]);
+	fprintf(stderr, "nacgt[4] = %llu \n", nacgt[4]);
 
 
 	**/
@@ -2317,8 +2249,8 @@ unsigned int indenpendent_creadte_index(bitmapper_bs_iter text_length, char** in
 
 
 
-	fprintf(stdout, "Sucess!\n");
-	fflush(stdout);
+	fprintf(stderr, "Sucess!\n");
+	fflush(stderr);
 
 
 
@@ -2601,7 +2533,7 @@ unsigned int load_index(char* filename_prefix)
 	fo = fopen(filenameo, "r");
 	if (fo == NULL)
 	{
-		fprintf(stdout, "Failed to open %s! FMtree will exit ...\n", filenameo);
+		fprintf(stderr, "Failed to open %s! FMtree will exit ...\n", filenameo);
 		return 1;
 	}
 	
@@ -2609,13 +2541,13 @@ unsigned int load_index(char* filename_prefix)
 	fs = fopen(filenames, "r");
 	if (fs == NULL)
 	{
-		fprintf(stdout, "Failed to open %s! FMtree will exit ...\n", filenames);
+		fprintf(stderr, "Failed to open %s! FMtree will exit ...\n", filenames);
 		return 1;
 	}
 	fb = fopen(filenameb, "r");
 	if (fb == NULL)
 	{
-		fprintf(stdout, "Failed to open %s! FMtree will exit ...\n", filenameb);
+		fprintf(stderr, "Failed to open %s! FMtree will exit ...\n", filenameb);
 		return 1;
 	}
 	strcpy(filename1, filename);
@@ -2623,7 +2555,7 @@ unsigned int load_index(char* filename_prefix)
 
 	if (f2 == NULL)
 	{
-		fprintf(stdout, "Failed to open %s! FMtree will exit ...\n", filename1);
+		fprintf(stderr, "Failed to open %s! FMtree will exit ...\n", filename1);
 		return 1;
 	}
 
@@ -2631,7 +2563,7 @@ unsigned int load_index(char* filename_prefix)
 	fread(&bitmapper_index_params.SA_length, sizeof(bitmapper_index_params.SA_length), 1, f2);
 	fread(&bitmapper_index_params.shapline, sizeof(bitmapper_index_params.shapline), 1, f2);
 
-	fprintf(stdout, "shapline=%llu\n", bitmapper_index_params.shapline);
+	fprintf(stderr, "shapline=%llu\n", bitmapper_index_params.shapline);
 
 
 
@@ -2655,7 +2587,7 @@ unsigned int load_index(char* filename_prefix)
 	fread(&bitmapper_index_params.bwt_length, sizeof(bitmapper_index_params.bwt_length), 1, fb);
 	bitmapper_index_params.bwt = (bwt_string_type *)malloc(sizeof(bwt_string_type)*bitmapper_index_params.bwt_length);
 	fread(bitmapper_index_params.bwt, sizeof(bwt_string_type), bitmapper_index_params.bwt_length, fb);
-	printf("BWT has been loaded!\n");
+	fprintf(stderr,"BWT has been loaded!\n");
 
 	fread(&bitmapper_index_params.hash_table_16_mer_size, sizeof(bitmapper_bs_iter), 1, fb);
 
@@ -2672,14 +2604,14 @@ unsigned int load_index(char* filename_prefix)
 	fread(bitmapper_index_params.hash_table_16_mer_low_8,
 		sizeof(unsigned char), bitmapper_index_params.hash_table_16_mer_size, fb);
 
-	printf("hash table has been loaded!\n");
+	fprintf(stderr,"hash table has been loaded!\n");
 
 
 
-	printf("SA_length=%u\n", bitmapper_index_params.SA_length);
+	fprintf(stderr,"SA_length=%u\n", bitmapper_index_params.SA_length);
 	fread(&bitmapper_index_params.sparse_suffix_array_length,
 		sizeof(bitmapper_index_params.sparse_suffix_array_length), 1, fs);
-	printf("sparse_suffix_array_length=%u\n", bitmapper_index_params.sparse_suffix_array_length);
+	fprintf(stderr,"sparse_suffix_array_length=%u\n", bitmapper_index_params.sparse_suffix_array_length);
 	bitmapper_index_params.sa
 		= (unsigned int *)malloc(sizeof(unsigned int)*(bitmapper_index_params.sparse_suffix_array_length));
 	fread(bitmapper_index_params.sa, sizeof(unsigned int), bitmapper_index_params.sparse_suffix_array_length, fs);
@@ -2694,7 +2626,7 @@ unsigned int load_index(char* filename_prefix)
 	fread(&bitmapper_index_params.SA_flag_iterater,
 		sizeof(bitmapper_index_params.SA_flag_iterater), 1, fs);
 
-	fprintf(stdout, "SA_flag_iterater=%llu\n", bitmapper_index_params.SA_flag_iterater);
+	fprintf(stderr, "SA_flag_iterater=%llu\n", bitmapper_index_params.SA_flag_iterater);
 
 	bitmapper_index_params.SA_flag =
 		(SA_flag_string_type*)malloc(sizeof(SA_flag_string_type)*bitmapper_index_params.SA_flag_iterater);
@@ -2704,7 +2636,7 @@ unsigned int load_index(char* filename_prefix)
 
 	
 	fread(&bitmapper_index_params.high_occ_table_length, sizeof(bitmapper_index_params.high_occ_table_length), 1, fo);
-	fprintf(stdout, "high_occ_table_length=%llu\n", bitmapper_index_params.high_occ_table_length);
+	fprintf(stderr, "high_occ_table_length=%llu\n", bitmapper_index_params.high_occ_table_length);
 	bitmapper_index_params.high_occ_table = (high_occ_table_type*)malloc(sizeof(high_occ_table_type)
 		*bitmapper_index_params.high_occ_table_length);
 	fread(bitmapper_index_params.high_occ_table, sizeof(high_occ_table_type),
@@ -2824,7 +2756,7 @@ unsigned int load_index(char* filename_prefix)
 	}
 
 
-	fprintf(stdout, "Debug sucess!\n");
+	fprintf(stderr, "Debug sucess!\n");
 	**/
 	
 
@@ -6315,6 +6247,6 @@ unsigned int locate(char* pattern, unsigned int sp, unsigned int ep,
 
 void debug_information()
 {
-	fprintf(stdout, "debug_2 = %llu \n", debug_2);
-	fprintf(stdout, "debug_total = %llu \n", debug_total);
+	fprintf(stderr, "debug_2 = %llu \n", debug_2);
+	fprintf(stderr, "debug_total = %llu \n", debug_total);
 }

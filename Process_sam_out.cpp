@@ -128,34 +128,34 @@ void output_single_methy_multiple_thread
 	**/
 
 	output_to_buffer_char_no_length(buffer, chrome_name);
-	//ÉÏÃæÀ©ÈÝÊ±ÓÐ32µÄÓàÁ¿£¬ËùÒÔÏÂÃæ\t²»ÐèÒª¼ì²éÁË
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½32ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½
 	buffer->buffer[buffer->length] = '\t';
 	buffer->length++;
 
 
 	output_to_buffer_int(buffer, tmp_pos);
-	//ÉÏÃæÀ©ÈÝÊ±ÓÐ32µÄÓàÁ¿£¬ËùÒÔÏÂÃæ\t²»ÐèÒª¼ì²éÁË
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½32ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½
 	buffer->buffer[buffer->length] = '\t';
 	buffer->length++;
 
 	output_to_buffer_int(buffer, tmp_pos + 1);
-	//ÉÏÃæÀ©ÈÝÊ±ÓÐ32µÄÓàÁ¿£¬ËùÒÔÏÂÃæ\t²»ÐèÒª¼ì²éÁË
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½32ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½
 	buffer->buffer[buffer->length] = '\t';
 	buffer->length++;
 
 
 	output_to_buffer_int(buffer, (int)(precent * 100));
-	//ÉÏÃæÀ©ÈÝÊ±ÓÐ32µÄÓàÁ¿£¬ËùÒÔÏÂÃæ\t²»ÐèÒª¼ì²éÁË
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½32ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½
 	buffer->buffer[buffer->length] = '\t';
 	buffer->length++;
 
 	output_to_buffer_int(buffer, nmethyl);
-	//ÉÏÃæÀ©ÈÝÊ±ÓÐ32µÄÓàÁ¿£¬ËùÒÔÏÂÃæ\t²»ÐèÒª¼ì²éÁË
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½32ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½
 	buffer->buffer[buffer->length] = '\t';
 	buffer->length++;
 
 	output_to_buffer_int(buffer, nunmethyl);
-	//ÉÏÃæÀ©ÈÝÊ±ÓÐ32µÄÓàÁ¿£¬ËùÒÔÏÂÃæ\t²»ÐèÒª¼ì²éÁË
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½32ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\tï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½
 	buffer->buffer[buffer->length] = '\n';
 	buffer->length++;
 
@@ -225,7 +225,7 @@ int init_output_methy(char *fileName, int* need_context)
 	{
 		sprintf(output_name, "%s_CpG.bedGraph", fileName);
 
-		fprintf(stdout, "Output CpG context methylation metrics to %s ...\n", output_name);
+		fprintf(stderr, "Output CpG context methylation metrics to %s ...\n", output_name);
 
 		_out_fp_methy1 = fopen(output_name, "w");
 
@@ -248,7 +248,7 @@ int init_output_methy(char *fileName, int* need_context)
 
 		sprintf(output_name, "%s_CHG.bedGraph", fileName);
 
-		fprintf(stdout, "Output CHG context methylation metrics to %s ...\n", output_name);
+		fprintf(stderr, "Output CHG context methylation metrics to %s ...\n", output_name);
 
 		_out_fp_methy2 = fopen(output_name, "w");
 
@@ -266,7 +266,7 @@ int init_output_methy(char *fileName, int* need_context)
 
 		sprintf(output_name, "%s_CHH.bedGraph", fileName);
 
-		fprintf(stdout, "Output CHH context methylation metrics to %s ...\n", output_name);
+		fprintf(stderr, "Output CHH context methylation metrics to %s ...\n", output_name);
 
 		_out_fp_methy3 = fopen(output_name, "w");
 
@@ -303,13 +303,13 @@ void init_buffer_sub_block(Output_buffer_sub_block* sub_block)
 
 
 
-///³õÊ¼»¯»º³åÇø
+///ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void init_output_buffer(int thread_number)
 {
 
 
 	///ouput_buffer_size
-	///sizeÊÇ¿Õ¼ä´óÐ¡
+	///sizeï¿½Ç¿Õ¼ï¿½ï¿½Ð¡
 	buffer_out.sub_block_size = ouput_buffer_size * thread_number;
 	buffer_out.sub_block_number = 0;
 
@@ -331,7 +331,7 @@ void init_output_methy_buffer(int thread_number)
 
 
 	///ouput_buffer_size
-	///sizeÊÇ¿Õ¼ä´óÐ¡
+	///sizeï¿½Ç¿Õ¼ï¿½ï¿½Ð¡
 	buffer_methy_out.sub_block_size = methylation_buffer_times * thread_number;
 	
 	buffer_methy_out.sub_block_number = 0;
@@ -357,7 +357,7 @@ void init_output_methy_buffer_pair(int thread_number)
 
 
 	///ouput_buffer_size
-	///sizeÊÇ¿Õ¼ä´óÐ¡
+	///sizeï¿½Ç¿Õ¼ï¿½ï¿½Ð¡
 	buffer_methy_out_PE.sub_block_size = methylation_buffer_times * thread_number;
 
 	buffer_methy_out_PE.sub_block_number = 0;
@@ -369,7 +369,7 @@ void init_output_methy_buffer_pair(int thread_number)
 
 	for (int i = 0; i < buffer_methy_out_PE.sub_block_size; i++)
 	{
-		///×¢ÒâÕâÀïÒª³ýÒÔ2
+		///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½2
 		init_pair_methylation(&(buffer_methy_out_PE.sub_buffer[i]), methylation_size/2);
 	}
 
@@ -463,12 +463,12 @@ inline int if_full_methy_buffer_pair()
 }
 
 
-///Õâ¸öÊÇÒªÈ¡Ò»¸ö½á¹ûÈ¡µ½curr_sub_blockÖÐ
+///ï¿½ï¿½ï¿½ï¿½ï¿½ÒªÈ¡Ò»ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½curr_sub_blockï¿½ï¿½
 inline void pop_single_buffer(Output_buffer_sub_block* curr_sub_block)
 {
 	buffer_out.sub_block_number--;
-	///Ö»½»»»Ö¸Õë
-	///¼ÇµÃÒª½»»»£¬Ö±½Ó¸³Öµ»áÄÚ´æÐ¹Â¶£¬Ôì³ÉÒ°Ö¸Õë
+	///Ö»ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+	///ï¿½Çµï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó¸ï¿½Öµï¿½ï¿½ï¿½Ú´ï¿½Ð¹Â¶ï¿½ï¿½ï¿½ï¿½ï¿½Ò°Ö¸ï¿½ï¿½
 	char *k;
 	k = buffer_out.sub_buffer[buffer_out.sub_block_number].buffer;
 	buffer_out.sub_buffer[buffer_out.sub_block_number].buffer = curr_sub_block->buffer;
@@ -508,14 +508,14 @@ inline void pop_single_methy_buffer(Methylation* curr_sub_block)
 
 	
 
-	///Õâ¸ö¿Õ¼äÓ¦¸ÃÊÇgenome_cut+1
-	bitmapper_bs_iter* cut_index;   ///Õâ¸öÒª½»»»
-	///ÕâËÄ¸öÊý×é¹¹³ÉÒ»¸öÍêÕûµÄÔªËØ
-	bitmapper_bs_iter* sites;  ///Õâ¸öÒª½»»»
-	uint16_t* r_length;  ///Õâ¸öÒª½»»»
-	uint16_t* r_real_length;  ///Õâ¸öÒª½»»»
-	uint16_t* r_size_3_bit;  ///Õâ¸öÒª½»»»
-	bitmapper_bs_iter** reads_3_bit;  ///Õâ¸öÒª½»»»
+	///ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½genome_cut+1
+	bitmapper_bs_iter* cut_index;   ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	///ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½é¹¹ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½
+	bitmapper_bs_iter* sites;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	uint16_t* r_length;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	uint16_t* r_real_length;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	uint16_t* r_size_3_bit;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	bitmapper_bs_iter** reads_3_bit;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 
 
 	cut_index = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].cut_index;
@@ -531,7 +531,7 @@ inline void pop_single_methy_buffer(Methylation* curr_sub_block)
 	curr_sub_block->r_length = r_length;
 
 
-	/*************ÕâÀïÒª¸Ä**************/
+	/*************ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½**************/
 	/**
 	r_size = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size;
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size = curr_sub_block->r_size;
@@ -556,11 +556,11 @@ inline void pop_single_methy_buffer(Methylation* curr_sub_block)
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_real_length = curr_sub_block->r_real_length;
 	curr_sub_block->r_real_length = r_real_length;
 
-	/*************ÕâÀïÒª¸Ä**************/
+	/*************ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½**************/
 
 	
 	curr_sub_block->current_size = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].current_size;
-	///Õâ¸öclearÓ¦¸ÃÊÇ¿ÉÒÔ²»ÒªµÄ
+	///ï¿½ï¿½ï¿½clearÓ¦ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½Ô²ï¿½Òªï¿½ï¿½
 	clear_methylation(&(buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number]));
 
 
@@ -587,29 +587,29 @@ inline void pop_single_methy_buffer_pair(Pair_Methylation* curr_sub_block)
 
 
 
-	///Õâ¸ö¿Õ¼äÓ¦¸ÃÊÇgenome_cut+1
-	bitmapper_bs_iter* cut_index;   ///Õâ¸öÒª½»»»
-	Single_Methylation tmp_R;///Õâ¸öÒª½»»»
+	///ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½genome_cut+1
+	bitmapper_bs_iter* cut_index;   ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	Single_Methylation tmp_R;///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 
 
 	cut_index = buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number].cut_index;
 	buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number].cut_index = curr_sub_block->cut_index;
 	curr_sub_block->cut_index = cut_index;
 
-	///µÚÒ»¸öread
+	///ï¿½ï¿½Ò»ï¿½ï¿½read
 	tmp_R = buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number].R[0];
 	buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number].R[0] = curr_sub_block->R[0];
 	curr_sub_block->R[0] = tmp_R;
 
 
-	///µÚ¶þ¸öread
+	///ï¿½Ú¶ï¿½ï¿½ï¿½read
 	tmp_R = buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number].R[1];
 	buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number].R[1] = curr_sub_block->R[1];
 	curr_sub_block->R[1] = tmp_R;
 
 
 	curr_sub_block->current_size = buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number].current_size;
-	///Õâ¸öclearÓ¦¸ÃÊÇ¿ÉÒÔ²»ÒªµÄ
+	///ï¿½ï¿½ï¿½clearÓ¦ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½Ô²ï¿½Òªï¿½ï¿½
 	clear_methylation_pair(&(buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number]));
 
 
@@ -623,13 +623,13 @@ inline void pop_single_methy_buffer_pair(Pair_Methylation* curr_sub_block)
 
 
 
-///Õâ¸öÊÇÒª°Ñcurr_sub_blockµÄ½á¹û·Åµ½¶ÓÁÐÖÐ
+///ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½curr_sub_blockï¿½Ä½ï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 inline void push_single_buffer(Output_buffer_sub_block* curr_sub_block)
 {
 
 
-	///Ö»½»»»Ö¸Õë
-	///¼ÇµÃÒª½»»»£¬Ö±½Ó¸³Öµ»áÄÚ´æÐ¹Â¶£¬Ôì³ÉÒ°Ö¸Õë
+	///Ö»ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
+	///ï¿½Çµï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó¸ï¿½Öµï¿½ï¿½ï¿½Ú´ï¿½Ð¹Â¶ï¿½ï¿½ï¿½ï¿½ï¿½Ò°Ö¸ï¿½ï¿½
 	char *k;
 	k = buffer_out.sub_buffer[buffer_out.sub_block_number].buffer;
 	buffer_out.sub_buffer[buffer_out.sub_block_number].buffer = curr_sub_block->buffer;
@@ -655,20 +655,20 @@ inline void push_single_buffer(Output_buffer_sub_block* curr_sub_block)
 
 
 
-///Õâ¸öÊÇÒª°Ñcurr_sub_blockµÄ½á¹û·Åµ½¶ÓÁÐÖÐ
+///ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½curr_sub_blockï¿½Ä½ï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 inline void push_single_methy_buffer(Methylation* curr_sub_block)
 {
 
 
 
-	///Õâ¸ö¿Õ¼äÓ¦¸ÃÊÇgenome_cut+1
-	bitmapper_bs_iter* cut_index;   ///Õâ¸öÒª½»»»
-	///ÕâËÄ¸öÊý×é¹¹³ÉÒ»¸öÍêÕûµÄÔªËØ
-	bitmapper_bs_iter* sites;  ///Õâ¸öÒª½»»»
-	uint16_t* r_length;  ///Õâ¸öÒª½»»»
-	uint16_t* r_real_length;  ///Õâ¸öÒª½»»»
-	uint16_t* r_size_3_bit;  ///Õâ¸öÒª½»»»
-	bitmapper_bs_iter** reads_3_bit;  ///Õâ¸öÒª½»»»
+	///ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½genome_cut+1
+	bitmapper_bs_iter* cut_index;   ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	///ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½é¹¹ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôªï¿½ï¿½
+	bitmapper_bs_iter* sites;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	uint16_t* r_length;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	uint16_t* r_real_length;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	uint16_t* r_size_3_bit;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	bitmapper_bs_iter** reads_3_bit;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 
 
 	cut_index = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].cut_index;
@@ -692,7 +692,7 @@ inline void push_single_methy_buffer(Methylation* curr_sub_block)
 
 
 
-	/*************ÕâÀïÒª¸Ä**************/
+	/*************ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½**************/
 	/**
 	r_size = buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size;
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].r_size = curr_sub_block->r_size;
@@ -727,7 +727,7 @@ inline void push_single_methy_buffer(Methylation* curr_sub_block)
 
 
 
-	/*************ÕâÀïÒª¸Ä**************/
+	/*************ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½**************/
 
 
 
@@ -744,7 +744,7 @@ inline void push_single_methy_buffer(Methylation* curr_sub_block)
 
 
 	buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number].current_size = curr_sub_block->current_size;
-	///Õâ¸öÓ¦¸Ã·ÅÔÚÁÙ½çÇøÖ®Íâ×ö
+	///ï¿½ï¿½ï¿½Ó¦ï¿½Ã·ï¿½ï¿½ï¿½ï¿½Ù½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½
 	///clear_methylation(curr_sub_block);
 
 
@@ -755,15 +755,15 @@ inline void push_single_methy_buffer(Methylation* curr_sub_block)
 
 
 
-///Õâ¸öÊÇÒª°Ñcurr_sub_blockµÄ½á¹û·Åµ½¶ÓÁÐÖÐ
+///ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½curr_sub_blockï¿½Ä½ï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 inline void push_single_methy_buffer_pair(Pair_Methylation* curr_sub_block)
 {
 
 
 
-	///Õâ¸ö¿Õ¼äÓ¦¸ÃÊÇgenome_cut+1
-	bitmapper_bs_iter* cut_index;   ///Õâ¸öÒª½»»»
-	Single_Methylation tmp_R;  ///Õâ¸öÒª½»»»
+	///ï¿½ï¿½ï¿½ï¿½Õ¼ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½genome_cut+1
+	bitmapper_bs_iter* cut_index;   ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+	Single_Methylation tmp_R;  ///ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
 
 
 
@@ -786,7 +786,7 @@ inline void push_single_methy_buffer_pair(Pair_Methylation* curr_sub_block)
 
 
 	buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number].current_size = curr_sub_block->current_size;
-	///Õâ¸öÓ¦¸Ã·ÅÔÚÁÙ½çÇøÖ®Íâ×ö
+	///ï¿½ï¿½ï¿½Ó¦ï¿½Ã·ï¿½ï¿½ï¿½ï¿½Ù½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½ï¿½ï¿½
 	///clear_methylation(curr_sub_block);
 
 
@@ -802,7 +802,7 @@ void finish_output_buffer()
 
 		if (output_methy == 0)
 		{
-			///Õâ¸öÒ²Òª¼Ó»¥³âËø
+			///ï¿½ï¿½ï¿½Ò²Òªï¿½Ó»ï¿½ï¿½ï¿½ï¿½ï¿½
 			pthread_mutex_lock(&o_doneMutex);
 			buffer_out.all_buffer_end++;
 
@@ -816,7 +816,7 @@ void finish_output_buffer()
 
 
 
-			///Õâ¸öÒ²Òª¼Ó»¥³âËø
+			///ï¿½ï¿½ï¿½Ò²Òªï¿½Ó»ï¿½ï¿½ï¿½ï¿½ï¿½
 			pthread_mutex_lock(&o_doneMutex);
 			buffer_methy_out.all_buffer_end++;
 
@@ -836,7 +836,7 @@ void finish_output_buffer_pair()
 {
 	if (output_methy == 0)
 	{
-		///Õâ¸öÒ²Òª¼Ó»¥³âËø
+		///ï¿½ï¿½ï¿½Ò²Òªï¿½Ó»ï¿½ï¿½ï¿½ï¿½ï¿½
 		pthread_mutex_lock(&o_doneMutex);
 		buffer_out.all_buffer_end++;
 
@@ -850,7 +850,7 @@ void finish_output_buffer_pair()
 
 
 
-		///Õâ¸öÒ²Òª¼Ó»¥³âËø
+		///ï¿½ï¿½ï¿½Ò²Òªï¿½Ó»ï¿½ï¿½ï¿½ï¿½ï¿½
 		pthread_mutex_lock(&o_doneMutex);
 		buffer_methy_out_PE.all_buffer_end++;
 
@@ -873,8 +873,8 @@ void push_results_to_buffer(Output_buffer_sub_block* sub_block)
 	///if_full_buffer
 	while (if_full_buffer())
 	{
-		///°´µÀÀíÕâ¸öÐÅºÅÁ¿ËÆºõ²»ÓÃ·¢
-		///ÒòÎª¶ÓÁÐ²»¿ÉÄÜÒ»±ßÂúÒ»±ß¿Õ
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½Ã·ï¿½
+		///ï¿½ï¿½Îªï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ß¿ï¿½
 		pthread_cond_signal(&o_flushCond);
 
 
@@ -900,8 +900,8 @@ void push_methy_to_buffer(Methylation* methy)
 	///if_full_buffer
 	while (if_full_methy_buffer())
 	{
-		///°´µÀÀíÕâ¸öÐÅºÅÁ¿ËÆºõ²»ÓÃ·¢
-		///ÒòÎª¶ÓÁÐ²»¿ÉÄÜÒ»±ßÂúÒ»±ß¿Õ
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½Ã·ï¿½
+		///ï¿½ï¿½Îªï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ß¿ï¿½
 		pthread_cond_signal(&o_flushCond);
 
 
@@ -930,8 +930,8 @@ void push_methy_to_buffer_pair(Pair_Methylation* methy)
 	///if_full_buffer
 	while (if_full_methy_buffer_pair())
 	{
-		///°´µÀÀíÕâ¸öÐÅºÅÁ¿ËÆºõ²»ÓÃ·¢
-		///ÒòÎª¶ÓÁÐ²»¿ÉÄÜÒ»±ßÂúÒ»±ß¿Õ
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½Ã·ï¿½
+		///ï¿½ï¿½Îªï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ß¿ï¿½
 		pthread_cond_signal(&o_flushCond);
 
 
@@ -968,8 +968,8 @@ void* pop_buffer(void*)
 
 		while (if_empty_buffer() && (buffer_out.all_buffer_end<THREAD_COUNT))
 		{
-			///°´µÀÀíÕâ¸öÐÅºÅÁ¿ËÆºõ²»ÓÃ·¢
-			///ÒòÎª¶ÓÁÐ²»¿ÉÄÜÒ»±ßÂúÒ»±ß¿Õ
+			///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½Ã·ï¿½
+			///ï¿½ï¿½Îªï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ß¿ï¿½
 			pthread_cond_signal(&o_stallCond);
 
 
@@ -987,7 +987,7 @@ void* pop_buffer(void*)
 
 		if (tmp_buffer_sub_block.length != 0)
 		{
-			///ÕâÖÖfwriteºÍfprintf¼¸ºõÃ»Çø±ð....ËÙ¶ÈÉÏ
+			///ï¿½ï¿½ï¿½ï¿½fwriteï¿½ï¿½fprintfï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½....ï¿½Ù¶ï¿½ï¿½ï¿½
 			fprintf(output_file, "%s", tmp_buffer_sub_block.buffer);
 		}
 
@@ -1007,9 +1007,9 @@ void* pop_buffer(void*)
 
 void* pop_methy_buffer_pair(void*)
 {
-	///ÒªÇóÕâ¸ö´óÐ¡ºÍÃ¿¸öÏß³ÌÄÚ²¿µÄblock´óÐ¡Ò»Ñù
+	///Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ß³ï¿½ï¿½Ú²ï¿½ï¿½ï¿½blockï¿½ï¿½Ð¡Ò»ï¿½ï¿½
 	int my_methylation_size = methylation_size;
-	///×¢ÒâÕâÀïÒª³ýÒÔ2
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½2
 	init_pair_methylation(&tmp_methy_sub_block_PE, my_methylation_size/2);
 
 
@@ -1021,8 +1021,8 @@ void* pop_methy_buffer_pair(void*)
 
 		while (if_empty_methy_buffer_pair() && (buffer_methy_out_PE.all_buffer_end<THREAD_COUNT))
 		{
-			///°´µÀÀíÕâ¸öÐÅºÅÁ¿ËÆºõ²»ÓÃ·¢
-			///ÒòÎª¶ÓÁÐ²»¿ÉÄÜÒ»±ßÂúÒ»±ß¿Õ
+			///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½Ã·ï¿½
+			///ï¿½ï¿½Îªï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ß¿ï¿½
 			pthread_cond_signal(&o_stallCond);
 
 
@@ -1040,12 +1040,12 @@ void* pop_methy_buffer_pair(void*)
 
 		if (tmp_methy_sub_block_PE.current_size != 0)
 		{
-			///Õâ¸ö´¿Êä³ö£¬²»ÓÃ»®·Ö£¬»®·ÖÔÚ¼ÆËãÏß³ÌÀï×ö
+			///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ö£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½
 			///assign_cuts(&tmp_methy_sub_block);
 
 			output_methylation_pair(&tmp_methy_sub_block_PE);
 
-			///°´µÀÀíÒ²ÊÇ²»ÓÃÇåÀíµÄ
+			///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ç²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			///clear_methylation(&tmp_methy_sub_block);
 		}
 
@@ -1056,12 +1056,12 @@ void* pop_methy_buffer_pair(void*)
 	{
 		buffer_methy_out_PE.sub_block_number--;
 
-		///Õâ¸ö´¿Êä³ö£¬²»ÓÃ»®·Ö£¬»®·ÖÔÚ¼ÆËãÏß³ÌÀï×ö
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ö£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½
 		///assign_cuts(&tmp_methy_sub_block);
 
 		output_methylation_pair(&(buffer_methy_out_PE.sub_buffer[buffer_methy_out_PE.sub_block_number]));
 
-		///°´µÀÀíÒ²ÊÇ²»ÓÃÇåÀíµÄ
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ç²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		///clear_methylation(&tmp_methy_sub_block);
 
 	}
@@ -1072,7 +1072,7 @@ void* pop_methy_buffer_pair(void*)
 
 void* pop_methy_buffer(void*)
 {
-	///ÒªÇóÕâ¸ö´óÐ¡ºÍÃ¿¸öÏß³ÌÄÚ²¿µÄblock´óÐ¡Ò»Ñù
+	///Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ß³ï¿½ï¿½Ú²ï¿½ï¿½ï¿½blockï¿½ï¿½Ð¡Ò»ï¿½ï¿½
 	int my_methylation_size = methylation_size;
 
 	init_methylation(&tmp_methy_sub_block, my_methylation_size);
@@ -1086,8 +1086,8 @@ void* pop_methy_buffer(void*)
 
 		while (if_empty_methy_buffer() && (buffer_methy_out.all_buffer_end<THREAD_COUNT))
 		{
-			///°´µÀÀíÕâ¸öÐÅºÅÁ¿ËÆºõ²»ÓÃ·¢
-			///ÒòÎª¶ÓÁÐ²»¿ÉÄÜÒ»±ßÂúÒ»±ß¿Õ
+			///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½Ã·ï¿½
+			///ï¿½ï¿½Îªï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ß¿ï¿½
 			pthread_cond_signal(&o_stallCond);
 
 
@@ -1105,12 +1105,12 @@ void* pop_methy_buffer(void*)
 
 		if (tmp_methy_sub_block.current_size != 0)
 		{
-			///Õâ¸ö´¿Êä³ö£¬²»ÓÃ»®·Ö£¬»®·ÖÔÚ¼ÆËãÏß³ÌÀï×ö
+			///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ö£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½
 			///assign_cuts(&tmp_methy_sub_block);
 
 			output_methylation(&tmp_methy_sub_block);
 
-			///°´µÀÀíÒ²ÊÇ²»ÓÃÇåÀíµÄ
+			///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ç²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			///clear_methylation(&tmp_methy_sub_block);
 		}
 
@@ -1121,12 +1121,12 @@ void* pop_methy_buffer(void*)
 	{
 		buffer_methy_out.sub_block_number--;
 		
-		///Õâ¸ö´¿Êä³ö£¬²»ÓÃ»®·Ö£¬»®·ÖÔÚ¼ÆËãÏß³ÌÀï×ö
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ö£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½
 		///assign_cuts(&tmp_methy_sub_block);
 
 		output_methylation(&(buffer_methy_out.sub_buffer[buffer_methy_out.sub_block_number]));
 
-		///°´µÀÀíÒ²ÊÇ²»ÓÃÇåÀíµÄ
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ç²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		///clear_methylation(&tmp_methy_sub_block);
 
 	}
@@ -1224,16 +1224,24 @@ void multi_outputQ(SAM map, int thread_id)
 int Output_gene ( char *fileName)
 {
 
+	if (fileName[0] == '\0')
+	{
+		_out_fp = stdout;
+	}
+	else
+	{
+		_out_fp = fopen (fileName, "w");
+	}
+	
+	
+    
 
-    _out_fp = fopen (fileName, "w");
-    char tmpFileName[NAME_LENGTH];
 
     if (_out_fp == NULL)
 	{
 	  return 0;
 	}
-    ///finalizeOutput = &finalizeTXOutput;
 
-  return 1;
+ 	 return 1;
 }
 

@@ -54,7 +54,7 @@ void loadRefGenome(char **refGen, _rg_name_l **refGenName, bitmapper_bs_iter* re
 
       if (ch == '>')
 	  {
-        fprintf(stdout, "%c\n", ch);
+        fprintf(stderr, "%c\n", ch);
         _rg_name_l*  tmp_rg_name = (struct _rg_name_l*)malloc(sizeof(struct _rg_name_l)* (++_rg_contChrome));
 
 	  int i = 0;
@@ -86,7 +86,7 @@ void loadRefGenome(char **refGen, _rg_name_l **refGenName, bitmapper_bs_iter* re
 			  break;
 		  }
 	  }
-	  fprintf(stdout, "Chrome Name =%s ********\n", (*refGenName)[_rg_contChrome - 1]._rg_chrome_name);
+	  fprintf(stderr, "Chrome Name =%s ********\n", (*refGenName)[_rg_contChrome - 1]._rg_chrome_name);
 	  _rg_contChromeLength = 0;
 	}
       //判断ch是否为空

@@ -60,7 +60,7 @@ char char_to_3bit[128] = {
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.1.4";
+char *versionN = "1.0.1.5";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
@@ -229,22 +229,6 @@ void out_paired_distance_statistic()
 	fprintf(stderr, "@%llu\t%llu\n", maxDistance_pair, minDistance_pair);
 
 
-	/**
-	int j;
-	long long tmp = 0;
-	for (j = 0; j < genome_cuts; j++)
-	{
-		int k = 0;
-
-		for (k = 0; k < length; k++)
-		{
-			fprintf(stderr, "%llu\t", PE_distance[0].count[j][k]);
-		}
-
-		fprintf(stderr, "\n\n");
-	}
-	**/
-
 	pair_distance_result sort_results;
 	sort_results.count = (pe_distance_info*)malloc(sizeof(pe_distance_info)*length);
 
@@ -263,10 +247,6 @@ void out_paired_distance_statistic()
 				tmp = tmp + PE_distance[i].count[j][k];
 			}
 
-			/**
-			PE_distance[0].count[j][k] = tmp;
-			fprintf(stderr, "%llu\t", PE_distance[0].count[j][k]);
-			**/
 
 			sort_results.count[k].count = tmp;
 			sort_results.count[k].index = k;
@@ -283,8 +263,6 @@ void out_paired_distance_statistic()
 		for (k = 0; k < length; k++)
 		{
 			total_frequence += sort_results.count[k].count;
-			
-			////fprintf(stderr, "%llu:%llu\t", sort_results.count[k].count, sort_results.count[k].index);
 		}
 
 		double current_frequence = 0;
@@ -304,7 +282,6 @@ void out_paired_distance_statistic()
 				fprintf(stderr, "%.2f, %lld, %llu\t", prec, (long long)current_frequence, k);
 			}
 
-			////fprintf(stderr, "%llu:%llu\t", sort_results.count[k].count, sort_results.count[k].index);
 		}
 
 		fprintf(stderr, "\n\n");
@@ -554,7 +531,7 @@ void Prepare_alignment(char* outputFileName, char *genFileName, _rg_name_l *chhy
 		}
 
 		///genome_cuts = 64;
-		fprintf(stdout, "genome_cuts: %d\n", genome_cuts);
+		fprintf(stderr, "genome_cuts: %d\n", genome_cuts);
 
 		///cut_length = (_msf_refGenLength * 2) / genome_cuts;
 		cut_length = _msf_refGenLength / genome_cuts;
@@ -3331,11 +3308,6 @@ void* process_PE_methy_alignment_multiple_threads(void* arg)
 		pthread_mutex_unlock(&methy_input_buffer.process_Mutex[thread_id]);
 	}
 
-
-
-
-
-	///fprintf(stdout, "thread %d (methy) has been completed\n", thread_id);
 }
 
 
@@ -3429,10 +3401,6 @@ void* process_single_methy_alignment_multiple_threads(void* arg)
 	}
 
 
-
-
-
-	///fprintf(stdout, "thread %d (methy) has been completed\n", thread_id);
 }
 
 
@@ -3731,9 +3699,9 @@ void methy_extract_PE_mutiple_thread(int thread_id, char* file_name, int PE_dist
 
 	
 
-	fprintf(stdout, "load_time: %f\n", load_time);
-	fprintf(stdout, "print_time: %f\n", print_time);
-	fprintf(stdout, "update_methy_time: %f\n", update_methy_time);
+	fprintf(stderr, "load_time: %f\n", load_time);
+	fprintf(stderr, "print_time: %f\n", print_time);
+	fprintf(stderr, "update_methy_time: %f\n", update_methy_time);
 
 	
 
@@ -3938,9 +3906,9 @@ void methy_extract_PE(int thread_id, char* file_name, int PE_distance, int* need
 	fprintf(stderr, "unique_read: %lld\n", unique_read);
 	fprintf(stderr, "abnormal_read: %lld\n", abnormal_read);
 
-	fprintf(stdout, "load_time: %f\n", load_time);
-	fprintf(stdout, "update_methylation_time: %f\n", update_methylation_time);
-	fprintf(stdout, "print_time: %f\n", print_time);
+	fprintf(stderr, "load_time: %f\n", load_time);
+	fprintf(stderr, "update_methylation_time: %f\n", update_methylation_time);
+	fprintf(stderr, "print_time: %f\n", print_time);
 	
 	
 	
@@ -4211,9 +4179,9 @@ void methy_extract_mutiple_thread(int thread_id, char* file_name, int* need_cont
 
 
 
-	fprintf(stdout, "load_time: %f\n", load_time);
-	fprintf(stdout, "print_time: %f\n", print_time);
-	fprintf(stdout, "update_methy_time: %f\n", update_methy_time);
+	fprintf(stderr, "load_time: %f\n", load_time);
+	fprintf(stderr, "print_time: %f\n", print_time);
+	fprintf(stderr, "update_methy_time: %f\n", update_methy_time);
 
 
 
@@ -18093,7 +18061,7 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 	long long total_number_of_hit = 0;
 
 
-	fprintf(stdout, "Welcome to BitMapperBS!\n");
+	fprintf(stderr, "Welcome to BitMapperBS!\n");
 
 
 	int is_mutiple_map1, is_mutiple_map2;
@@ -18167,9 +18135,6 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 
 
 	long long debug_1 = 0, debug_2 = 0;
-
-
-	fprintf(stdout, "max_candidates_occ: %lld\n", max_candidates_occ);
 
 
 	double startTime = Get_T();
@@ -19440,13 +19405,6 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 
 
 
-
-
-
-
-	fprintf(stdout, "Welcome to BitMapperBS!\n");
-
-
 	int is_mutiple_map1, is_mutiple_map2;
 
 	long long distance;
@@ -19512,7 +19470,6 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 	long long debug_1 = 0, debug_2 = 0;
 
 
-	fprintf(stdout, "max_candidates_occ: %lld\n", max_candidates_occ);
 
 
 	double startTime = Get_T();
@@ -21631,7 +21588,7 @@ void* Map_Pair_Seq_split_fast(void* arg)
 	mapped_bases[thread_id] = total_bases;
 	error_mapped_bases[thread_id] = error_bases;
 
-	fprintf(stdout, "thread %d completed!\n", thread_id);
+	fprintf(stderr, "thread %d completed!\n", thread_id);
 
 
 }
@@ -21931,12 +21888,6 @@ void* Map_Pair_Seq_split(void* arg)
 	int first_seed_read1_occ, first_seed_read2_occ;
 	int first_seed_read1_length, first_seed_read2_length;
 
-
-
-
-
-
-	///fprintf(stdout, "max_candidates_occ: %lld\n", max_candidates_occ);
 
 
 
@@ -23107,7 +23058,7 @@ void* Map_Pair_Seq_split(void* arg)
 	mapped_bases[thread_id] = total_bases;
 	error_mapped_bases[thread_id] = error_bases;
 
-	fprintf(stdout, "thread %d completed!\n", thread_id);
+	fprintf(stderr, "thread %d completed!\n", thread_id);
 
 
 }
@@ -23477,7 +23428,7 @@ int Map_Single_Seq_end_to_end(int thread_id)
 		available_seed_length = bs_available_seed_length;
 	}
 
-	fprintf(stdout, "Welcome to BitMapperBS!\n");
+	fprintf(stderr, "Welcome to BitMapperBS!\n");
 
 	#if defined __AVX2__
 
@@ -24581,14 +24532,6 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 		}
 
 
-
-		/**
-		if (i % 100000 == 0)
-		{
-			fprintf(stdout, "i: %llu \n", i);
-
-		}
-		**/
 
 		///fprintf(stderr, "*******\current_read.length: %llu\n", current_read.length);
 
@@ -25946,12 +25889,6 @@ void* Map_Single_Seq_split(void* arg)
 
 	long long total_number_of_hit = 0;
 
-	/**
-	fprintf(stdout, "error_threshold: %llu\n", error_threshold);
-	fprintf(stdout, "score_threshold: %f\n", score_threshold);
-	fprintf(stdout, "edit_distance_threshold: %f\n", edit_distance_threshold);
-	fprintf(stdout, "available_seed_length: %llu\n", available_seed_length);
-	**/
 
 	int is_mutiple_map = 0;
 
@@ -26766,10 +26703,8 @@ void* Map_Single_Seq_split(void* arg)
 
 
 
-	fprintf(stdout, "thread %d completed!\n", thread_id);
+	fprintf(stderr, "thread %d completed!\n", thread_id);
 
-	///这里要改
-	///fprintf(stderr, "debug_1_mismatch: %lld\n", debug_1_mismatch);
 
 }
 
@@ -27886,10 +27821,8 @@ void* Map_Single_Seq_split_pbat(void* arg)
 	mapped_bases[thread_id] = total_bases;
 	error_mapped_bases[thread_id] = error_bases;
 
-	fprintf(stdout, "thread %d completed!\n", thread_id);
+	fprintf(stderr, "thread %d completed!\n", thread_id);
 
-	///这里要改
-	///fprintf(stderr, "debug_1_mismatch: %lld\n", debug_1_mismatch);
 }
 
 
@@ -28118,15 +28051,6 @@ void* input_methy_muti_threads(void*)
 			key_pos = pos1<=pos2? pos1:pos2;
 			key_pos = key_pos - methy_input_buffer.total_start;
 			sub_interval_ID = key_pos / methy_input_buffer.each_interval_length;
-			/**
-			if (key_pos > methy_input_buffer.each_buffer_interval_end[sub_interval_ID]
-				||
-				key_pos < methy_input_buffer.each_buffer_interval_start[sub_interval_ID])
-			{
-				fprintf(stdout, "ERROR!\n");
-				exit(0);
-			}
-			**/
 
 			current_interval = methy_input_buffer.intervals + sub_interval_ID;
 
@@ -28215,7 +28139,6 @@ void* input_methy_muti_threads(void*)
 
 	}
 
-	///fprintf(stdout, "Input thread has been completed\n");
 
 	
 }

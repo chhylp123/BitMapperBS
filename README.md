@@ -218,6 +218,10 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 ### Changelog ###
 
+(14) June 28, 2019: version 1.0.1.5 released. 
+
+    >> Fix a minor bug when mapping.
+
 (13) June 18, 2019: version 1.0.1.4 released. 
 
     >> Fix the bug for methylation extraction when loading index.

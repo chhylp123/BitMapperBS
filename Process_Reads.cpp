@@ -807,33 +807,6 @@ int inputReads_single_directly_back(
 		///seqList1->hits[0] = 0;
 		seqList1->length = seq_length;
 
-		/**
-		///fprintf(stdout, "thread_e: %u\n",thread_e);
-
-		///if (nCnt <=thread_e)
-		if (nCnt <= seq_length*0.7)
-		{
-
-
-			seq_length = strlen(seqList1->seq);
-			//这是read编号吧，确定这是当前第几个read
-			//rseq1这个字符数组中存储了反向互补链。既要反向，又要互补
-			///reverseComplement(seq1, rseq1, seq_length);
-			//rseq1这个字符数组中存储了反向链, 只反向，不互补
-			reverse_pattern(seqList1->seq, seqList1->rseq, seq_length);
-			//hits就分配了一个字符啊，貌似仅有这一个hits[0]吧
-			//这个应该是存这个read匹配上了多少个位置，这里当然置为0了
-			seqList1->hits[0] = 0;
-
-
-			seqList1->length = seq_length;
-		}
-		else
-		{
-			//这个应该是N太多了，超过阈值了，那这个read就直接丢弃了
-			return 3;
-		}
-		**/
 
 		return 1;
 	}
@@ -1207,7 +1180,6 @@ int inputReads_single(
 		}
                 
 
-                ///fprintf(stdout, "thread_e: %u\n",thread_e);
 
 		///if (nCnt <=thread_e)
                 if (nCnt <=seq_length*0.7)
@@ -1419,7 +1391,7 @@ int inputReads_paired(
 	  }
 
 	  if (clipped == 1 || clipped == 2){
-	    fprintf(stdout, "[PE mode Warning] Sequence lengths are different,  read #%d is clipped to match.\n", clipped);
+	    fprintf(stderr, "[PE mode Warning] Sequence lengths are different,  read #%d is clipped to match.\n", clipped);
 	    clipped = 3;
 	    return 3;
 	  }
@@ -1626,13 +1598,13 @@ int initiReadAllReads(char *fileName1,
 	{
 		if (format2 == FASTQ)
 		{
-			fprintf(stdout,
+			fprintf(stderr,
 				" Read files are in FASTQ format...\n");
 		}
 
 		if (format2 == FASTQGZ)
 		{
-			fprintf(stdout,
+			fprintf(stderr,
 				" Read files are in compressed FASTQ format...\n");
 		}
 		

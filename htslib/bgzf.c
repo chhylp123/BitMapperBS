@@ -1136,15 +1136,15 @@ static void *bgzf_mt_writer(void *vp) {
     BGZF *fp = (BGZF *)vp;
     mtaux_t *mt = fp->mt;
 
-	///Õâ¸örÊµ¼ÊÉÏ°üÀ¨Á½¸öÒª·ÖÅä¿Õ¼äµÄ²¿·Ö
-	///Ò»¸öÊÇr±¾Éí, »¹ÓÐ¾ÍÊÇr-data, ÕæÕýµÄÊý¾Ý¶¼ÔÚr-dataÀï
+	///ï¿½ï¿½ï¿½rÊµï¿½ï¿½ï¿½Ï°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Õ¼ï¿½Ä²ï¿½ï¿½ï¿½
+	///Ò»ï¿½ï¿½ï¿½ï¿½rï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½Ð¾ï¿½ï¿½ï¿½r-data, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¶ï¿½ï¿½ï¿½r-dataï¿½ï¿½
     hts_tpool_result *r;
 
     // Iterates until result queue is shutdown, where it returns NULL.
-    while ((r = hts_tpool_next_result_wait(mt->out_queue))) {///Õâ¸öºÃÏñÊÇ´Ó¶ÓÁÐÀïÄÃ
-        bgzf_job *j = (bgzf_job *)hts_tpool_result_data(r); ///Õâ¸öÊÇ»ñµÃÕæÕýµÄÊý¾Ý, ¾ÍÊÇ»ñµÃr->data
+    while ((r = hts_tpool_next_result_wait(mt->out_queue))) {///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç´Ó¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+        bgzf_job *j = (bgzf_job *)hts_tpool_result_data(r); ///ï¿½ï¿½ï¿½ï¿½Ç»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½Ç»ï¿½ï¿½r->data
         assert(j);
-		///ÕâÀïÏñÊÇÕæÕýµÄÐ´Ó²ÅÌ
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´Ó²ï¿½ï¿½
         if (hwrite(fp->fp, j->comp_data, j->comp_len) != j->comp_len) {
             fp->errcode |= BGZF_ERR_IO;
             goto err;
@@ -1163,13 +1163,13 @@ static void *bgzf_mt_writer(void *vp) {
             if (hflush(fp->fp) != 0)
                 goto err;
 
-		///ÕâÀïfreeÁËr±¾Éí,µ«ÊÇr->dataÒ²¾ÍÊÇj, ²¢Ã»free
+		///ï¿½ï¿½ï¿½ï¿½freeï¿½ï¿½rï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½r->dataÒ²ï¿½ï¿½ï¿½ï¿½j, ï¿½ï¿½Ã»free
         hts_tpool_delete_result(r, 0);
 
 
 		///fprintf(stderr, "+mt->jobs_pendin: %d\n", mt->jobs_pending);
 
-		///ÏÂÃæÕâÒ»¶ÎÊÇÎÒ¸ÄµÄ
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ò¸Äµï¿½
 		
         // Also updated by main thread
         pthread_mutex_lock(&mt->job_pool_m);
@@ -1461,8 +1461,8 @@ int bgzf_thread_pool(BGZF *fp, hts_tpool *pool, int qsize) {
     }
     hts_tpool_process_ref_incr(mt->out_queue);
 
-	///Õâ¸öjob_poolÀïÃæÖ¸Õë²¢Ã»ÓÐ·ÖÅä
-	///pool_t *poolsºÍvoid *freeÒÀÈ»»¹ÊÇnull
+	///ï¿½ï¿½ï¿½job_poolï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ë²¢Ã»ï¿½Ð·ï¿½ï¿½ï¿½
+	///pool_t *poolsï¿½ï¿½void *freeï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½null
     mt->job_pool = pool_create(sizeof(bgzf_job));
 
     pthread_mutex_init(&mt->job_pool_m, NULL);
@@ -1472,16 +1472,16 @@ int bgzf_thread_pool(BGZF *fp, hts_tpool *pool, int qsize) {
     mt->jobs_pending = 0;
     mt->free_block = fp->uncompressed_block; // currently in-use block
 
-	/*****Ó¦µ±ÊÇ¹²ÏíµÄ±äÁ¿*****/
+	/*****Ó¦ï¿½ï¿½ï¿½Ç¹ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½*****/
 
 	mt->chhy_job_pool_m = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(mt->chhy_job_pool_m, NULL);
 	mt->chhy_jobs_pending = (int*)malloc(sizeof(int));
-	/*****Ó¦µ±ÊÇ¹²ÏíµÄ±äÁ¿*****/
+	/*****Ó¦ï¿½ï¿½ï¿½Ç¹ï¿½ï¿½ï¿½ï¿½Ä±ï¿½ï¿½ï¿½*****/
 
 
 
-	///¶ÔÎÒÀ´Ëµ, Ö»ÓÐbam Êä³öµÄÊ±ºò²Å»áµ½ÕâÀï, ËùÒÔÖ»¿´bgzf_mt_writer¾ÍºÃÁË
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëµ, Ö»ï¿½ï¿½bam ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Å»áµ½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½bgzf_mt_writerï¿½Íºï¿½ï¿½ï¿½
     pthread_create(&mt->io_task, NULL,
                    fp->is_write ? bgzf_mt_writer : bgzf_mt_reader, fp);
 
@@ -1511,21 +1511,21 @@ int chhy_bgzf_thread_pool(BGZF *fp, struct hts_tpool *pool, int qsize, BGZF *cur
 
 
 	/**
-	¶ÁÐ´¹«ÓÃ
-	mt->job_pool_m Ëø
-	mt->job_pool Ö¸Õë
-	mt->jobs_pending ±äÁ¿
-	mt->out_queue Ö¸Õë
-	ÆäÊµ
-	mt->poolÒ²ÊÇ¹²ÏíµÄ Ö¸Õë,
+	ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½
+	mt->job_pool_m ï¿½ï¿½
+	mt->job_pool Ö¸ï¿½ï¿½
+	mt->jobs_pending ï¿½ï¿½ï¿½ï¿½
+	mt->out_queue Ö¸ï¿½ï¿½
+	ï¿½ï¿½Êµ
+	mt->poolÒ²ï¿½Ç¹ï¿½ï¿½ï¿½ï¿½ï¿½ Ö¸ï¿½ï¿½,
 
-	mt->job_pool_mºÍmt->jobs_pendingÃ»·¨¸³Öµ, Ö»ÄÜÓÃÐÂ±äÁ¿
+	mt->job_pool_mï¿½ï¿½mt->jobs_pendingÃ»ï¿½ï¿½ï¿½ï¿½Öµ, Ö»ï¿½ï¿½ï¿½ï¿½ï¿½Â±ï¿½ï¿½ï¿½
 
 	**/
 
 
 
-	///ÏÂÃæÕâ¶Î²»ÒªÖØÐÂ³õÊ¼»¯, ÒªµÈÓÚcurrent_fp->mt->out_queue
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î²ï¿½Òªï¿½ï¿½ï¿½Â³ï¿½Ê¼ï¿½ï¿½, Òªï¿½ï¿½ï¿½ï¿½current_fp->mt->out_queue
 	/**
 	if (!(mt->out_queue = hts_tpool_process_init(mt->pool, qsize, 0))) {
 		free(mt);
@@ -1537,8 +1537,8 @@ int chhy_bgzf_thread_pool(BGZF *fp, struct hts_tpool *pool, int qsize, BGZF *cur
 
 
 
-	///ÏÂÃæÕâ¶Î²»ÒªÖØÐÂ³õÊ¼»¯, ÒªµÈÓÚcurrent_fp->mt->out_queue
-	///ÕâÀïÒ²Òª¹²Ïí
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î²ï¿½Òªï¿½ï¿½ï¿½Â³ï¿½Ê¼ï¿½ï¿½, Òªï¿½ï¿½ï¿½ï¿½current_fp->mt->out_queue
+	///ï¿½ï¿½ï¿½ï¿½Ò²Òªï¿½ï¿½ï¿½ï¿½
 	/**
 	mt->job_pool = pool_create(sizeof(bgzf_job));
 	**/
@@ -1560,9 +1560,9 @@ int chhy_bgzf_thread_pool(BGZF *fp, struct hts_tpool *pool, int qsize, BGZF *cur
 
 
 
-	///Õâ¶ÎÒ²ÊÇ²»ÒªµÄ
+	///ï¿½ï¿½ï¿½Ò²ï¿½Ç²ï¿½Òªï¿½ï¿½
 	/**
-	///¶ÔÎÒÀ´Ëµ, Ö»ÓÐbam Êä³öµÄÊ±ºò²Å»áµ½ÕâÀï, ËùÒÔÖ»¿´bgzf_mt_writer¾ÍºÃÁË
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëµ, Ö»ï¿½ï¿½bam ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Å»áµ½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½bgzf_mt_writerï¿½Íºï¿½ï¿½ï¿½
 	pthread_create(&mt->io_task, NULL,
 		fp->is_write ? bgzf_mt_writer : bgzf_mt_reader, fp);
 	**/
@@ -1635,13 +1635,13 @@ static int mt_queue_backup(BGZF *fp)
 
 	///fprintf(stderr, "fp->compress_level: %d\n", fp->compress_level);
 
-    if (fp->compress_level == 0) {///Õâ¸ö²»Ö´ÐÐ
+    if (fp->compress_level == 0) {///ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½
 
 
         memcpy(j->comp_data + BLOCK_HEADER_LENGTH + 5, fp->uncompressed_block,
                j->uncomp_len);
         hts_tpool_dispatch(mt->pool, mt->out_queue, bgzf_encode_level0_func, j);
-    } else {   ///Ö»Ö´ÐÐÕâ¸ö
+    } else {   ///Ö»Ö´ï¿½ï¿½ï¿½ï¿½ï¿½
         memcpy(j->uncomp_data, fp->uncompressed_block, j->uncomp_len);
 
         // Need non-block vers & job_pending?
@@ -1659,7 +1659,7 @@ static int mt_queue(BGZF *fp)
 {
 	mtaux_t *mt = fp->mt;
 
-	///ÏÂÃæÕâ¸öÊÇÎÒ¸ÄµÄ
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò¸Äµï¿½
 	
 	// Also updated by writer thread
 	pthread_mutex_lock(&mt->job_pool_m);
@@ -1683,14 +1683,14 @@ static int mt_queue(BGZF *fp)
 
 	///fprintf(stderr, "fp->compress_level: %d\n", fp->compress_level);
 
-	if (fp->compress_level == 0) {///Õâ¸ö²»Ö´ÐÐ
+	if (fp->compress_level == 0) {///ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½
 
 
 		memcpy(j->comp_data + BLOCK_HEADER_LENGTH + 5, fp->uncompressed_block,
 			j->uncomp_len);
 		hts_tpool_dispatch(mt->pool, mt->out_queue, bgzf_encode_level0_func, j);
 	}
-	else {   ///Ö»Ö´ÐÐÕâ¸ö
+	else {   ///Ö»Ö´ï¿½ï¿½ï¿½ï¿½ï¿½
 		memcpy(j->uncomp_data, fp->uncompressed_block, j->uncomp_len);
 
 		// Need non-block vers & job_pending?
@@ -1718,7 +1718,7 @@ static int mt_flush_queue(BGZF *fp)
     // be to have one input queue per type of job, but we don't right now.
     //hts_tpool_flush(mt->pool);
 
-	///ÕâÊÇÎÒ¸ÄµÄ
+	///ï¿½ï¿½ï¿½ï¿½ï¿½Ò¸Äµï¿½
 	
     pthread_mutex_lock(&mt->job_pool_m);
 
@@ -1744,8 +1744,8 @@ static int mt_flush_queue(BGZF *fp)
 
 static int lazy_flush(BGZF *fp)
 {
-	//block_offset´ú±íuncompressed_blockÓÐ¶àÉÙ×Ö½Ú´ýÑ¹Ëõ
-	//Èç¹ûblock_offsetÎª0, Ôò´ú±íuncompressed_blockÀïÃ»Êý¾Ý, ÔòÃ»±ØÒªÌá½»µ½»º³åÇøÈ¥´¦Àí
+	//block_offsetï¿½ï¿½ï¿½ï¿½uncompressed_blockï¿½Ð¶ï¿½ï¿½ï¿½ï¿½Ö½Ú´ï¿½Ñ¹ï¿½ï¿½
+	//ï¿½ï¿½ï¿½block_offsetÎª0, ï¿½ï¿½ï¿½ï¿½ï¿½uncompressed_blockï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã»ï¿½ï¿½Òªï¿½á½»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½ï¿½ï¿½
     if (fp->mt)
         return fp->block_offset ? mt_queue(fp) : 0;  
     else
@@ -1823,13 +1823,13 @@ ssize_t bgzf_write(BGZF *fp, const void *data, size_t length)
     assert(fp->is_write);
     while (remaining > 0) {
         uint8_t* buffer = (uint8_t*)fp->uncompressed_block;
-        int copy_length = BGZF_BLOCK_SIZE - fp->block_offset;  ///block_offset´ú±íuncompressed_blockÓÐ¶àÉÙ×Ö½Ú´ýÑ¹Ëõ
+        int copy_length = BGZF_BLOCK_SIZE - fp->block_offset;  ///block_offsetï¿½ï¿½ï¿½ï¿½uncompressed_blockï¿½Ð¶ï¿½ï¿½ï¿½ï¿½Ö½Ú´ï¿½Ñ¹ï¿½ï¿½
         if (copy_length > remaining) copy_length = remaining;
         memcpy(buffer + fp->block_offset, input, copy_length);
         fp->block_offset += copy_length;
         input += copy_length;
         remaining -= copy_length;
-        if (fp->block_offset == BGZF_BLOCK_SIZE) {  ///Ö»ÓÐ´ïµ½Ò»¸öBGZF_BLOCK_SIZEµÄÊ±ºò, ²Å»áflush
+        if (fp->block_offset == BGZF_BLOCK_SIZE) {  ///Ö»ï¿½Ð´ïµ½Ò»ï¿½ï¿½BGZF_BLOCK_SIZEï¿½ï¿½Ê±ï¿½ï¿½, ï¿½Å»ï¿½flush
             if (lazy_flush(fp) != 0) return -1;
         }
     }
@@ -1854,7 +1854,7 @@ static int chhy_mt_queue(BGZF *main_fp, BGZF *buffer_fp)
 {
 	mtaux_t *mt = main_fp->mt;
 
-	///ÏÂÃæÕâ¸öÊÇÎÒ¸ÄµÄ
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò¸Äµï¿½
 
 	// Also updated by writer thread
 	pthread_mutex_lock(&mt->job_pool_m);
@@ -1866,19 +1866,19 @@ static int chhy_mt_queue(BGZF *main_fp, BGZF *buffer_fp)
 
 	j->fp = main_fp;
 	j->errcode = 0;
-	///×¢ÒâÕâÀïÊÇbuffer_fp
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	j->uncomp_len = buffer_fp->block_offset;
 
 
-	if (main_fp->compress_level == 0) {///Õâ¸ö²»Ö´ÐÐ
+	if (main_fp->compress_level == 0) {///ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½
 
-		///×¢ÒâÕâÀïÊÇbuffer_fp
+		///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 		memcpy(j->comp_data + BLOCK_HEADER_LENGTH + 5, buffer_fp->uncompressed_block,
 			j->uncomp_len);
 		hts_tpool_dispatch(mt->pool, mt->out_queue, bgzf_encode_level0_func, j);
 	}
-	else {   ///Ö»Ö´ÐÐÕâ¸ö
-		///×¢ÒâÕâÀïÊÇbuffer_fp
+	else {   ///Ö»Ö´ï¿½ï¿½ï¿½ï¿½ï¿½
+		///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 		memcpy(j->uncomp_data, buffer_fp->uncompressed_block, j->uncomp_len);
 
 
@@ -1898,7 +1898,7 @@ static int chhy_mt_queue(BGZF *main_fp, BGZF *buffer_fp)
 		hts_tpool_dispatch(mt->pool, mt->out_queue, chhy_bgzf_encode_func, j);
 	}
 
-	///×¢ÒâÕâÀïÊÇbuffer_fp
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	buffer_fp->block_offset = 0;
 	return 0;
 }
@@ -1908,11 +1908,11 @@ static int chhy_mt_queue(BGZF *main_fp, BGZF *buffer_fp)
 
 int chhy_lazy_flush(BGZF *main_fp, BGZF *buffer_fp)
 {
-	//block_offset´ú±íuncompressed_blockÓÐ¶àÉÙ×Ö½Ú´ýÑ¹Ëõ
-	//Èç¹ûblock_offsetÎª0, Ôò´ú±íuncompressed_blockÀïÃ»Êý¾Ý, ÔòÃ»±ØÒªÌá½»µ½»º³åÇøÈ¥´¦Àí
+	//block_offsetï¿½ï¿½ï¿½ï¿½uncompressed_blockï¿½Ð¶ï¿½ï¿½ï¿½ï¿½Ö½Ú´ï¿½Ñ¹ï¿½ï¿½
+	//ï¿½ï¿½ï¿½block_offsetÎª0, ï¿½ï¿½ï¿½ï¿½ï¿½uncompressed_blockï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã»ï¿½ï¿½Òªï¿½á½»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½ï¿½ï¿½
 	if (main_fp->mt)
 	{
-		///×¢ÒâÕâÀïÊÇbuffer_fp, ÒªÇóbuffer_fpÀïÃæÓÐÊý¾Ý, ²Å»áÌá½»¸ø¶ÓÁÐ
+		///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp, Òªï¿½ï¿½buffer_fpï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½Å»ï¿½ï¿½á½»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		return buffer_fp->block_offset ? chhy_mt_queue(main_fp, buffer_fp) : 0;
 	}
 	else
@@ -1928,7 +1928,7 @@ int chhy_lazy_flush(BGZF *main_fp, BGZF *buffer_fp)
 
 int chhy_bgzf_flush_try(BGZF *main_fp, BGZF *buffer_fp, ssize_t size)
 {	
-	//×¢ÒâÕâÀïÊÇbuffer_fp
+	//×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	if (buffer_fp->block_offset + size > BGZF_BLOCK_SIZE)
 	{
 		return chhy_lazy_flush(main_fp, buffer_fp);
@@ -1950,16 +1950,16 @@ ssize_t chhy_bgzf_write(BGZF *main_fp, BGZF *buffer_fp, const void *data, size_t
 	ssize_t remaining = length;
 	assert(main_fp->is_write);
 
-	///ÕâÀïÃæÓ¦¸Ã¶¼ÊÇbuffer_fp
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ã¶ï¿½ï¿½ï¿½buffer_fp
 	while (remaining > 0) {
 		uint8_t* buffer = (uint8_t*)buffer_fp->uncompressed_block;
-		int copy_length = BGZF_BLOCK_SIZE - buffer_fp->block_offset;  ///block_offset´ú±íuncompressed_blockÓÐ¶àÉÙ×Ö½Ú´ýÑ¹Ëõ
+		int copy_length = BGZF_BLOCK_SIZE - buffer_fp->block_offset;  ///block_offsetï¿½ï¿½ï¿½ï¿½uncompressed_blockï¿½Ð¶ï¿½ï¿½ï¿½ï¿½Ö½Ú´ï¿½Ñ¹ï¿½ï¿½
 		if (copy_length > remaining) copy_length = remaining;
 		memcpy(buffer + buffer_fp->block_offset, input, copy_length);
 		buffer_fp->block_offset += copy_length;
 		input += copy_length;
 		remaining -= copy_length;
-		if (buffer_fp->block_offset == BGZF_BLOCK_SIZE) {  ///Ö»ÓÐ´ïµ½Ò»¸öBGZF_BLOCK_SIZEµÄÊ±ºò, ²Å»áflush
+		if (buffer_fp->block_offset == BGZF_BLOCK_SIZE) {  ///Ö»ï¿½Ð´ïµ½Ò»ï¿½ï¿½BGZF_BLOCK_SIZEï¿½ï¿½Ê±ï¿½ï¿½, ï¿½Å»ï¿½flush
 			if (chhy_lazy_flush(main_fp, buffer_fp) != 0) return -1;
 		}
 	}
@@ -1974,7 +1974,7 @@ ssize_t chhy_bgzf_write(BGZF *main_fp, BGZF *buffer_fp, const void *data, size_t
 
 void finish_bam_output_buffer()
 {
-	///Õâ¸öÒ²Òª¼Ó»¥³âËø
+	///ï¿½ï¿½ï¿½Ò²Òªï¿½Ó»ï¿½ï¿½ï¿½ï¿½ï¿½
 	pthread_mutex_lock(&multiple_buffer.o_doneMutex);
 	multiple_buffer.all_buffer_end++;
 
@@ -2002,6 +2002,7 @@ void init_multiple_buffer(int number_of_threads)
 
 		multiple_buffer.result_array[i].comp_data = (unsigned char*)multiple_buffer.result_array[i].uncomp_data + BGZF_MAX_BLOCK_SIZE;
 
+        multiple_buffer.result_array[i].comp_len = 0;
 	}
 
 	multiple_buffer.all_buffer_end = 0;
@@ -2024,19 +2025,19 @@ inline int if_empty_buffer()
 
 
 
-///Ö»ÒªÕâÈý¸ö±äÁ¿¾ÍºÃ
+///Ö»Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íºï¿½
 ///hwrite(main_fp->fp, j->comp_data, j->comp_len) != j->comp_len
 
-///Õâ¸öÊÇÒªÈ¡Ò»¸ö½á¹ûÈ¡µ½curr_sub_blockÖÐ
+///ï¿½ï¿½ï¿½ï¿½ï¿½ÒªÈ¡Ò»ï¿½ï¿½ï¿½ï¿½ï¿½È¡ï¿½ï¿½curr_sub_blockï¿½ï¿½
 inline void pop_single_buffer(bgzf_buffer* curr_sub_block)
 {
 	multiple_buffer.number--;
 
-	///Ö±½Ó¸³Öµ
+	///Ö±ï¿½Ó¸ï¿½Öµ
 	curr_sub_block->fp = multiple_buffer.result_array[multiple_buffer.number].fp;
 	curr_sub_block->comp_len = multiple_buffer.result_array[multiple_buffer.number].comp_len;
 
-	///½»»»Ö¸Õë
+	///ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
 	char *k;
 	k = multiple_buffer.result_array[multiple_buffer.number].comp_data;
 	multiple_buffer.result_array[multiple_buffer.number].comp_data = curr_sub_block->comp_data;
@@ -2053,7 +2054,7 @@ void* pop_buffer_bam(void *a)
 
 	tmp_buffer_sub_block.uncomp_data = (unsigned char*)malloc(2 * BGZF_MAX_BLOCK_SIZE);
 	tmp_buffer_sub_block.comp_data = (unsigned char*)tmp_buffer_sub_block.uncomp_data + BGZF_MAX_BLOCK_SIZE;
-
+    tmp_buffer_sub_block.comp_len = 0;
 
 
 	while (multiple_buffer.all_buffer_end<multiple_buffer.threads_count)
@@ -2065,8 +2066,8 @@ void* pop_buffer_bam(void *a)
 
 		while (if_empty_buffer() && (multiple_buffer.all_buffer_end<multiple_buffer.threads_count))
 		{
-			///°´µÀÀíÕâ¸öÐÅºÅÁ¿ËÆºõ²»ÓÃ·¢
-			///ÒòÎª¶ÓÁÐ²»¿ÉÄÜÒ»±ßÂúÒ»±ß¿Õ
+			///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½Ã·ï¿½
+			///ï¿½ï¿½Îªï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ß¿ï¿½
 			pthread_cond_signal(&multiple_buffer.o_stallCond);
 
 
@@ -2082,18 +2083,15 @@ void* pop_buffer_bam(void *a)
 		pthread_cond_signal(&multiple_buffer.o_stallCond);
 		pthread_mutex_unlock(&multiple_buffer.o_queueMutex);
 
-		///if (tmp_buffer_sub_block.length != 0)
+
+		if (tmp_buffer_sub_block.comp_len != 0)
 		{
-			///fprintf(output_file, "%s", tmp_buffer_sub_block.buffer);
 
 			if (hwrite(tmp_buffer_sub_block.fp->fp, tmp_buffer_sub_block.comp_data, tmp_buffer_sub_block.comp_len) != tmp_buffer_sub_block.comp_len) 
 			{
 				fprintf(stderr, "ERROR when writing to disk\n");
 			}
 		}
-
-
-
 
 	}
 
@@ -2102,9 +2100,10 @@ void* pop_buffer_bam(void *a)
 	while (multiple_buffer.number>0)
 	{
 		multiple_buffer.number--;
-		////fprintf(output_file, "%s", buffer_out.sub_buffer[buffer_out.sub_block_number].buffer);
 
-		if (hwrite(multiple_buffer.result_array[multiple_buffer.number].fp->fp,
+        if (multiple_buffer.result_array[multiple_buffer.number].comp_len != 0)
+        {
+            if (hwrite(multiple_buffer.result_array[multiple_buffer.number].fp->fp,
 				multiple_buffer.result_array[multiple_buffer.number].comp_data, 
 				multiple_buffer.result_array[multiple_buffer.number].comp_len) 
 				!= 
@@ -2112,6 +2111,9 @@ void* pop_buffer_bam(void *a)
 			{
 				fprintf(stderr, "ERROR when writing to disk\n");
 			}
+        }
+        
+		
 
 	}
 
@@ -2134,18 +2136,18 @@ inline int if_full_buffer()
 }
 
 
-///Ö»ÒªÕâÈý¸ö±äÁ¿¾ÍºÃ
+///Ö»Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Íºï¿½
 ///hwrite(main_fp->fp, j->comp_data, j->comp_len) != j->comp_len
-///Õâ¸öÊÇÒª°Ñcurr_sub_blockµÄ½á¹û·Åµ½¶ÓÁÐÖÐ
+///ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½curr_sub_blockï¿½Ä½ï¿½ï¿½ï¿½Åµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 inline void push_single_buffer(bgzf_buffer* curr_sub_block)
 {
 
 
-	///Ö±½Ó¸³Öµ
+	///Ö±ï¿½Ó¸ï¿½Öµ
 	multiple_buffer.result_array[multiple_buffer.number].fp = curr_sub_block->fp;
 	multiple_buffer.result_array[multiple_buffer.number].comp_len = curr_sub_block->comp_len;
 
-	///½»»»Ö¸Õë
+	///ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½
 	char *k;
 	k = multiple_buffer.result_array[multiple_buffer.number].comp_data;
 	multiple_buffer.result_array[multiple_buffer.number].comp_data = curr_sub_block->comp_data;
@@ -2164,8 +2166,8 @@ void push_results_to_buffer(bgzf_buffer* sub_block)
 	///if_full_buffer
 	while (if_full_buffer())
 	{
-		///°´µÀÀíÕâ¸öÐÅºÅÁ¿ËÆºõ²»ÓÃ·¢
-		///ÒòÎª¶ÓÁÐ²»¿ÉÄÜÒ»±ßÂúÒ»±ß¿Õ
+		///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Åºï¿½ï¿½ï¿½ï¿½Æºï¿½ï¿½ï¿½ï¿½Ã·ï¿½
+		///ï¿½ï¿½Îªï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ß¿ï¿½
 		pthread_cond_signal(&multiple_buffer.o_flushCond);
 
 
@@ -2203,10 +2205,10 @@ static int chhy_write_disk_back(BGZF *main_fp, BGZF *buffer_fp)
 
 	j->fp = main_fp;
 	j->errcode = 0;
-	///×¢ÒâÕâÀïÊÇbuffer_fp
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	j->uncomp_len = buffer_fp->block_offset;
 
-	///×¢ÒâÕâÀïÊÇbuffer_fp
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	memcpy(j->uncomp_data, buffer_fp->uncompressed_block, j->uncomp_len);
 
 
@@ -2226,14 +2228,14 @@ static int chhy_write_disk_back(BGZF *main_fp, BGZF *buffer_fp)
 		fprintf(stderr, "ERROR when writing to disk\n");
 	}
 
-	////ÕâÀïÆäÊµÓÐ¸öË¢ÐÂ, ÒÔºóÔÙ²¹
+	////ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ð¸ï¿½Ë¢ï¿½ï¿½, ï¿½Ôºï¿½ï¿½Ù²ï¿½
 
 
 	pthread_mutex_unlock(&queueMutex_bam);
 
 	free(j);
 
-	///×¢ÒâÕâÀïÊÇbuffer_fp
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	buffer_fp->block_offset = 0;
 	return 0;
 
@@ -2255,12 +2257,12 @@ static int chhy_write_disk(BGZF *main_fp, BGZF *buffer_fp, bgzf_buffer* j)
 
 	j->fp = main_fp;
 	j->errcode = 0;
-	///×¢ÒâÕâÀïÊÇbuffer_fp
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	j->uncomp_len = buffer_fp->block_offset;
 
 
 	/**
-	///×¢ÒâÕâÀïÊÇbuffer_fp
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	memcpy(j->uncomp_data, buffer_fp->uncompressed_block, j->uncomp_len);
 	**/
 	char* k_tmp = j->uncomp_data;
@@ -2286,14 +2288,14 @@ static int chhy_write_disk(BGZF *main_fp, BGZF *buffer_fp, bgzf_buffer* j)
 		fprintf(stderr, "ERROR when writing to disk\n");
 	}
 
-	////ÕâÀïÆäÊµÓÐ¸öË¢ÐÂ, ÒÔºóÔÙ²¹
+	////ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ð¸ï¿½Ë¢ï¿½ï¿½, ï¿½Ôºï¿½ï¿½Ù²ï¿½
 
 
 	pthread_mutex_unlock(&queueMutex_bam);
 	**/
 
 
-	///×¢ÒâÕâÀïÊÇbuffer_fp
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	buffer_fp->block_offset = 0;
 	return 0;
 
@@ -2306,8 +2308,8 @@ static int chhy_write_disk(BGZF *main_fp, BGZF *buffer_fp, bgzf_buffer* j)
 
 int chhy_lazy_flush_pure(BGZF *main_fp, BGZF *buffer_fp, bgzf_buffer* j)
 {
-	//block_offset´ú±íuncompressed_blockÓÐ¶àÉÙ×Ö½Ú´ýÑ¹Ëõ
-	//Èç¹ûblock_offsetÎª0, Ôò´ú±íuncompressed_blockÀïÃ»Êý¾Ý, ÔòÃ»±ØÒªÌá½»µ½»º³åÇøÈ¥´¦Àí
+	//block_offsetï¿½ï¿½ï¿½ï¿½uncompressed_blockï¿½Ð¶ï¿½ï¿½ï¿½ï¿½Ö½Ú´ï¿½Ñ¹ï¿½ï¿½
+	//ï¿½ï¿½ï¿½block_offsetÎª0, ï¿½ï¿½ï¿½ï¿½ï¿½uncompressed_blockï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã»ï¿½ï¿½Òªï¿½á½»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¥ï¿½ï¿½ï¿½ï¿½
 	if (buffer_fp->block_offset)
 	{
 		return chhy_write_disk(main_fp, buffer_fp, j);
@@ -2323,7 +2325,7 @@ int chhy_lazy_flush_pure(BGZF *main_fp, BGZF *buffer_fp, bgzf_buffer* j)
 
 int chhy_bgzf_flush_try_pure(BGZF *main_fp, BGZF *buffer_fp, ssize_t size, bgzf_buffer* j)
 {
-	//×¢ÒâÕâÀïÊÇbuffer_fp
+	//×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer_fp
 	if (buffer_fp->block_offset + size > BGZF_BLOCK_SIZE)
 	{
 		return chhy_lazy_flush_pure(main_fp, buffer_fp, j);
@@ -2347,16 +2349,16 @@ ssize_t chhy_bgzf_write_pure(BGZF *main_fp, BGZF *buffer_fp, const void *data, s
 	ssize_t remaining = length;
 	assert(main_fp->is_write);
 
-	///ÕâÀïÃæÓ¦¸Ã¶¼ÊÇbuffer_fp
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½Ã¶ï¿½ï¿½ï¿½buffer_fp
 	while (remaining > 0) {
 		uint8_t* buffer = (uint8_t*)buffer_fp->uncompressed_block;
-		int copy_length = BGZF_BLOCK_SIZE - buffer_fp->block_offset;  ///block_offset´ú±íuncompressed_blockÓÐ¶àÉÙ×Ö½Ú´ýÑ¹Ëõ
+		int copy_length = BGZF_BLOCK_SIZE - buffer_fp->block_offset;  ///block_offsetï¿½ï¿½ï¿½ï¿½uncompressed_blockï¿½Ð¶ï¿½ï¿½ï¿½ï¿½Ö½Ú´ï¿½Ñ¹ï¿½ï¿½
 		if (copy_length > remaining) copy_length = remaining;
 		memcpy(buffer + buffer_fp->block_offset, input, copy_length);
 		buffer_fp->block_offset += copy_length;
 		input += copy_length;
 		remaining -= copy_length;
-		if (buffer_fp->block_offset == BGZF_BLOCK_SIZE) {  ///Ö»ÓÐ´ïµ½Ò»¸öBGZF_BLOCK_SIZEµÄÊ±ºò, ²Å»áflush
+		if (buffer_fp->block_offset == BGZF_BLOCK_SIZE) {  ///Ö»ï¿½Ð´ïµ½Ò»ï¿½ï¿½BGZF_BLOCK_SIZEï¿½ï¿½Ê±ï¿½ï¿½, ï¿½Å»ï¿½flush
 			if (chhy_lazy_flush_pure(main_fp, buffer_fp, j) != 0) return -1;
 		}
 	}

@@ -191,12 +191,12 @@ int Load_Methy_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapp
 
 	if (_ih_fp == NULL)
 	{
-		fprintf(stdout, "Cannot open %s!\n", indexName);
+		fprintf(stderr, "Cannot open %s!\n", indexName);
 		return 0;
 	}
 	else
 	{
-		fprintf(stdout, "Open %s sucessfully!\n", indexName);
+		fprintf(stderr, "Open %s sucessfully!\n", indexName);
 	}
 
 
@@ -249,7 +249,7 @@ int Load_Methy_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapp
 	///这个是基因组总长
 	tmp = fread(&refGenLength, sizeof(refGenLength), 1, _ih_fp);
 
-	fprintf(stdout, "refGenLength = %llu \n", refGenLength);
+	fprintf(stderr, "refGenLength = %llu \n", refGenLength);
 
 
 	return 1;
@@ -460,13 +460,7 @@ void SavingMethyIndex(char *fileName, bitmapper_bs_iter reference_length, _rg_na
 	fseek(methy_ih_fp, 0, SEEK_END);
 	bitmapper_bs_iter file_length = ftell(methy_ih_fp);
 	fseek(methy_ih_fp, 0, SEEK_SET);
-	/**
-	if (file_length != reference_length)
-	{
-		fprintf(stdout, "ERRORE: file_length!=reference_length\n");
-		exit(0);
-	}
-	**/
+
 
 	fclose(methy_ih_fp);
 
@@ -527,12 +521,12 @@ void build_inde_from_disk(char* file_name)
 
 	if (NULL == f1)
 	{
-		fprintf(stdout, "Failed to open %s! Bitmapper_BS will exit ...\n", file_name);
+		fprintf(stderr, "Failed to open %s! Bitmapper_BS will exit ...\n", file_name);
 		exit(1);
 	}
 	else
 	{
-		fprintf(stdout, "Open %s sucessfully! \n", file_name);
+		fprintf(stderr, "Open %s sucessfully! \n", file_name);
 	}
 
 
@@ -556,7 +550,7 @@ void build_inde_from_disk(char* file_name)
 		else
 		{
 
-			fprintf(stdout, "%u-th character does not belong to {a, c, g, t, A, C, G, T}. Its  ASCII Code is %u, and it is %c.\n",
+			fprintf(stderr, "%u-th character does not belong to {a, c, g, t, A, C, G, T}. Its  ASCII Code is %u, and it is %c.\n",
 				number_of_total_characters, ch, ch);
 		}
 
@@ -616,10 +610,10 @@ void generate_directional_BS_genome_to_disk(char* refGen, bitmapper_bs_iter leng
 			refGen[i] != 'g'&&
 			refGen[i] != 't')
 		{
-			fprintf(stdout, "(generate_directional_BS_genome) Text has non-A-C-G-T characters!\n");
-			fprintf(stdout, "(generate_directional_BS_genome) i = %c\n", i);
-			fprintf(stdout, "(generate_directional_BS_genome) character = %c\n", refGen[i]);
-			fprintf(stdout, "(generate_directional_BS_genome) ASCII code = %u\n", (unsigned int)refGen[i]);
+			fprintf(stderr, "(generate_directional_BS_genome) Text has non-A-C-G-T characters!\n");
+			fprintf(stderr, "(generate_directional_BS_genome) i = %c\n", i);
+			fprintf(stderr, "(generate_directional_BS_genome) character = %c\n", refGen[i]);
+			fprintf(stderr, "(generate_directional_BS_genome) ASCII code = %u\n", (unsigned int)refGen[i]);
 			exit(1);
 		}
 	}
@@ -815,14 +809,7 @@ void convert_to_2bit(char* refGen, bitmapper_bs_iter length, char* file_name)
 	}
 
 
-	/**
-	fprintf(stdout, "i_2_bit = %llu\n", i_2_bit);
 
-	for (i = 0; i < i_2_bit; i++)
-	{
-		fprintf(stdout, "refGen[%llu] = %llu\n", i, refGen[i]);
-	}
-	**/
 
 	char file_name_g[1000];
 
@@ -833,7 +820,7 @@ void convert_to_2bit(char* refGen, bitmapper_bs_iter length, char* file_name)
 
 	if (f_g == NULL)
 	{
-		fprintf(stdout, "Cannot open %s \n", file_name_g);
+		fprintf(stderr, "Cannot open %s \n", file_name_g);
 		exit(1);
 	}
 
@@ -862,12 +849,12 @@ void createIndex(char *fileName, char *indexName)
   ///这里的结果比较粗略，实际上是文件大小,这个会比基因组略大一点
   bitmapper_bs_iter reference_length = initLoadingRefGenome(fileName);
 
-  fprintf(stdout, "Generating Index from %s \n", fileName);
+  fprintf(stderr, "Generating Index from %s \n", fileName);
 	
 
   if (!reference_length)
   {
-    fprintf(stdout, "The error of Reading Index:\n");
+    fprintf(stderr, "The error of Reading Index:\n");
     return;
   }
 
@@ -882,14 +869,14 @@ void createIndex(char *fileName, char *indexName)
 
   for(i=0;i<refChromeCont;++i)
   {
-      fprintf(stdout, "Chrome Name =%s ********\n", (refChromeName)[i]._rg_chrome_name);
-      fflush(stdout);
-      fprintf(stdout, "Chrome length =%d ********\n", (refChromeName)[i]._rg_chrome_length);
-      fflush(stdout);
+      fprintf(stderr, "Chrome Name =%s ********\n", (refChromeName)[i]._rg_chrome_name);
+      fflush(stderr);
+      fprintf(stderr, "Chrome length =%d ********\n", (refChromeName)[i]._rg_chrome_length);
+      fflush(stderr);
   }
 
-  fprintf(stdout, "The length of Genome is %u:\n", reference_length);
-  fflush(stdout);
+  fprintf(stderr, "The length of Genome is %u:\n", reference_length);
+  fflush(stderr);
 
   //这就是把那个文件打开而已..，写进了一些属性信息
   ///主要是写基因组长度
@@ -928,8 +915,7 @@ void createIndex(char *fileName, char *indexName)
 
   
 
-  fprintf(stdout, "command_string: %s\n", command_string);
-  ///fflush(stdout);
+  fprintf(stderr, "command_string: %s\n", command_string);
 
   int error = system(command_string);
   error = system("rm *.sa5");
@@ -948,7 +934,7 @@ void createIndex(char *fileName, char *indexName)
 
 
 
-  fprintf(stdout, "\nDONE in %0.2fs!\n", (Get_T()-startTime));
+  fprintf(stderr, "\nDONE in %0.2fs!\n", (Get_T()-startTime));
 }
 
 int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs_iter* msf_refChromeCont, char* indexName)
@@ -1005,7 +991,7 @@ int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs
   ///这个是基因组总长
   tmp = fread(&refGenLength, sizeof(refGenLength), 1, _ih_fp);
 
-  fprintf(stdout, "refGenLength = %llu \n", refGenLength);
+  fprintf(stderr, "refGenLength = %llu \n", refGenLength);
  
 
 
@@ -1025,12 +1011,12 @@ int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs
   _ih_fp_bs_ref = fopen(file_name_g, "r");
   if (_ih_fp_bs_ref == NULL)
   {
-	  fprintf(stdout, "Cannot open %s \n", file_name_g);
+	  fprintf(stderr, "Cannot open %s \n", file_name_g);
 	  exit(1);
   }
   else
   {
-	  fprintf(stdout, "Open %s sucessfully!\n", file_name_g);
+	  fprintf(stderr, "Open %s sucessfully!\n", file_name_g);
   }
   ///这个是基因组2bit形式总长
   fread(&refGenLength_2_bit, sizeof(refGenLength_2_bit), 1, _ih_fp_bs_ref);
@@ -1058,47 +1044,6 @@ int  Load_Index(int errThreshould, _rg_name_l  **msf_ih_refGenName, bitmapper_bs
 }
 
 
-/**
-int Start_Load_Index(char *fileName)
-{
-	int path_length = strlen(fileName);
-	fileName[path_length - 6] = '_';
-	
-
-	DIR* dir = opendir(fileName);
-
-	if (dir)
-	{
-		/// Directory exists. 
-		char directory_path[NAME_LENGTH];
-		strcpy(directory_path, fileName);
-		directory_path[path_length - 6] = '.';
-		fileName[path_length] = '/';
-		strcpy(fileName + path_length, directory_path);
-		///fprintf(stderr, "fileName: %s\n", fileName);
-	}
-	else if (ENOENT == errno)
-	{
-		/// Directory does not exist. 
-		fileName[path_length - 6] = '.';
-	}
-
-	_ih_fp = fopen(fileName, "r");
-
-	if (_ih_fp == NULL)
-	{
-		fprintf(stdout, "Cannot open %s!\n", fileName);
-		return 0;
-	}
-	else
-	{
-		fprintf(stdout, "Open %s sucessfully!\n", fileName);
-	}
-  
-
-  return 1;
-}
-**/
 
 int Start_Load_Index(char *fileName)
 {
@@ -1125,12 +1070,12 @@ int Start_Load_Index(char *fileName)
 	_ih_fp = fopen(fileName, "r");
 	if (_ih_fp == NULL)
 	{
-		fprintf(stdout, "Cannot open %s!\n", fileName);
+		fprintf(stderr, "Cannot open %s!\n", fileName);
 		return 0;
 	}
 	else
 	{
-		fprintf(stdout, "Open %s sucessfully!\n", fileName);
+		fprintf(stderr, "Open %s sucessfully!\n", fileName);
 	}
 
 	return 1;
