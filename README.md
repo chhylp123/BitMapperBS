@@ -109,7 +109,7 @@ single-end reads
 
 paired-end reads
 
-    ./bitmapperBS --search <genome file name> --seq1 <read1 file name> --seq2 <read2 file name> --pe [options]
+    ./bitmapperBS --search <genome file name> --seq1 <read1 file name> --seq2 <read2 file name> [options]
 
 
 output mapping results in BAM format
@@ -148,11 +148,10 @@ We recommend users to first remove the duplicates by Picard or samtools, and the
 | --search | NULL| String | NULL | Search in the specified genome. If the indexes of this genome are built without "--index_folder", please provide the path to the fasta file when aligning. Otherwise please provide the path to the index folder (set by "--index_folder" during indexing).|
 | --fast | NULL| String | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
 | --sensitive | NULL| String | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
-| --pe | NULL| NULL | NULL | Searching will be done in paired-end mode. |
 | --seq | NULL| String | NULL | Provide the name of single-end read file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
-| -o | -o | String | output (SAM format) | Provide the name of output file (SAM or BAM format). |
+| -o | -o | String | stdout (Standard output) | Provide the name of output file (SAM or BAM format). |
 | --sam | NULL| String | NULL | Output mapping results in SAM format (default). |
 | --bam | NULL| String | NULL | Output mapping results in BAM format. |
 | -e | -e | Double | 0.08 | Set the edit distance rate of read length, which is between 0 and 1. |
@@ -197,7 +196,7 @@ If map the reads from the *_2 reads file or the pbat protocol, the --pbat option
 
 to map reads to human genome (GRCH38) in paired-end mode using 6 CPU threads:
 
-	./bitmapperBS --search ../../ssd/human_genome.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq --pe -t 6
+	./bitmapperBS --search ../../ssd/human_genome.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq -t 6
 
 
 
@@ -217,6 +216,13 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 
 ### Changelog ###
+
+(15) June 29, 2019: version 1.0.1.6 released. 
+
+    >> Remove the `--pe` option. The paired-end mode or the single-end mode can be determined automatically.
+    >> All logging information is printed to standard error.
+    >> If `-o` is not specified, the alignment results would be printed to standard output.
+    >> Fix a minor bug of the paired-end read name.
 
 (14) June 28, 2019: version 1.0.1.5 released. 
 

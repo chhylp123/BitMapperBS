@@ -59,23 +59,46 @@ void init_bam_header_back(char* tmp_sam_file_name, char* bam_file_name)
 
 }
 
-void init_bam_header(char* tmp_sam_file_name, char* bam_file_name)
+void init_bam_header(char* bam_file_name, _rg_name_l  *_ih_refGenName, int refChromeCont, int argc, char *argv[])
 {
 
-	samFile* in;
-	in = sam_open(tmp_sam_file_name, "r");
-	bitmapperBS_bam.bam_file = sam_open_format(bam_file_name, "wb", NULL);
-	///bitmapperBS_bam.bam_file = sam_open_format("stdout", "wb", NULL);
+	if (bam_file_name[0] == '\0')
+	{
+		bitmapperBS_bam.bam_file = sam_open_format("-", "wb", NULL);
+	}
+	else
+	{
+		bitmapperBS_bam.bam_file = sam_open_format(bam_file_name, "wb", NULL);
+	}
+	
+
 	bitmapperBS_bam.bam_header = NULL;
 
 
-	bitmapperBS_bam.output_name = tmp_sam_file_name;
+	bitmapperBS_bam.output_name = bam_file_name;
+
+
+	char** chrome_name = (char**)malloc(sizeof(char*)*refChromeCont);
+	bitmapper_bs_iter* chrome_length = (bitmapper_bs_iter*)malloc(sizeof(bitmapper_bs_iter)*refChromeCont);
+
+	int i = 0;
+
+	for (i = 0; i < refChromeCont; i++)
+	{
+		chrome_name[i]=_ih_refGenName[i]._rg_chrome_name;
+		chrome_length[i] = _ih_refGenName[i]._rg_chrome_length;
+	}
+
 
 	///读入sam的首部
-	if ((bitmapperBS_bam.bam_header = sam_hdr_read(in)) == 0) {
-		fprintf(stderr, "fail to read %s\n", tmp_sam_file_name);
+	//if ((bitmapperBS_bam.bam_header = sam_hdr_read(in)) == 0) {
+	if ((bitmapperBS_bam.bam_header = chhy_sam_hdr_read(chrome_name, chrome_length, refChromeCont,
+	argc, argv, versionN)) == 0) {
+		fprintf(stderr, "fail to phrase %s\n", bam_file_name);
 		return;
 	}
+
+
 
 	///写入sam的首部
 	if (sam_hdr_write(bitmapperBS_bam.bam_file, bitmapperBS_bam.bam_header) != 0) {
@@ -83,19 +106,22 @@ void init_bam_header(char* tmp_sam_file_name, char* bam_file_name)
 		return;
 	}
 
-	///一定要关闭，不关的话写不到文件里去
-	sam_close(in);
+	free(chrome_name);
+	free(chrome_length);
 
 }
 
 
 
-void init_bam_file_from_sam(char* file_name, char* outputFileName)
+///void init_bam_file_from_sam(char* file_name, char* outputFileName)
+void init_bam_file_from_sam(char* file_name, char* outputFileName,
+_rg_name_l  *_ih_refGenName, int refChromeCont, int argc, char *argv[])
 {
 	finalizeOutput();
 
 
-	init_bam_header(file_name, outputFileName);
+	///init_bam_header(file_name, outputFileName);
+	///init_bam_header(file_name, outputFileName, _ih_refGenName, refChromeCont, argc, argv);
 
 
 }

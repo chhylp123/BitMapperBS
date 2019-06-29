@@ -60,7 +60,7 @@ char char_to_3bit[128] = {
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.1.5";
+char *versionN = "1.0.1.6";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
@@ -541,6 +541,7 @@ void Prepare_alignment(char* outputFileName, char *genFileName, _rg_name_l *chhy
 			cut_length = cut_length + 1;
 		}
 
+		///outputFileName一定是bmm_folder/output
 		open_methy_output(&methy_out, outputFileName, cut_length);
 
 

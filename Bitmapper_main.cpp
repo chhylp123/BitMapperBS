@@ -53,7 +53,6 @@ int main(int argc, char *argv[])
       double loadingTime;
       double mappingTime;
       char outputFileName[NAME_LENGTH];
-	  char bam_outputFileName[NAME_LENGTH];
 	  
 
 
@@ -69,18 +68,17 @@ int main(int argc, char *argv[])
          return 1;
       }
 
+	  if(Mapped_File)
+	  {
+		  sprintf(outputFileName, "%s%s",Mapped_FilePath , Mapped_File);
+	  }
+	  else
+	  {
+		  outputFileName[0] = '\0';
+	  }
+	  
 
-	  sprintf(outputFileName, "%s%s",Mapped_FilePath , Mapped_File);
-	  sprintf(bam_outputFileName, "%s.tmp", outputFileName);
-	   
-       
-
-	   if (output_methy == 0)
-	   {
-			Output_gene(outputFileName);   
-	   }
-
-       
+	  
 
         if (!is_pairedEnd)
         {
@@ -105,14 +103,16 @@ int main(int argc, char *argv[])
 
 			if (output_methy == 0)
 			{
-				//这个Prepare_alignment()就是将这个文件里的变量各种配置到新文件中
-				OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
-
-
-				if (bam_output == 1)
+				if (bam_output == 0)
 				{
-					init_bam_file_from_sam(outputFileName, bam_outputFileName);
+					Output_gene(outputFileName);   
+					OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
 				}
+				else
+				{
+					init_bam_header(outputFileName, chhy_ih_refGenName, refChromeCont, argc, argv);
+				}
+				
 			}
             
             
@@ -200,19 +200,20 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "Start alignment in sensitive mode.\n");
 			}
 
-
-			///fprintf(stderr, "is_local: %d\n", is_local);
             
 
 			if (output_methy == 0)
 			{
-
-				OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
-
-				if (bam_output == 1)
+				if (bam_output == 0)
 				{
-					init_bam_file_from_sam(outputFileName, bam_outputFileName);
+					Output_gene(outputFileName); 
+					OutPutSAM_Nounheader(chhy_ih_refGenName, refChromeCont, argc, argv);
 				}
+				else
+				{
+					init_bam_header(outputFileName, chhy_ih_refGenName, refChromeCont, argc, argv);
+				}
+				
 			}
 
 
@@ -224,7 +225,7 @@ int main(int argc, char *argv[])
              if(THREAD_COUNT==1)
             {
 
-				 Map_Pair_Seq(0);
+				Map_Pair_Seq(0);
             }
             else
             {
@@ -247,9 +248,7 @@ int main(int argc, char *argv[])
 
 		if (bam_output == 1)
 		{
-			///close_bam_file();
-			close_bam_file_rename(bam_outputFileName, outputFileName);
-
+			close_bam_file();
 		}
 
 	  ///这个一打开速度就奇慢，不知道为什么
@@ -284,8 +283,16 @@ int main(int argc, char *argv[])
 	  {
 		  char mapstatsFileName[NAME_LENGTH];
 
-		  sprintf(mapstatsFileName, "%s.mapstats", outputFileName);
-
+		  if (outputFileName[0] == '\0')
+		  {
+			  sprintf(mapstatsFileName, "stdout.mapstats");
+		  }
+		  else
+		  {
+			  sprintf(mapstatsFileName, "%s.mapstats", outputFileName);
+		  }
+		  
+		  
 		  FILE* mapstats_fp = fopen(mapstatsFileName, "w");
 			 
 		  if (mapstats_fp != NULL)
