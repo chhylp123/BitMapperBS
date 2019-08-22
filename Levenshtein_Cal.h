@@ -13,7 +13,7 @@
 #include "nmmintrin.h"
 #include "smmintrin.h"
 #include <immintrin.h>
-
+#include "ksw.h"
 
 
 ///int each_length;
@@ -123,15 +123,15 @@ int Start_location_Reserve_Banded_BPM(char *pattern,int p_length,char *text,int 
 
 
 
-/**************************************************µ¥Ìõ±È¶Ô***************************************************************************************************/
+/**************************************************ï¿½ï¿½ï¿½ï¿½ï¿½È¶ï¿½***************************************************************************************************/
 
-///Õâ¸ö³ÌĞòÊµ¼Ê¾Í¼ÙÉèpatternÀïÃæÓĞ¿ÉÄÜÓĞN
+///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ê¾Í¼ï¿½ï¿½ï¿½patternï¿½ï¿½ï¿½ï¿½ï¿½Ğ¿ï¿½ï¿½ï¿½ï¿½ï¿½N
 inline int BS_Reserve_Banded_BPM_back
 (char *pattern, int p_length, char *text, int t_length, unsigned short errthold, unsigned int* return_err)
 {
 	(*return_err) = (unsigned int)-1;
 
-	///Õâ¸öÊÇÄÇ¸öĞèÒªÔ¤´¦ÀíµÄÏòÁ¿
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ÒªÔ¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	Word Peq[256];
 
 	int band_length = (errthold << 1) + 1;
@@ -150,9 +150,9 @@ inline int BS_Reserve_Banded_BPM_back
 	Word Peq_G;
 
 	///band_length = 2k + 1
-	///ÕâÊÇ°ÑpatternµÄÇ°2k + 1¸ö×Ö·ûÔ¤´¦Àí
-	///pattern[0]¶ÔÓ¦Peq[0]
-	///pattern[2k]¶ÔÓ¦Peq[2k]
+	///ï¿½ï¿½ï¿½Ç°ï¿½patternï¿½ï¿½Ç°2k + 1ï¿½ï¿½ï¿½Ö·ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½
+	///pattern[0]ï¿½ï¿½Ó¦Peq[0]
+	///pattern[2k]ï¿½ï¿½Ó¦Peq[2k]
 	for (i = 0; i<band_length; i++)
 	{
 		Peq[pattern[i]] = Peq[pattern[i]] | tmp_Peq_1;
@@ -209,7 +209,7 @@ inline int BS_Reserve_Banded_BPM_back
 	while (i<t_length_1)
 	{
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
 		X = Peq[text[i]] | VN;
 
 		D0 = ((VP + (X&VP)) ^ VP) | X;
@@ -220,21 +220,21 @@ inline int BS_Reserve_Banded_BPM_back
 		X = D0 >> 1;
 		VN = X&HP;
 		VP = HN | ~(X | HP);
-		///Èç¹ûĞ±¶Ô½ÇÏß·½ÏòÆ¥ÅäÔòD0ÊÇ1
-		///Èç¹û²»Æ¥ÅäÔòD0ÊÇ0
-		///Õâ¸öÒâË¼ÊÇÈç¹û×îÉÏÃæÄÇÌõ¶Ô½ÇÏßÉÏµÄĞ±¶Ô½ÇÏß·½Ïò·¢ÉúÎóÅä,ÔòÖ´ĞĞÄÚ²¿³ÌĞò
+		///ï¿½ï¿½ï¿½Ğ±ï¿½Ô½ï¿½ï¿½ß·ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½D0ï¿½ï¿½1
+		///ï¿½ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½D0ï¿½ï¿½0
+		///ï¿½ï¿½ï¿½ï¿½ï¿½Ë¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½ï¿½Ïµï¿½Ğ±ï¿½Ô½ï¿½ï¿½ß·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½Ö´ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½
 		///
 		if (!(D0&err_mask))
 		{
 			++err;
 
-			///¼´Ê¹È«²¿µİ¼õ£¬Ò²¾Í¼õ2k
+			///ï¿½ï¿½Ê¹È«ï¿½ï¿½ï¿½İ¼ï¿½ï¿½ï¿½Ò²ï¿½Í¼ï¿½2k
 			if ((err - last_high)>errthold)
 				return -1;
 		}
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
-		//ÓÒÒÆÊµ¼ÊÉÏÊÇ°Ñpattern[0]ÒÆµôÁË
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
+		//ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½pattern[0]ï¿½Æµï¿½ï¿½ï¿½
 		Peq['A'] = Peq['A'] >> 1;
 		Peq['C'] = Peq['C'] >> 1;
 		Peq['G'] = Peq['G'] >> 1;
@@ -243,7 +243,7 @@ inline int BS_Reserve_Banded_BPM_back
 
 		++i;
 		++i_bd;
-		///ÕâÊÇ°ÑĞÂµÄpattern[2k]¼Ó½øÀ´, ÕâÃ²ËÆÊÇ¼Óµ½Peq[2k]ÉÏÁË
+		///ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Âµï¿½pattern[2k]ï¿½Ó½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ç¼Óµï¿½Peq[2k]ï¿½ï¿½ï¿½ï¿½
 		Peq[pattern[i_bd]] = Peq[pattern[i_bd]] | Mask;
 
 
@@ -254,10 +254,10 @@ inline int BS_Reserve_Banded_BPM_back
 	///fprintf(stderr, "sucess(1)\n");
 
 
-	///Õâ¸öÑ­»·ÄÃ³öÀ´ÊÇÎªÁË·ÀÖ¹ÄÚ´æĞ¹Â¶
-	///ÆäÊµÒ²¾ÍÊÇÑ­»·ÀïµÄ×îºóÒ»ĞĞÓï¾ä°É
-	///ÍêÈ«¿ÉÒÔ°ÑpatternÔö´óÒ»Î»
-	///²»¹ıÕâÑùÒ²ºÃ£¬¿ÉÒÔ¼õÉÙ¼ÆËã¿ªÏú
+	///ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ë·ï¿½Ö¹ï¿½Ú´ï¿½Ğ¹Â¶
+	///ï¿½ï¿½ÊµÒ²ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	///ï¿½ï¿½È«ï¿½ï¿½ï¿½Ô°ï¿½patternï¿½ï¿½ï¿½ï¿½Ò»Î»
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ã£ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½Ù¼ï¿½ï¿½ã¿ªï¿½ï¿½
 	X = Peq[text[i]] | VN;
 	D0 = ((VP + (X&VP)) ^ VP) | X;
 	HN = VP&D0;
@@ -278,7 +278,7 @@ inline int BS_Reserve_Banded_BPM_back
 	/// last_high = 2k
 	/// site = (SEQ_LENGTH + 2k) - 2k -1
 	/// site = SEQ_LENGTH - 1
-	///´ËÊ±Õâ¸ösiteÃ²ËÆÊÇ×îÉÏÃæÄÇÌõ¶Ô½ÇÏßµÄÎ»ÖÃ
+	///ï¿½ï¿½Ê±ï¿½ï¿½ï¿½siteÃ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ßµï¿½Î»ï¿½ï¿½
 	///int site = p_length - last_high - 1;
 	int site = t_length - 1;
 	int return_site = -1;
@@ -345,15 +345,15 @@ inline int BS_Reserve_Banded_BPM_back
 
 
 
-/**************************************************µ¥Ìõ±È¶Ô***************************************************************************************************/
+/**************************************************ï¿½ï¿½ï¿½ï¿½ï¿½È¶ï¿½***************************************************************************************************/
 
-///Õâ¸ö³ÌĞòÊµ¼Ê¾Í¼ÙÉèpatternÀïÃæÓĞ¿ÉÄÜÓĞN
+///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½Ê¾Í¼ï¿½ï¿½ï¿½patternï¿½ï¿½ï¿½ï¿½ï¿½Ğ¿ï¿½ï¿½ï¿½ï¿½ï¿½N
 inline int BS_Reserve_Banded_BPM
 (char *pattern, int p_length, char *text, int t_length, unsigned short errthold, unsigned int* return_err)
 {
 	(*return_err) = (unsigned int)-1;
 
-	///Õâ¸öÊÇÄÇ¸öĞèÒªÔ¤´¦ÀíµÄÏòÁ¿
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ÒªÔ¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	Word Peq[256];
 
 	int band_length = (errthold << 1) + 1;
@@ -372,9 +372,9 @@ inline int BS_Reserve_Banded_BPM
 	Word Peq_G;
 
 	///band_length = 2k + 1
-	///ÕâÊÇ°ÑpatternµÄÇ°2k + 1¸ö×Ö·ûÔ¤´¦Àí
-	///pattern[0]¶ÔÓ¦Peq[0]
-	///pattern[2k]¶ÔÓ¦Peq[2k]
+	///ï¿½ï¿½ï¿½Ç°ï¿½patternï¿½ï¿½Ç°2k + 1ï¿½ï¿½ï¿½Ö·ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½
+	///pattern[0]ï¿½ï¿½Ó¦Peq[0]
+	///pattern[2k]ï¿½ï¿½Ó¦Peq[2k]
 	for (i = 0; i<band_length; i++)
 	{
 		Peq[pattern[i]] = Peq[pattern[i]] | tmp_Peq_1;
@@ -432,7 +432,7 @@ inline int BS_Reserve_Banded_BPM
 
 	while (i<t_length_1)
 	{
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
 		X = Peq[text[i]] | VN;
 
 		D0 = ((VP + (X&VP)) ^ VP) | X;
@@ -443,21 +443,21 @@ inline int BS_Reserve_Banded_BPM
 		X = D0 >> 1;
 		VN = X&HP;
 		VP = HN | ~(X | HP);
-		///Èç¹ûĞ±¶Ô½ÇÏß·½ÏòÆ¥ÅäÔòD0ÊÇ1
-		///Èç¹û²»Æ¥ÅäÔòD0ÊÇ0
-		///Õâ¸öÒâË¼ÊÇÈç¹û×îÉÏÃæÄÇÌõ¶Ô½ÇÏßÉÏµÄĞ±¶Ô½ÇÏß·½Ïò·¢ÉúÎóÅä,ÔòÖ´ĞĞÄÚ²¿³ÌĞò
+		///ï¿½ï¿½ï¿½Ğ±ï¿½Ô½ï¿½ï¿½ß·ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½D0ï¿½ï¿½1
+		///ï¿½ï¿½ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½D0ï¿½ï¿½0
+		///ï¿½ï¿½ï¿½ï¿½ï¿½Ë¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½ï¿½Ïµï¿½Ğ±ï¿½Ô½ï¿½ï¿½ß·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½Ö´ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½
 		///
 		if (!(D0&err_mask))
 		{
 			++err;
 
-			///¼´Ê¹È«²¿µİ¼õ£¬Ò²¾Í¼õ2k
+			///ï¿½ï¿½Ê¹È«ï¿½ï¿½ï¿½İ¼ï¿½ï¿½ï¿½Ò²ï¿½Í¼ï¿½2k
 			if ((err - last_high)>errthold)
 				return -1;
 		}
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
-		//ÓÒÒÆÊµ¼ÊÉÏÊÇ°Ñpattern[0]ÒÆµôÁË
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
+		//ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½pattern[0]ï¿½Æµï¿½ï¿½ï¿½
 		Peq['A'] = Peq['A'] >> 1;
 		Peq['C'] = Peq['C'] >> 1;
 		Peq['G'] = Peq['G'] >> 1;
@@ -466,7 +466,7 @@ inline int BS_Reserve_Banded_BPM
 
 		++i;
 		++i_bd;
-		///ÕâÊÇ°ÑĞÂµÄpattern[2k]¼Ó½øÀ´, ÕâÃ²ËÆÊÇ¼Óµ½Peq[2k]ÉÏÁË
+		///ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Âµï¿½pattern[2k]ï¿½Ó½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ç¼Óµï¿½Peq[2k]ï¿½ï¿½ï¿½ï¿½
 		Peq[pattern[i_bd]] = Peq[pattern[i_bd]] | Mask;
 
 
@@ -479,10 +479,10 @@ inline int BS_Reserve_Banded_BPM
 	///fprintf(stderr, "sucess(1)\n");
 
 
-	///Õâ¸öÑ­»·ÄÃ³öÀ´ÊÇÎªÁË·ÀÖ¹ÄÚ´æĞ¹Â¶
-	///ÆäÊµÒ²¾ÍÊÇÑ­»·ÀïµÄ×îºóÒ»ĞĞÓï¾ä°É
-	///ÍêÈ«¿ÉÒÔ°ÑpatternÔö´óÒ»Î»
-	///²»¹ıÕâÑùÒ²ºÃ£¬¿ÉÒÔ¼õÉÙ¼ÆËã¿ªÏú
+	///ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ë·ï¿½Ö¹ï¿½Ú´ï¿½Ğ¹Â¶
+	///ï¿½ï¿½ÊµÒ²ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	///ï¿½ï¿½È«ï¿½ï¿½ï¿½Ô°ï¿½patternï¿½ï¿½ï¿½ï¿½Ò»Î»
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ã£ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½Ù¼ï¿½ï¿½ã¿ªï¿½ï¿½
 	X = Peq[text[i]] | VN;
 	D0 = ((VP + (X&VP)) ^ VP) | X;
 	HN = VP&D0;
@@ -506,7 +506,7 @@ inline int BS_Reserve_Banded_BPM
 	/// last_high = 2k
 	/// site = (SEQ_LENGTH + 2k) - 2k -1
 	/// site = SEQ_LENGTH - 1
-	///´ËÊ±Õâ¸ösiteÃ²ËÆÊÇ×îÉÏÃæÄÇÌõ¶Ô½ÇÏßµÄÎ»ÖÃ
+	///ï¿½ï¿½Ê±ï¿½ï¿½ï¿½siteÃ²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ßµï¿½Î»ï¿½ï¿½
 	///int site = p_length - last_high - 1;
 	int site = t_length - 1;
 	int return_site = -1;
@@ -573,7 +573,7 @@ inline int BS_Reserve_Banded_BPM
 
 
 
-/***************************************************2Ìõ±È¶Ô**************************************************/
+/***************************************************2ï¿½ï¿½ï¿½È¶ï¿½**************************************************/
 inline int BS_Reserve_Banded_BPM_2_SSE_back(char *pattern1, char *pattern2, int p_length, char *text, int t_length,
 	int* return_sites, unsigned int* return_sites_error, unsigned short errthold)
 {
@@ -659,7 +659,7 @@ inline int BS_Reserve_Banded_BPM_2_SSE_back(char *pattern1, char *pattern2, int 
 
 
 
-	/**********************************Õâ¸öÊÇÎª·ÀÖ¹Òç³ö****************************/
+	/**********************************ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Ö¹ï¿½ï¿½ï¿½****************************/
     Word a_mask=((Word)-1)>>(64-band_length);
     ///zui gao wei shi 0, fang zhi yi chu
     __m128i add_mask=_mm_set_epi64x(a_mask,a_mask);
@@ -689,7 +689,7 @@ inline int BS_Reserve_Banded_BPM_2_SSE_back(char *pattern1, char *pattern2, int 
 		/*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
         ///X&VP
 		tmp_process1 = _mm_and_si128(X, VP);
-		/*****************************************ÏÂÃæÕâÁ½²½ÊÇ´¿´â·ÀÖ¹Òç³ö*************************/
+		/*****************************************ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½*************************/
 		tmp_process1 = _mm_and_si128(tmp_process1, add_mask);
 		VP = _mm_and_si128(VP, add_mask);
 		/*************************************************************************************/
@@ -759,7 +759,7 @@ inline int BS_Reserve_Banded_BPM_2_SSE_back(char *pattern1, char *pattern2, int 
     /*************D0 = ((VP + (X&VP)) ^ VP) | X*********************/
     ///X&VP
     tmp_process1 = _mm_and_si128(X, VP);
-    /*****************************************ÏÂÃæÕâÁ½²½ÊÇ´¿´â·ÀÖ¹Òç³ö*************************/
+    /*****************************************ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç´ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½*************************/
     tmp_process1 = _mm_and_si128(tmp_process1, add_mask);
     VP = _mm_and_si128(VP, add_mask);
     /*************************************************************************************/
@@ -921,7 +921,7 @@ inline int BS_Reserve_Banded_BPM_2_SSE_back(char *pattern1, char *pattern2, int 
 
 
 
-/***************************************************2Ìõ±È¶Ô**************************************************/
+/***************************************************2ï¿½ï¿½ï¿½È¶ï¿½**************************************************/
 inline int BS_Reserve_Banded_BPM_2_SSE(char *pattern1, char *pattern2, int p_length, char *text, int t_length,
 	int* return_sites, unsigned int* return_sites_error, unsigned short errthold)
 {
@@ -1263,7 +1263,7 @@ inline int BS_Reserve_Banded_BPM_2_SSE(char *pattern1, char *pattern2, int p_len
 #if defined __AVX2__
 
 
-/***************************************************4Ìõ±È¶Ô**************************************************/
+/***************************************************4ï¿½ï¿½ï¿½È¶ï¿½**************************************************/
 inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char *pattern3, char *pattern4, int p_length, char *text, int t_length,
 	int* return_sites, unsigned int* return_sites_error, unsigned short errthold, __m256i* Peq_SSE)
 {
@@ -1674,7 +1674,7 @@ inline int BS_Reserve_Banded_BPM_4_SSE_back(char *pattern1, char *pattern2, char
 
 
 
-/***************************************************4Ìõ±È¶Ô**************************************************/
+/***************************************************4ï¿½ï¿½ï¿½È¶ï¿½**************************************************/
 inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pattern3, char *pattern4, int p_length, char *text, int t_length,
 	int* return_sites, unsigned int* return_sites_error, unsigned short errthold, __m256i* Peq_SSE)
 {
@@ -2088,8 +2088,8 @@ inline int BS_Reserve_Banded_BPM_4_SSE(char *pattern1, char *pattern2, char *pat
 
 
 
-/***************************************************8Ìõ±È¶Ô**************************************************/
-///Õâ¸öÃ»×öÎªungapµÄÂ·¾¶ÓÅ»¯£¬Èç¹ûÒª×ö¿ÉÒÔ²Î¿¼BS_Reserve_Banded_BPM_4_SSE
+/***************************************************8ï¿½ï¿½ï¿½È¶ï¿½**************************************************/
+///ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Îªungapï¿½ï¿½Â·ï¿½ï¿½ï¿½Å»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½Ô²Î¿ï¿½BS_Reserve_Banded_BPM_4_SSE
 inline int BS_Reserve_Banded_BPM_8_SSE(
 	char *pattern1, char *pattern2, char *pattern3, char *pattern4,
 	char *pattern5, char *pattern6, char *pattern7, char *pattern8,
@@ -2602,8 +2602,8 @@ inline int BS_Reserve_Banded_BPM_8_SSE(
 
 
 
-/***************************************************16Ìõ±È¶Ô**************************************************/
-///Õâ¸öÃ»×öÎªungapµÄÂ·¾¶ÓÅ»¯£¬Èç¹ûÒª×ö¿ÉÒÔ²Î¿¼BS_Reserve_Banded_BPM_4_SSE
+/***************************************************16ï¿½ï¿½ï¿½È¶ï¿½**************************************************/
+///ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Îªungapï¿½ï¿½Â·ï¿½ï¿½ï¿½Å»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½Ô²Î¿ï¿½BS_Reserve_Banded_BPM_4_SSE
 inline int BS_Reserve_Banded_BPM_16_SSE(
 	char *pattern1, char *pattern2, char *pattern3, char *pattern4,
 	char *pattern5, char *pattern6, char *pattern7, char *pattern8,
@@ -3299,7 +3299,7 @@ inline int bs_Calculate_Cigar(
 
 	if ((*return_err) == 0)
 	{
-		///ÆäÊµÕâÀï»¹ÒªÖÃÎ»path, Òª°ÑpathÈ«²¿ÖÃÎª0
+		///ï¿½ï¿½Êµï¿½ï¿½ï¿½ï»¹Òªï¿½ï¿½Î»path, Òªï¿½ï¿½pathÈ«ï¿½ï¿½ï¿½ï¿½Îª0
 		(*return_start_site) = start_site;
 
 
@@ -3405,7 +3405,7 @@ inline int bs_Calculate_Cigar(
 
 
 
-	///Õâ¸öÊÇÄÇ¸öĞèÒªÔ¤´¦ÀíµÄÏòÁ¿
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ÒªÔ¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	Word Peq[256];
 
 	int band_length = (errthold << 1) + 1;
@@ -3424,9 +3424,9 @@ inline int bs_Calculate_Cigar(
 	Word Peq_G;
 
 	///band_length = 2k + 1
-	///ÕâÊÇ°ÑpatternµÄÇ°2k + 1¸ö×Ö·ûÔ¤´¦Àí
-	///pattern[0]¶ÔÓ¦Peq[0]
-	///pattern[2k]¶ÔÓ¦Peq[2k]
+	///ï¿½ï¿½ï¿½Ç°ï¿½patternï¿½ï¿½Ç°2k + 1ï¿½ï¿½ï¿½Ö·ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½
+	///pattern[0]ï¿½ï¿½Ó¦Peq[0]
+	///pattern[2k]ï¿½ï¿½Ó¦Peq[2k]
 	for (i = 0; i<band_length; i++)
 	{
 		Peq[pattern[i]] = Peq[pattern[i]] | tmp_Peq_1;
@@ -3487,7 +3487,7 @@ inline int bs_Calculate_Cigar(
 	while (i<t_length_1)
 	{
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
 		X = Peq[text[i]] | VN;
 
 		D0 = ((VP + (X&VP)) ^ VP) | X;
@@ -3499,8 +3499,8 @@ inline int bs_Calculate_Cigar(
 		VN = X&HP;
 		VP = HN | ~(X | HP);
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
-		//ÓÒÒÆÊµ¼ÊÉÏÊÇ°Ñpattern[0]ÒÆµôÁË
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
+		//ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½pattern[0]ï¿½Æµï¿½ï¿½ï¿½
 		Peq['A'] = Peq['A'] >> 1;
 		Peq['C'] = Peq['C'] >> 1;
 		Peq['G'] = Peq['G'] >> 1;
@@ -3509,7 +3509,7 @@ inline int bs_Calculate_Cigar(
 
 		++i;
 		++i_bd;
-		///ÕâÊÇ°ÑĞÂµÄpattern[2k]¼Ó½øÀ´, ÕâÃ²ËÆÊÇ¼Óµ½Peq[2k]ÉÏÁË
+		///ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Âµï¿½pattern[2k]ï¿½Ó½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ç¼Óµï¿½Peq[2k]ï¿½ï¿½ï¿½ï¿½
 		Peq[pattern[i_bd]] = Peq[pattern[i_bd]] | Mask;
 
 
@@ -3545,10 +3545,10 @@ inline int bs_Calculate_Cigar(
 	///fprintf(stderr, "sucess(1)\n");
 
 
-	///Õâ¸öÑ­»·ÄÃ³öÀ´ÊÇÎªÁË·ÀÖ¹ÄÚ´æĞ¹Â¶
-	///ÆäÊµÒ²¾ÍÊÇÑ­»·ÀïµÄ×îºóÒ»ĞĞÓï¾ä°É
-	///ÍêÈ«¿ÉÒÔ°ÑpatternÔö´óÒ»Î»
-	///²»¹ıÕâÑùÒ²ºÃ£¬¿ÉÒÔ¼õÉÙ¼ÆËã¿ªÏú
+	///ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ë·ï¿½Ö¹ï¿½Ú´ï¿½Ğ¹Â¶
+	///ï¿½ï¿½ÊµÒ²ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	///ï¿½ï¿½È«ï¿½ï¿½ï¿½Ô°ï¿½patternï¿½ï¿½ï¿½ï¿½Ò»Î»
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ã£ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½Ù¼ï¿½ï¿½ã¿ªï¿½ï¿½
 	X = Peq[text[i]] | VN;
 	D0 = ((VP + (X&VP)) ^ VP) | X;
 	HN = VP&D0;
@@ -3562,7 +3562,7 @@ inline int bs_Calculate_Cigar(
 
 
 
-	///×¢ÒâÕâÀïÊÇ(i+1)
+	///×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(i+1)
 	column_start = (i + 1)*band_length;
 
 	for (inner_i = 0; inner_i < band_length; inner_i++)
@@ -3958,7 +3958,7 @@ inline int fast_bs_Calculate_Cigar_back_new(
 
 	if ((*return_err) == 0)
 	{
-		///ÆäÊµÕâÀï»¹ÒªÖÃÎ»path, Òª°ÑpathÈ«²¿ÖÃÎª0
+		///ï¿½ï¿½Êµï¿½ï¿½ï¿½ï»¹Òªï¿½ï¿½Î»path, Òªï¿½ï¿½pathÈ«ï¿½ï¿½ï¿½ï¿½Îª0
 		(*return_start_site) = start_site;
 
 
@@ -4017,7 +4017,7 @@ inline int fast_bs_Calculate_Cigar_back_new(
 
 
 
-	///Õâ¸öÊÇÄÇ¸öĞèÒªÔ¤´¦ÀíµÄÏòÁ¿
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ÒªÔ¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	Word Peq[256];
 
 	int band_length = (errthold << 1) + 1;
@@ -4036,9 +4036,9 @@ inline int fast_bs_Calculate_Cigar_back_new(
 	Word Peq_G;
 
 	///band_length = 2k + 1
-	///ÕâÊÇ°ÑpatternµÄÇ°2k + 1¸ö×Ö·ûÔ¤´¦Àí
-	///pattern[0]¶ÔÓ¦Peq[0]
-	///pattern[2k]¶ÔÓ¦Peq[2k]
+	///ï¿½ï¿½ï¿½Ç°ï¿½patternï¿½ï¿½Ç°2k + 1ï¿½ï¿½ï¿½Ö·ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½
+	///pattern[0]ï¿½ï¿½Ó¦Peq[0]
+	///pattern[2k]ï¿½ï¿½Ó¦Peq[2k]
 	for (i = 0; i<band_length; i++)
 	{
 		Peq[pattern[i]] = Peq[pattern[i]] | tmp_Peq_1;
@@ -4099,7 +4099,7 @@ inline int fast_bs_Calculate_Cigar_back_new(
 	{
 
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
 		X = Peq[text[i]] | VN;
 
 
@@ -4124,8 +4124,8 @@ inline int fast_bs_Calculate_Cigar_back_new(
 
 		VP = HN | ~(X | HP);
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
-		//ÓÒÒÆÊµ¼ÊÉÏÊÇ°Ñpattern[0]ÒÆµôÁË
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
+		//ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½pattern[0]ï¿½Æµï¿½ï¿½ï¿½
 		Peq['A'] = Peq['A'] >> 1;
 		Peq['C'] = Peq['C'] >> 1;
 		Peq['G'] = Peq['G'] >> 1;
@@ -4134,13 +4134,13 @@ inline int fast_bs_Calculate_Cigar_back_new(
 
 		++i;
 		++i_bd;
-		///ÕâÊÇ°ÑĞÂµÄpattern[2k]¼Ó½øÀ´, ÕâÃ²ËÆÊÇ¼Óµ½Peq[2k]ÉÏÁË
+		///ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Âµï¿½pattern[2k]ï¿½Ó½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ç¼Óµï¿½Peq[2k]ï¿½ï¿½ï¿½ï¿½
 		Peq[pattern[i_bd]] = Peq[pattern[i_bd]] | Mask;
 
 
 		Peq['T'] = Peq['T'] | Peq['C'];
 
-		///Ã¿8¸öÔªËØÒ»´æ
+		///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 		column_start = i << 3;
 
 		matrix_bit[column_start] = D0;
@@ -4155,10 +4155,10 @@ inline int fast_bs_Calculate_Cigar_back_new(
 
 
 
-	///Õâ¸öÑ­»·ÄÃ³öÀ´ÊÇÎªÁË·ÀÖ¹ÄÚ´æĞ¹Â¶
-	///ÆäÊµÒ²¾ÍÊÇÑ­»·ÀïµÄ×îºóÒ»ĞĞÓï¾ä°É
-	///ÍêÈ«¿ÉÒÔ°ÑpatternÔö´óÒ»Î»
-	///²»¹ıÕâÑùÒ²ºÃ£¬¿ÉÒÔ¼õÉÙ¼ÆËã¿ªÏú
+	///ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ë·ï¿½Ö¹ï¿½Ú´ï¿½Ğ¹Â¶
+	///ï¿½ï¿½ÊµÒ²ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	///ï¿½ï¿½È«ï¿½ï¿½ï¿½Ô°ï¿½patternï¿½ï¿½ï¿½ï¿½Ò»Î»
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ã£ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½Ù¼ï¿½ï¿½ã¿ªï¿½ï¿½
 	X = Peq[text[i]] | VN;
 	D0 = ((VP + (X&VP)) ^ VP) | X;
 	HN = VP&D0;
@@ -4168,7 +4168,7 @@ inline int fast_bs_Calculate_Cigar_back_new(
 	VP = HN | ~(X | HP);
 
 
-	///Ã¿8¸öÔªËØÒ»´æ
+	///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 	column_start = (i + 1) << 3;
 
 	matrix_bit[column_start] = D0;
@@ -4202,13 +4202,13 @@ inline int fast_bs_Calculate_Cigar_back_new(
 			break;
 		}
 
-		///Ã¿8¸öÔªËØÒ»´æ
+		///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 		column_start = i << 3;
 
 
-		///Èç¹ûĞ±¶Ô½ÇÏß·½ÏòÆ¥ÅäÔòD0ÊÇ1
-		///ËùÒÔµ±D0ÊÇ1, ¼õ0
-		///D0ÊÇ0, ¼õ1
+		///ï¿½ï¿½ï¿½Ğ±ï¿½Ô½ï¿½ï¿½ß·ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½D0ï¿½ï¿½1
+		///ï¿½ï¿½ï¿½Ôµï¿½D0ï¿½ï¿½1, ï¿½ï¿½0
+		///D0ï¿½ï¿½0, ï¿½ï¿½1
 		delta_value = current_value -
 			((~(matrix_bit[column_start] >> back_track_site))&err_mask);
 
@@ -4747,10 +4747,7 @@ inline int fast_bs_Calculate_Cigar(
 
 	if ((*return_err) == 0)
 	{
-		///ÆäÊµÕâÀï»¹ÒªÖÃÎ»path, Òª°ÑpathÈ«²¿ÖÃÎª0
 		(*return_start_site) = start_site;
-
-
 
 		return 1;
 	}
@@ -4764,6 +4761,9 @@ inline int fast_bs_Calculate_Cigar(
 	}
 
 
+
+
+
 	/**
 	if (trim_Ns(pattern, p_length, text, t_length, errthold, return_err, return_start_site, adjust_end_site, end_site))
 	{
@@ -4773,7 +4773,7 @@ inline int fast_bs_Calculate_Cigar(
 	
 
 
-	///Õâ¸öÊÇÄÇ¸öĞèÒªÔ¤´¦ÀíµÄÏòÁ¿
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ÒªÔ¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	Word Peq[256];
 
 	int band_length = (errthold << 1) + 1;
@@ -4793,9 +4793,9 @@ inline int fast_bs_Calculate_Cigar(
 
 
 	///band_length = 2k + 1
-	///ÕâÊÇ°ÑpatternµÄÇ°2k + 1¸ö×Ö·ûÔ¤´¦Àí
-	///pattern[0]¶ÔÓ¦Peq[0]
-	///pattern[2k]¶ÔÓ¦Peq[2k]
+	///ï¿½ï¿½ï¿½Ç°ï¿½patternï¿½ï¿½Ç°2k + 1ï¿½ï¿½ï¿½Ö·ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½
+	///pattern[0]ï¿½ï¿½Ó¦Peq[0]
+	///pattern[2k]ï¿½ï¿½Ó¦Peq[2k]
 	for (i = 0; i<band_length; i++)
 	{
 		Peq[pattern[i]] = Peq[pattern[i]] | tmp_Peq_1;
@@ -4862,7 +4862,7 @@ inline int fast_bs_Calculate_Cigar(
 	{
 
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
 		X = Peq[text[i]] | VN;
 
 
@@ -4895,8 +4895,8 @@ inline int fast_bs_Calculate_Cigar(
 
 
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
-		//ÓÒÒÆÊµ¼ÊÉÏÊÇ°Ñpattern[0]ÒÆµôÁË
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
+		//ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½pattern[0]ï¿½Æµï¿½ï¿½ï¿½
 		Peq['A'] = Peq['A'] >> 1;
 		Peq['C'] = Peq['C'] >> 1;
 		Peq['G'] = Peq['G'] >> 1;
@@ -4905,13 +4905,13 @@ inline int fast_bs_Calculate_Cigar(
 
 		++i;
 		++i_bd;
-		///ÕâÊÇ°ÑĞÂµÄpattern[2k]¼Ó½øÀ´, ÕâÃ²ËÆÊÇ¼Óµ½Peq[2k]ÉÏÁË
+		///ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Âµï¿½pattern[2k]ï¿½Ó½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ç¼Óµï¿½Peq[2k]ï¿½ï¿½ï¿½ï¿½
 		Peq[pattern[i_bd]] = Peq[pattern[i_bd]] | Mask;
 
 
 		Peq['T'] = Peq['T'] | Peq['C'];
 
-		///Ã¿8¸öÔªËØÒ»´æ
+		///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 		column_start = i << 3;
 
 		matrix_bit[column_start] = D0;
@@ -4925,10 +4925,10 @@ inline int fast_bs_Calculate_Cigar(
 
 
 
-	///Õâ¸öÑ­»·ÄÃ³öÀ´ÊÇÎªÁË·ÀÖ¹ÄÚ´æĞ¹Â¶
-	///ÆäÊµÒ²¾ÍÊÇÑ­»·ÀïµÄ×îºóÒ»ĞĞÓï¾ä°É
-	///ÍêÈ«¿ÉÒÔ°ÑpatternÔö´óÒ»Î»
-	///²»¹ıÕâÑùÒ²ºÃ£¬¿ÉÒÔ¼õÉÙ¼ÆËã¿ªÏú
+	///ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ë·ï¿½Ö¹ï¿½Ú´ï¿½Ğ¹Â¶
+	///ï¿½ï¿½ÊµÒ²ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	///ï¿½ï¿½È«ï¿½ï¿½ï¿½Ô°ï¿½patternï¿½ï¿½ï¿½ï¿½Ò»Î»
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ã£ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½Ù¼ï¿½ï¿½ã¿ªï¿½ï¿½
 	X = Peq[text[i]] | VN;
 	D0 = ((VP + (X&VP)) ^ VP) | X;
 	HN = VP&D0;
@@ -4945,7 +4945,7 @@ inline int fast_bs_Calculate_Cigar(
 
 
 
-	///Ã¿8¸öÔªËØÒ»´æ
+	///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 	column_start = (i + 1) << 3;
 
 	matrix_bit[column_start] = D0;
@@ -4959,7 +4959,7 @@ inline int fast_bs_Calculate_Cigar(
 	
 
 
-	/**************************************ÕâÒ»´ó¶Ñ¶«Î÷¿ÉÒÔ²»Òª**********************************************/
+	/**************************************ï¿½ï¿½Ò»ï¿½ï¿½Ñ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô²ï¿½Òª**********************************************/
 	/**
 	int site = t_length - 1;
 	int return_site = -1;
@@ -5039,7 +5039,7 @@ inline int fast_bs_Calculate_Cigar(
 	
 	fprintf(stderr, "\n");
 	**/
-	/**************************************ÕâÒ»´ó¶Ñ¶«Î÷¿ÉÒÔ²»Òª**********************************************/
+	/**************************************ï¿½ï¿½Ò»ï¿½ï¿½Ñ¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô²ï¿½Òª**********************************************/
 
 
 
@@ -5102,13 +5102,13 @@ inline int fast_bs_Calculate_Cigar(
 			break;
 		}
 
-		///Ã¿8¸öÔªËØÒ»´æ
+		///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 		column_start = i << 3;
 
 
-		///Èç¹ûĞ±¶Ô½ÇÏß·½ÏòÆ¥ÅäÔòD0ÊÇ1
-		///ËùÒÔµ±D0ÊÇ1, ¼õ0
-		///D0ÊÇ0, ¼õ1
+		///ï¿½ï¿½ï¿½Ğ±ï¿½Ô½ï¿½ï¿½ß·ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½D0ï¿½ï¿½1
+		///ï¿½ï¿½ï¿½Ôµï¿½D0ï¿½ï¿½1, ï¿½ï¿½0
+		///D0ï¿½ï¿½0, ï¿½ï¿½1
 		delta_value = current_value -
 			((~(matrix_bit[column_start] >> back_track_site))&err_mask);
 
@@ -5251,10 +5251,6 @@ inline int fast_bs_Calculate_Cigar(
 
 
 
-
-
-
-
 inline int fast_bs_Calculate_Cigar_back(
 	char *pattern, int p_length,
 	char *text, int t_length,
@@ -5275,7 +5271,7 @@ inline int fast_bs_Calculate_Cigar_back(
 
 	if ((*return_err) == 0)
 	{
-		///ÆäÊµÕâÀï»¹ÒªÖÃÎ»path, Òª°ÑpathÈ«²¿ÖÃÎª0
+		///ï¿½ï¿½Êµï¿½ï¿½ï¿½ï»¹Òªï¿½ï¿½Î»path, Òªï¿½ï¿½pathÈ«ï¿½ï¿½ï¿½ï¿½Îª0
 		(*return_start_site) = start_site;
 
 
@@ -5334,7 +5330,7 @@ inline int fast_bs_Calculate_Cigar_back(
 
 
 
-	///Õâ¸öÊÇÄÇ¸öĞèÒªÔ¤´¦ÀíµÄÏòÁ¿
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ÒªÔ¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	Word Peq[256];
 
 	int band_length = (errthold << 1) + 1;
@@ -5353,9 +5349,9 @@ inline int fast_bs_Calculate_Cigar_back(
 	Word Peq_G;
 
 	///band_length = 2k + 1
-	///ÕâÊÇ°ÑpatternµÄÇ°2k + 1¸ö×Ö·ûÔ¤´¦Àí
-	///pattern[0]¶ÔÓ¦Peq[0]
-	///pattern[2k]¶ÔÓ¦Peq[2k]
+	///ï¿½ï¿½ï¿½Ç°ï¿½patternï¿½ï¿½Ç°2k + 1ï¿½ï¿½ï¿½Ö·ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½
+	///pattern[0]ï¿½ï¿½Ó¦Peq[0]
+	///pattern[2k]ï¿½ï¿½Ó¦Peq[2k]
 	for (i = 0; i<band_length; i++)
 	{
 		Peq[pattern[i]] = Peq[pattern[i]] | tmp_Peq_1;
@@ -5416,7 +5412,7 @@ inline int fast_bs_Calculate_Cigar_back(
 	{
 
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
 		X = Peq[text[i]] | VN;
 
 
@@ -5441,8 +5437,8 @@ inline int fast_bs_Calculate_Cigar_back(
 
 		VP = HN | ~(X | HP);
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
-		//ÓÒÒÆÊµ¼ÊÉÏÊÇ°Ñpattern[0]ÒÆµôÁË
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
+		//ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½pattern[0]ï¿½Æµï¿½ï¿½ï¿½
 		Peq['A'] = Peq['A'] >> 1;
 		Peq['C'] = Peq['C'] >> 1;
 		Peq['G'] = Peq['G'] >> 1;
@@ -5451,13 +5447,13 @@ inline int fast_bs_Calculate_Cigar_back(
 
 		++i;
 		++i_bd;
-		///ÕâÊÇ°ÑĞÂµÄpattern[2k]¼Ó½øÀ´, ÕâÃ²ËÆÊÇ¼Óµ½Peq[2k]ÉÏÁË
+		///ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Âµï¿½pattern[2k]ï¿½Ó½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ç¼Óµï¿½Peq[2k]ï¿½ï¿½ï¿½ï¿½
 		Peq[pattern[i_bd]] = Peq[pattern[i_bd]] | Mask;
 
 
 		Peq['T'] = Peq['T'] | Peq['C'];
 
-		///Ã¿8¸öÔªËØÒ»´æ
+		///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 		column_start = i << 3;
 
 		matrix_bit[column_start] = D0;
@@ -5485,10 +5481,10 @@ inline int fast_bs_Calculate_Cigar_back(
 
 
 
-	///Õâ¸öÑ­»·ÄÃ³öÀ´ÊÇÎªÁË·ÀÖ¹ÄÚ´æĞ¹Â¶
-	///ÆäÊµÒ²¾ÍÊÇÑ­»·ÀïµÄ×îºóÒ»ĞĞÓï¾ä°É
-	///ÍêÈ«¿ÉÒÔ°ÑpatternÔö´óÒ»Î»
-	///²»¹ıÕâÑùÒ²ºÃ£¬¿ÉÒÔ¼õÉÙ¼ÆËã¿ªÏú
+	///ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ë·ï¿½Ö¹ï¿½Ú´ï¿½Ğ¹Â¶
+	///ï¿½ï¿½ÊµÒ²ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	///ï¿½ï¿½È«ï¿½ï¿½ï¿½Ô°ï¿½patternï¿½ï¿½ï¿½ï¿½Ò»Î»
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ã£ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½Ù¼ï¿½ï¿½ã¿ªï¿½ï¿½
 	X = Peq[text[i]] | VN;
 	D0 = ((VP + (X&VP)) ^ VP) | X;
 	HN = VP&D0;
@@ -5498,7 +5494,7 @@ inline int fast_bs_Calculate_Cigar_back(
 	VP = HN | ~(X | HP);
 
 
-	///Ã¿8¸öÔªËØÒ»´æ
+	///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 	column_start = (i + 1) << 3;
 
 	matrix_bit[column_start] = D0;
@@ -5537,13 +5533,13 @@ inline int fast_bs_Calculate_Cigar_back(
 			break;
 		}
 
-		///Ã¿8¸öÔªËØÒ»´æ
+		///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 		column_start = i << 3;
 
 
-		///Èç¹ûĞ±¶Ô½ÇÏß·½ÏòÆ¥ÅäÔòD0ÊÇ1
-		///ËùÒÔµ±D0ÊÇ1, ¼õ0
-		///D0ÊÇ0, ¼õ1
+		///ï¿½ï¿½ï¿½Ğ±ï¿½Ô½ï¿½ï¿½ß·ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½D0ï¿½ï¿½1
+		///ï¿½ï¿½ï¿½Ôµï¿½D0ï¿½ï¿½1, ï¿½ï¿½0
+		///D0ï¿½ï¿½0, ï¿½ï¿½1
 		delta_value = current_value -
 			((~(matrix_bit[column_start] >> back_track_site))&err_mask);
 
@@ -5751,7 +5747,7 @@ inline int fast_bs_Calculate_Cigar_score(
 
 	if ((*return_err) == 0)
 	{
-		///ÆäÊµÕâÀï»¹ÒªÖÃÎ»path, Òª°ÑpathÈ«²¿ÖÃÎª0
+		///ï¿½ï¿½Êµï¿½ï¿½ï¿½ï»¹Òªï¿½ï¿½Î»path, Òªï¿½ï¿½pathÈ«ï¿½ï¿½ï¿½ï¿½Îª0
 		(*return_start_site) = start_site;
 
 		return 1;
@@ -5763,7 +5759,7 @@ inline int fast_bs_Calculate_Cigar_score(
 	if (start_site >= 0)
 	{
 
-		///µÚÒ»¸ö×Ö·ûµ¥¶ÀÄÃ³öÀ´´¦Àí
+		///ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 		for (i = 0; i<t_length; i++)
 		{
@@ -5799,7 +5795,7 @@ inline int fast_bs_Calculate_Cigar_score(
 	}
 
 
-	///Õâ¸öÊÇÄÇ¸öĞèÒªÔ¤´¦ÀíµÄÏòÁ¿
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ï¿½ï¿½ÒªÔ¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	Word Peq[256];
 
 	int band_length = (errthold << 1) + 1;
@@ -5818,9 +5814,9 @@ inline int fast_bs_Calculate_Cigar_score(
 	Word Peq_G;
 
 	///band_length = 2k + 1
-	///ÕâÊÇ°ÑpatternµÄÇ°2k + 1¸ö×Ö·ûÔ¤´¦Àí
-	///pattern[0]¶ÔÓ¦Peq[0]
-	///pattern[2k]¶ÔÓ¦Peq[2k]
+	///ï¿½ï¿½ï¿½Ç°ï¿½patternï¿½ï¿½Ç°2k + 1ï¿½ï¿½ï¿½Ö·ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½
+	///pattern[0]ï¿½ï¿½Ó¦Peq[0]
+	///pattern[2k]ï¿½ï¿½Ó¦Peq[2k]
 	for (i = 0; i<band_length; i++)
 	{
 		Peq[pattern[i]] = Peq[pattern[i]] | tmp_Peq_1;
@@ -5880,7 +5876,7 @@ inline int fast_bs_Calculate_Cigar_score(
 	while (i<t_length_1)
 	{
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
 		X = Peq[text[i]] | VN;
 
 		D0 = ((VP + (X&VP)) ^ VP) | X;
@@ -5895,8 +5891,8 @@ inline int fast_bs_Calculate_Cigar_score(
 
 		VP = HN | ~(X | HP);
 
-		///pattern[0]ÔÚPeq[2k], ¶øpattern[2k]ÔÚPeq[0]
-		//ÓÒÒÆÊµ¼ÊÉÏÊÇ°Ñpattern[0]ÒÆµôÁË
+		///pattern[0]ï¿½ï¿½Peq[2k], ï¿½ï¿½pattern[2k]ï¿½ï¿½Peq[0]
+		//ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½pattern[0]ï¿½Æµï¿½ï¿½ï¿½
 		Peq['A'] = Peq['A'] >> 1;
 		Peq['C'] = Peq['C'] >> 1;
 		Peq['G'] = Peq['G'] >> 1;
@@ -5905,13 +5901,13 @@ inline int fast_bs_Calculate_Cigar_score(
 
 		++i;
 		++i_bd;
-		///ÕâÊÇ°ÑĞÂµÄpattern[2k]¼Ó½øÀ´, ÕâÃ²ËÆÊÇ¼Óµ½Peq[2k]ÉÏÁË
+		///ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Âµï¿½pattern[2k]ï¿½Ó½ï¿½ï¿½ï¿½, ï¿½ï¿½Ã²ï¿½ï¿½ï¿½Ç¼Óµï¿½Peq[2k]ï¿½ï¿½ï¿½ï¿½
 		Peq[pattern[i_bd]] = Peq[pattern[i_bd]] | Mask;
 
 
 		Peq['T'] = Peq['T'] | Peq['C'];
 
-		///Ã¿8¸öÔªËØÒ»´æ
+		///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 		column_start = i << 3;
 
 		matrix_bit[column_start] = D0;
@@ -5924,10 +5920,10 @@ inline int fast_bs_Calculate_Cigar_score(
 
 
 
-	///Õâ¸öÑ­»·ÄÃ³öÀ´ÊÇÎªÁË·ÀÖ¹ÄÚ´æĞ¹Â¶
-	///ÆäÊµÒ²¾ÍÊÇÑ­»·ÀïµÄ×îºóÒ»ĞĞÓï¾ä°É
-	///ÍêÈ«¿ÉÒÔ°ÑpatternÔö´óÒ»Î»
-	///²»¹ıÕâÑùÒ²ºÃ£¬¿ÉÒÔ¼õÉÙ¼ÆËã¿ªÏú
+	///ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½Ë·ï¿½Ö¹ï¿½Ú´ï¿½Ğ¹Â¶
+	///ï¿½ï¿½ÊµÒ²ï¿½ï¿½ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	///ï¿½ï¿½È«ï¿½ï¿½ï¿½Ô°ï¿½patternï¿½ï¿½ï¿½ï¿½Ò»Î»
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ã£ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½Ù¼ï¿½ï¿½ã¿ªï¿½ï¿½
 	X = Peq[text[i]] | VN;
 	D0 = ((VP + (X&VP)) ^ VP) | X;
 	HN = VP&D0;
@@ -5937,7 +5933,7 @@ inline int fast_bs_Calculate_Cigar_score(
 	VP = HN | ~(X | HP);
 
 
-	///Ã¿8¸öÔªËØÒ»´æ
+	///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 	column_start = (i + 1) << 3;
 
 	matrix_bit[column_start] = D0;
@@ -5963,13 +5959,13 @@ inline int fast_bs_Calculate_Cigar_score(
 	while (i>0)
 	{
 
-		///Ã¿8¸öÔªËØÒ»´æ
+		///Ã¿8ï¿½ï¿½Ôªï¿½ï¿½Ò»ï¿½ï¿½
 		column_start = i << 3;
 
 
-		///Èç¹ûĞ±¶Ô½ÇÏß·½ÏòÆ¥ÅäÔòD0ÊÇ1
-		///ËùÒÔµ±D0ÊÇ1, ¼õ0
-		///D0ÊÇ0, ¼õ1
+		///ï¿½ï¿½ï¿½Ğ±ï¿½Ô½ï¿½ï¿½ß·ï¿½ï¿½ï¿½Æ¥ï¿½ï¿½ï¿½ï¿½D0ï¿½ï¿½1
+		///ï¿½ï¿½ï¿½Ôµï¿½D0ï¿½ï¿½1, ï¿½ï¿½0
+		///D0ï¿½ï¿½0, ï¿½ï¿½1
 		delta_value = current_value -
 			((~(matrix_bit[column_start] >> back_track_site))&err_mask);
 
@@ -6093,7 +6089,7 @@ inline int fast_bs_Calculate_Cigar_score(
 
 
 
-/***************************************************4Ìõ±È¶Ô¼ƒsse**************************************************/
+/***************************************************4ï¿½ï¿½ï¿½È¶Ô¼ï¿½sse**************************************************/
 inline int BS_Reserve_Banded_BPM_4_SSE_only(char *pattern1, char *pattern2, char *pattern3, char *pattern4, int p_length, char *text, int t_length,
 	int* return_sites, unsigned int* return_sites_error, unsigned short errthold, __m128i* Peq_SSE)
 
@@ -6580,7 +6576,7 @@ inline int BS_Reserve_Banded_BPM_4_SSE_only(char *pattern1, char *pattern2, char
 
 
 
-/***************************************************2Ìõ±È¶Ô¼ƒsse**************************************************/
+/***************************************************2ï¿½ï¿½ï¿½È¶Ô¼ï¿½sse**************************************************/
 inline int BS_Reserve_Banded_BPM_2_SSE_only(char *pattern1, char *pattern2, int p_length, char *text, int t_length,
 	int* return_sites, unsigned int* return_sites_error, unsigned short errthold, __m128i* Peq_SSE)
 

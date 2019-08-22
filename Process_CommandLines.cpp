@@ -63,6 +63,15 @@ int CHH = 0;
 int unmapped_out = 0;
 int ambiguous_out = 0;
 int mapstats = 0;
+char *Mapstats_File = NULL;
+char *Mapstats_File_Path = NULL;
+
+int GapOpenPenalty = 5;
+int GapExtensionPenalty = 3;
+int MistMatchPenaltyMax = 6;
+int MistMatchPenaltyMin = 2;
+int N_Penalty = 1;
+int Q_base = 33;
 
 
 void Print_H();
@@ -89,7 +98,9 @@ int CommandLine_process (int argc, char *argv[])
 	  { "CpG", no_argument, &CpG, 1 },
 	  { "CHG", no_argument, &CHG, 1 },
 	  { "CHH", no_argument, &CHH, 1 },
-	  { "mapstats", no_argument, &mapstats, 1},
+	  { "phred33", no_argument, &Q_base, 33},
+	  { "phred64", no_argument, &Q_base, 64},
+	  {"mapstats",		required_argument,  0,		'O'},
 	  { "unmapped_out", no_argument, &unmapped_out, 1 },
 	  { "ambiguous_out", no_argument, &ambiguous_out, 1 },
 	  { "methy_extract", required_argument, 0, 'f' },
@@ -111,6 +122,12 @@ int CommandLine_process (int argc, char *argv[])
 	  { "minVariantDepth", required_argument, 0, 'b' },
 	  { "index_folder", required_argument, 0, 'd' },
 	  { "bmm_folder", required_argument, 0, 'z' },
+
+	  { "mp_max", required_argument, 0, 'A' },
+	  { "mp_min", required_argument, 0, 'B' },
+	  { "np", required_argument, 0, 'C' },
+	  { "gap_open", required_argument, 0, 'D' },
+	  { "gap_extension", required_argument, 0, 'E' },
       {0,  0,  0, 0},
     };
 
@@ -120,7 +137,7 @@ int CommandLine_process (int argc, char *argv[])
     return 0;
   }
   
-  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:b:d:g:p:r:s:t:q:d:z:", longOptions, &index)) != -1 )
+  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:b:d:g:p:r:s:t:q:d:z:O:A:B:C:D:E:", longOptions, &index)) != -1 )
     {
       switch (o)
 	  {
@@ -182,6 +199,12 @@ int CommandLine_process (int argc, char *argv[])
 	  Mapped_FilePath = (char*)malloc(NAME_LENGTH);
 	  stripPath (optarg, &Mapped_FilePath, &Mapped_File);
 	  break;
+	case 'O':
+	  mapstats = 1;
+	  Mapstats_File = (char*)malloc(NAME_LENGTH);
+	  Mapstats_File_Path = (char*)malloc(NAME_LENGTH);
+	  stripPath (optarg, &Mapstats_File_Path, &Mapstats_File);
+	  break;
 	case 'n':
 	  maxHits = atoi(optarg);
 	  break;
@@ -204,6 +227,21 @@ int CommandLine_process (int argc, char *argv[])
 	  break;
 	case 's':
 	  over_all_seed_length = atoi(optarg);
+	  break;
+	case 'A':
+	  MistMatchPenaltyMax = atoi(optarg);
+	  break;
+	case 'B':
+	  MistMatchPenaltyMin = atoi(optarg);
+	  break;
+	case 'C':
+	  N_Penalty = atoi(optarg);
+	  break;
+	case 'D':
+	  GapOpenPenalty = atoi(optarg);
+	  break;
+	case 'E':
+	  GapExtensionPenalty = atoi(optarg);
 	  break;
 	case 'h':
 	  Print_H();
@@ -435,7 +473,15 @@ void Print_H()
   fprintf(stderr, " --pbat \t\tMapping the BS-seq from pbat protocol.\n");
   fprintf(stderr, " --unmapped_out \tReport unmapped reads.\n");
   fprintf(stderr, " --ambiguous_out \tRandom report one of hit of each ambiguous mapped read.\n");
-  fprintf(stderr, " --mapstats \t\tOutput the statistical information of read alignment into file named \"OUTPUT_FILE.mapstats\", \n\t\t\twhere \"OUTPUT_FILE\" is the name of output SAM or BAM file (defined by the option \"-o\").\n");
+  fprintf(stderr, " --mapstats [file]\tOutput the statistical information of read alignment into file.\n");
+  fprintf(stderr, " --phred33 \t\tInput read qualities are encoded by Phred33 (default).\n");
+  fprintf(stderr, " --phred64 \t\tInput read qualities are encoded by Phred64.\n");
+  fprintf(stderr, " --mp_max [INT]\t\tMaximum mismatch penalty (default: 6).\n");
+  fprintf(stderr, " --mp_min [INT]\t\tMinimum mismatch penalty (default: 2).\n");
+  fprintf(stderr, " --np [INT]\t\tAmbiguous character (e.g., N) penalty (default: 1).\n");
+  fprintf(stderr, " --gap_open [INT]\tGap open penalty (default: 5).\n");
+  fprintf(stderr, " --gap_extension [INT]\tGap extension penalty (default: 3).\n");
+
   fprintf(stderr,"\n\n");
 
   
