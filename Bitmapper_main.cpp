@@ -82,7 +82,6 @@ int main(int argc, char *argv[])
 		  outputFileName[0] = '\0';
 	  }
 	  
-
 	  
 
         if (!is_pairedEnd)
@@ -224,7 +223,6 @@ int main(int argc, char *argv[])
             startTime = Get_T();
 
 			Prepare_alignment(outputFileName, fileName[0], chhy_ih_refGenName, refChromeCont, read_format, is_pairedEnd);
-
 
              if(THREAD_COUNT==1)
             {

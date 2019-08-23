@@ -20315,14 +20315,15 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 	int output_mask = 0;
 	unsigned int second_best_diff;
 
-	
+	///fprintf(stderr, "hahah\n");
 
 	//正向模式
 	i = 0;
 	while (1)
 	{
 
-
+		///fprintf(stderr, "******\n");
+			
 
 		/********************************************输出不匹配结果用的********************************************/
 		///这里要改
@@ -20333,6 +20334,8 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 			&&
 			pre_unique_matched_read == unique_matched_read)
 		{
+			///fprintf(stderr, "######\n");
+
 			if (unmapped_out == 1)
 			{
 				directly_output_unmapped_PE(current_read1.name, current_read1.seq, current_read1.rseq, current_read1.qual,
@@ -22851,7 +22854,6 @@ void* Map_Pair_Seq_split(void* arg)
 
 
 
-
 			/********************************************输出不匹配结果用的********************************************/
 			///这里要改
 			///这说明上一个read没有匹配
@@ -22863,6 +22865,7 @@ void* Map_Pair_Seq_split(void* arg)
 			{
 				if (unmapped_out == 1)
 				{
+					
 					directly_output_read1_return_buffer_unmapped_PE(
 						read_batch1[i - 1].name, read_batch1[i - 1].seq, read_batch1[i - 1].rseq, read_batch1[i - 1].qual,
 						read_batch1[i - 1].length, &current_sub_buffer, &bam_buffer, 1);
