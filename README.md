@@ -109,7 +109,7 @@ single-end reads
 
 paired-end reads
 
-    ./bitmapperBS --search <genome file name> --seq1 <read1 file name> --seq2 <read2 file name> --pe [options]
+    ./bitmapperBS --search <genome file name> --seq1 <read1 file name> --seq2 <read2 file name> [options]
 
 
 output mapping results in BAM format
@@ -146,36 +146,23 @@ We recommend users to first remove the duplicates by Picard or samtools, and the
 | Option | Short Option | Type | Default | Brief Description |
 | :------: | :---------------: | :-----:|:-----:| :-----|
 | --search | NULL| String | NULL | Search in the specified genome. If the indexes of this genome are built without "--index_folder", please provide the path to the fasta file when aligning. Otherwise please provide the path to the index folder (set by "--index_folder" during indexing).|
-| --fast | NULL| NULL | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
+| --fast | NULL| String | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
 | --sensitive | NULL| String | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
-| --pe | NULL| NULL | NULL | Searching will be done in paired-end mode. |
 | --seq | NULL| String | NULL | Provide the name of single-end read file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
-<<<<<<< HEAD
 | -o | -o | String | stdout (Standard output) | Provide the name of output file (SAM or BAM format). |
-| --sam | NULL| NULL | NULL | Output mapping results in SAM format (default). |
-| --bam | NULL| NULL | NULL | Output mapping results in BAM format. |
-=======
-| -o | -o | String | output (SAM format) | Provide the name of output file (SAM or BAM format). |
 | --sam | NULL| String | NULL | Output mapping results in SAM format (default). |
 | --bam | NULL| String | NULL | Output mapping results in BAM format. |
->>>>>>> parent of e8092b5... improve output
 | -e | -e | Double | 0.08 | Set the edit distance rate of read length, which is between 0 and 1. |
 | --min | NULL | Int | 0 | Minimum observed template length between a pair of end sequences. |
-| --max | NULL | Int | 500 | Maximum observed template length between a pair of end sequences. |
+| --max | NULL | Int | 0 | Maximum observed template length between a pair of end sequences. |
 | --threads | -t | Int | 1 | Set the number of CPU threads. |
 | --pbat | NULL | NULL | NULL | Map the bs-seq from pbat protocol. |
 | --unmapped_out | NULL | NULL | NULL | Report unmapped reads. |
 | --ambiguous_out | NULL | NULL | NULL | Random report one of hit of each ambiguous mapped read. |
-| --mapstats | NULL | String | NULL | Output the statistical information of read alignment into file.|
-| --phred33 | NULL | NULL | NULL | Input read qualities are encoded by Phred33 (default). |
-| --phred64 | NULL | NULL | NULL | Input read qualities are encoded by Phred64. |
-| --mp_max | NULL | Int | 6 | Maximum mismatch penalty. |
-| --mp_min | NULL | Int | 2 | Minimum mismatch penalty. |
-| --np | NULL | Int | 1 | Ambiguous character (e.g., N) penalty. |
-| --gap_open | NULL | Int | 5 | Gap open penalty. |
-| --gap_extension | NULL | Int | 3 | Gap extension penalty. |
+| --mapstats | NULL | NULL | NULL | Output the statistical information of read alignment into "OUTPUT_FILE.mapstats". Here "OUTPUT_FILE" is the name of output SAM or BAM file (defined by the option "-o")|
+
 
 
 
@@ -209,7 +196,7 @@ If map the reads from the *_2 reads file or the pbat protocol, the --pbat option
 
 to map reads to human genome (GRCH38) in paired-end mode using 6 CPU threads:
 
-	./bitmapperBS --search ../../ssd/human_genome.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq --pe -t 6
+	./bitmapperBS --search ../../ssd/human_genome.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq -t 6
 
 
 
@@ -230,14 +217,6 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 ### Changelog ###
 
-<<<<<<< HEAD
-(16) August 22, 2019: version 1.0.2.0 released. 
-
-    >> Add support of BitMapperBS to output MAPQ like Bowtie2.
-    >> Recalculate alignment with large or complex gaps.
-    >> For the '--mapstats' option, the output file name can be defined by users.
-    >> Add '--phred33', '--phred64', '--mp_max', '--mp_min', '--np', '--gap_open', and '--gap_extension' options.
-
 (15) June 29, 2019: version 1.0.1.6 released. 
 
     >> Remove the `--pe` option. The paired-end mode or the single-end mode can be determined automatically.
@@ -245,8 +224,6 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
     >> If `-o` is not specified, the alignment results would be printed to standard output.
     >> Fix a minor bug of the paired-end read name.
 
-=======
->>>>>>> parent of e8092b5... improve output
 (14) June 28, 2019: version 1.0.1.5 released. 
 
     >> Fix a minor bug when mapping.
@@ -261,34 +238,34 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 (12) March 10, 2019: version 1.0.1.2 released. 
 
-    >> Fix the bug when indexing in extreme cases.
+    >> Fixed the bug when indexing in extreme cases.
 
 (11) March 9, 2019: version 1.0.1.1 released. 
 
-    >> Fix the bug when indexing in extreme cases.
+    >> Fixed the bug when indexing in extreme cases.
 
 (10) March 9, 2019: version 1.0.1.0 released. 
 
-    >> Fix the bug about the optopn "--index_folder" when indexing.
+    >> Fixed the bug about the optopn "--index_folder" when indexing.
 
 (9) March 8, 2019: version 1.0.0.9 released. 
 
-    >> Fix the bug that may be happened with old version of G++.
+    >> Fixed the bug that may be happened with old version of G++.
 
 (8) January 17, 2019: version 1.0.0.8 released. 
 
-    >>Add support of BitMapperBS to report the statistical information of read alignment into file.
+    >>Added support of BitMapperBS to report the statistical information of read alignment into file.
     >>When the input read files are in compressed fastq files (.fq.gz or .fastq.gz), BitMapperBS is sligntly faster at the expense of sligntly higher CPU usage. 
 
 (7) January 8, 2019: version 1.0.0.7 released. 
 
-    >>Add support of BitMapperBS to report unmapped reads and ambiguous mapped read.
+    >>Added support of BitMapperBS to report unmapped reads and ambiguous mapped read.
 
 
 (6) December 27, 2018: version 1.0.0.6 released. 
 
     >>BitMapperBS fixed the bug of the option --min when aligning paired-end reads. 
-    >>Add support of BitMapperBS to report mismatch and indel rate in alignment.
+    >>Added support of BitMapperBS to report mismatch and indel rate in alignment.
 
 (5) December 22, 2018: version 1.0.0.5 released. 
 
@@ -297,11 +274,11 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 (4) December 11, 2018: version 1.0.0.4 released. 
 
     >>BitMapperBS fixed the bug of the QNAME in SAM file when aligning paired-end reads. 
-    >>Remove the reads which are mapped off the end of the reference.
+    >>Removed the reads which are mapped off the end of the reference.
 
 (3) November 28, 2018: version 1.0.0.3 released. 
 
-    >>Add support of BitMapperBS to output mapping results in BAM format.
+    >>Added support of BitMapperBS to output mapping results in BAM format.
 
 
 (2) November 16, 2018: version 1.0.0.2 released. 
@@ -311,7 +288,7 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 (1) November 9, 2018: version 1.0.0.1 released. 
      
-     >>Add support of BitMapperBS to accept read files compressed by gzip (.fq.gz or .fastq.gz).
+     >>Added support of BitMapperBS to accept read files compressed by gzip (.fq.gz or .fastq.gz).
      >>BitMapperBS fixed the bug of the SAM flag when aligning the single-end reads from pbat protocol.
      >>BitMapperBS can check if the AVX2 instructions are supported by CPU automatically. If AVX2 is supported, the AVX2 version of BitMapperBS will be compiled, otherwise the SSE4.2 version of BitMapperBS will be compiled. Please note that the AVX2 version of BitMapperBS may be slightly slower than SSE4.2 version of BitMapperBS.
 
@@ -320,7 +297,7 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 ### Contacts ###
 
-Haoyu Cheng: hcheng@jimmy.harvard.edu
+Haoyu Cheng: chhy@mail.ustc.edu.cn
 
 
 ### Note ###

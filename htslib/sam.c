@@ -518,8 +518,8 @@ int bam_read1(BGZF *fp, bam1_t *b)
 
 int bam_write1(BGZF *fp, const bam1_t *b)
 {
-	///bgzf_flush_tryºÍbgzf_writeÀï¶¼ÓÐÈë¶Ó²Ù×÷, ÕâÁ½º¯Êý¶¼ÔÚbgzf.cÕâ¸öÎÄ¼þÀï
-	///ÊÇÕâÁ½º¯ÊýÖÐµÄlazy_flushÈë¶Ó
+	///bgzf_flush_tryï¿½ï¿½bgzf_writeï¿½ï¶¼ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½bgzf.cï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½lazy_flushï¿½ï¿½ï¿½
     const bam1_core_t *c = &b->core;
     uint32_t x[8], block_len = b->l_data - c->l_extranul + 32, y;
     int i, ok;
@@ -533,7 +533,7 @@ int bam_write1(BGZF *fp, const bam1_t *b)
     x[5] = c->mtid;
     x[6] = c->mpos;
     x[7] = c->isize;
-    ok = (bgzf_flush_try(fp, 4 + block_len) >= 0);   ///Õâ¸öÀïÃæÓÐÈë¶ÓÁÐµÄ
+    ok = (bgzf_flush_try(fp, 4 + block_len) >= 0);   ///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½
     if (fp->is_be) {
         for (i = 0; i < 8; ++i) ed_swap_4p(x + i);
         y = block_len;
@@ -572,8 +572,8 @@ int bam_write1(BGZF *fp, const bam1_t *b)
 int chhy_bam_write1(BGZF *main_fp, BGZF *buff_fp, const bam1_t *b)
 {
 
-	///bgzf_flush_tryºÍbgzf_writeÀï¶¼ÓÐÈë¶Ó²Ù×÷, ÕâÁ½º¯Êý¶¼ÔÚbgzf.cÕâ¸öÎÄ¼þÀï
-	///ÊÇÕâÁ½º¯ÊýÖÐµÄlazy_flushÈë¶Ó
+	///bgzf_flush_tryï¿½ï¿½bgzf_writeï¿½ï¶¼ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½bgzf.cï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½lazy_flushï¿½ï¿½ï¿½
 	const bam1_core_t *c = &b->core;
 	uint32_t x[8], block_len = b->l_data - c->l_extranul + 32, y;
 	int i, ok;
@@ -587,7 +587,7 @@ int chhy_bam_write1(BGZF *main_fp, BGZF *buff_fp, const bam1_t *b)
 	x[5] = c->mtid;
 	x[6] = c->mpos;
 	x[7] = c->isize;
-	ok = (chhy_bgzf_flush_try(main_fp, buff_fp, 4 + block_len) >= 0);   ///Õâ¸öÀïÃæÓÐÈë¶ÓÁÐµÄ
+	ok = (chhy_bgzf_flush_try(main_fp, buff_fp, 4 + block_len) >= 0);   ///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½
 	if (main_fp->is_be) {
 		for (i = 0; i < 8; ++i) ed_swap_4p(x + i);
 		y = block_len;
@@ -635,8 +635,8 @@ int chhy_bam_write1(BGZF *main_fp, BGZF *buff_fp, const bam1_t *b)
 int chhy_bam_write1_pure(BGZF *main_fp, BGZF *buff_fp, const bam1_t *b, bgzf_buffer* j)
 {
 
-	///bgzf_flush_tryºÍbgzf_writeÀï¶¼ÓÐÈë¶Ó²Ù×÷, ÕâÁ½º¯Êý¶¼ÔÚbgzf.cÕâ¸öÎÄ¼þÀï
-	///ÊÇÕâÁ½º¯ÊýÖÐµÄlazy_flushÈë¶Ó
+	///bgzf_flush_tryï¿½ï¿½bgzf_writeï¿½ï¶¼ï¿½ï¿½ï¿½ï¿½Ó²ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½bgzf.cï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
+	///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½lazy_flushï¿½ï¿½ï¿½
 	const bam1_core_t *c = &b->core;
 	uint32_t x[8], block_len = b->l_data - c->l_extranul + 32, y;
 	int i, ok;
@@ -650,7 +650,7 @@ int chhy_bam_write1_pure(BGZF *main_fp, BGZF *buff_fp, const bam1_t *b, bgzf_buf
 	x[5] = c->mtid;
 	x[6] = c->mpos;
 	x[7] = c->isize;
-	ok = (chhy_bgzf_flush_try_pure(main_fp, buff_fp, 4 + block_len,j) >= 0);   ///Õâ¸öÀïÃæÓÐÈë¶ÓÁÐµÄ
+	ok = (chhy_bgzf_flush_try_pure(main_fp, buff_fp, 4 + block_len,j) >= 0);   ///ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½
 	if (main_fp->is_be) {
 		for (i = 0; i < 8; ++i) ed_swap_4p(x + i);
 		y = block_len;
@@ -1135,6 +1135,79 @@ static bam_hdr_t *sam_hdr_sanitise(bam_hdr_t *h) {
 
     return h;
 }
+
+
+
+
+bam_hdr_t *chhy_sam_hdr_read(char** _ih_refGenName, uint64_t* _ih_refGenLength, 
+int refChromeCont, int argc, char *argv[], char* versionN)
+{
+
+    kstring_t str = { 0, 0, NULL };
+    bam_hdr_t *h = NULL;
+    int ret, has_SQ = 0;
+
+    uint64_t refName_length;
+    int i = 0;
+    int max_length_size = 20 + 15;
+    char* tmp_str;
+    int tmp_str_size = 1000;
+    tmp_str = (char*)malloc(sizeof(char*)*tmp_str_size);
+
+    sprintf(tmp_str, "@HD\tVN:1.4\tSO:unsorted");
+    kputsn(tmp_str, strlen(tmp_str), &str);
+    kputc('\n', &str);
+
+    for (i = 0; i < refChromeCont; i++)
+    {
+        refName_length = strlen(_ih_refGenName[i]) + max_length_size;
+        if (refName_length > tmp_str_size)
+        {
+            tmp_str_size = refName_length;
+            tmp_str = (char*)realloc(tmp_str, sizeof(char*)*tmp_str_size);
+        }
+
+        sprintf(tmp_str, "@SQ\tSN:%s\tLN:%llu", _ih_refGenName[i], _ih_refGenLength[i]);
+        kputsn(tmp_str, strlen(tmp_str), &str);
+        kputc('\n', &str);
+    }
+
+    sprintf(tmp_str, "@PG\tID:BitMapperBS\tVN:%s\tCL:", versionN);
+    refName_length = strlen(tmp_str);
+    for (i = 0; i < argc; i++)
+    {
+        refName_length = strlen(argv[i]) + 2;
+        if (refName_length > tmp_str_size)
+        {
+            tmp_str_size = refName_length;
+            tmp_str = (char*)realloc(tmp_str, sizeof(char*)*tmp_str_size);
+        }
+
+        sprintf(tmp_str + strlen(tmp_str), "%s ", argv[i]);
+    }
+
+    kputsn(tmp_str, strlen(tmp_str), &str);
+    kputc('\n', &str);
+
+    free(tmp_str);
+
+
+    if (str.l == 0) kputsn("", 0, &str);
+    h = sam_hdr_parse(str.l, str.s);
+    h->l_text = str.l; h->text = str.s;
+    return sam_hdr_sanitise(h);
+}
+
+
+
+
+
+
+
+
+
+
+
 
 bam_hdr_t *sam_hdr_read(htsFile *fp)
 {

@@ -213,7 +213,6 @@ typedef struct
 	int chrome_id;
 	char cigar[SEQ_MAX_LENGTH];
 	unsigned int err;
-	int score;
 } map_result;
 
 

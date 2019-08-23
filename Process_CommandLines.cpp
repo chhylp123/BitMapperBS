@@ -21,7 +21,7 @@
 int				is_index = 0;
 int				is_search = 0;
 int             is_methy = 0;
-int				is_pairedEnd;
+int				is_pairedEnd = 0;
 int				cropSize = 0;
 int				minDistance_pair=0;
 int				maxDistance_pair=500;
@@ -29,8 +29,8 @@ int				over_all_seed_length = 30;
 unsigned int			THREAD_COUNT = 1;
 char				*Read_File1;
 char				*Read_File2;
-char				*Mapped_File = "output";
-///char				*Mapped_File = NULL;
+///char				*Mapped_File = "output";
+char				*Mapped_File = NULL;
 char				*Mapped_FilePath = "";
 char                *folder_path = NULL;
 char                *bmm_folder_path = NULL;
@@ -63,15 +63,6 @@ int CHH = 0;
 int unmapped_out = 0;
 int ambiguous_out = 0;
 int mapstats = 0;
-char *Mapstats_File = NULL;
-char *Mapstats_File_Path = NULL;
-
-int GapOpenPenalty = 5;
-int GapExtensionPenalty = 3;
-int MistMatchPenaltyMax = 6;
-int MistMatchPenaltyMin = 2;
-int N_Penalty = 1;
-int Q_base = 33;
 
 
 void Print_H();
@@ -98,9 +89,7 @@ int CommandLine_process (int argc, char *argv[])
 	  { "CpG", no_argument, &CpG, 1 },
 	  { "CHG", no_argument, &CHG, 1 },
 	  { "CHH", no_argument, &CHH, 1 },
-	  { "phred33", no_argument, &Q_base, 33},
-	  { "phred64", no_argument, &Q_base, 64},
-	  {"mapstats",		required_argument,  0,		'O'},
+	  { "mapstats", no_argument, &mapstats, 1},
 	  { "unmapped_out", no_argument, &unmapped_out, 1 },
 	  { "ambiguous_out", no_argument, &ambiguous_out, 1 },
 	  { "methy_extract", required_argument, 0, 'f' },
@@ -122,12 +111,6 @@ int CommandLine_process (int argc, char *argv[])
 	  { "minVariantDepth", required_argument, 0, 'b' },
 	  { "index_folder", required_argument, 0, 'd' },
 	  { "bmm_folder", required_argument, 0, 'z' },
-
-	  { "mp_max", required_argument, 0, 'A' },
-	  { "mp_min", required_argument, 0, 'B' },
-	  { "np", required_argument, 0, 'C' },
-	  { "gap_open", required_argument, 0, 'D' },
-	  { "gap_extension", required_argument, 0, 'E' },
       {0,  0,  0, 0},
     };
 
@@ -137,7 +120,7 @@ int CommandLine_process (int argc, char *argv[])
     return 0;
   }
   
-  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:b:d:g:p:r:s:t:q:d:z:O:A:B:C:D:E:", longOptions, &index)) != -1 )
+  while ( (o = getopt_long ( argc, argv, "hvn:e:o:u:i:s:x:y:w:l:m:c:a:b:d:g:p:r:s:t:q:d:z:", longOptions, &index)) != -1 )
     {
       switch (o)
 	  {
@@ -199,12 +182,6 @@ int CommandLine_process (int argc, char *argv[])
 	  Mapped_FilePath = (char*)malloc(NAME_LENGTH);
 	  stripPath (optarg, &Mapped_FilePath, &Mapped_File);
 	  break;
-	case 'O':
-	  mapstats = 1;
-	  Mapstats_File = (char*)malloc(NAME_LENGTH);
-	  Mapstats_File_Path = (char*)malloc(NAME_LENGTH);
-	  stripPath (optarg, &Mapstats_File_Path, &Mapstats_File);
-	  break;
 	case 'n':
 	  maxHits = atoi(optarg);
 	  break;
@@ -227,21 +204,6 @@ int CommandLine_process (int argc, char *argv[])
 	  break;
 	case 's':
 	  over_all_seed_length = atoi(optarg);
-	  break;
-	case 'A':
-	  MistMatchPenaltyMax = atoi(optarg);
-	  break;
-	case 'B':
-	  MistMatchPenaltyMin = atoi(optarg);
-	  break;
-	case 'C':
-	  N_Penalty = atoi(optarg);
-	  break;
-	case 'D':
-	  GapOpenPenalty = atoi(optarg);
-	  break;
-	case 'E':
-	  GapExtensionPenalty = atoi(optarg);
 	  break;
 	case 'h':
 	  Print_H();
@@ -310,19 +272,25 @@ int CommandLine_process (int argc, char *argv[])
 	}
 
 
-      if (!is_pairedEnd && Read_File2 != NULL)
+
+	if (Read_File1 != NULL && Read_File2 != NULL)
+	{
+		is_pairedEnd = 1;
+	}
+	
+    if (!is_pairedEnd && Read_File2 != NULL)
 	{
 	  fprintf(stderr, "Please not indicate the read2 files for single-end mode!\n");
 	  return 0;
 	}
 
-      if (is_pairedEnd && (minDistance_pair <0 || maxDistance_pair < 0 || minDistance_pair > maxDistance_pair))
+    if (is_pairedEnd && (minDistance_pair <0 || maxDistance_pair < 0 || minDistance_pair > maxDistance_pair))
 	{
 	  fprintf(stderr, "Please set a valid range for paired-end mode.\n");
 	  return 0;
 	}
 
-      if (is_pairedEnd && Read_File1 == NULL)
+    if (is_pairedEnd && Read_File1 == NULL)
 	{
 	  fprintf(stderr, "Please indicate the read1 file for single-end mode.\n");
 	  return 0;
@@ -452,11 +420,11 @@ void Print_H()
   fprintf(stderr," --search [file/folder]\tSearch in the specified genome. If the indexes of this genome are built without \"--index_folder\", \n\t\t\tplease provide the path to the fasta file of genome (index files should be in the same folder). \n\t\t\tOtherwise please provide the path to the index folder (set by \"--index_folder\" during indexing).\n");
   fprintf(stderr," --fast \t\tSet bitmapperBS in fast mode (default). This option is only available in paired-end mode.\n");
   fprintf(stderr," --sensitive \t\tSet bitmapperBS in sensitive mode. This option is only available in paired-end mode.\n");
-  fprintf(stderr," --pe \t\t\tSearch will be done in paired-end mode.\n");
+  //fprintf(stderr," --pe \t\t\tSearch will be done in paired-end mode.\n");
   fprintf(stderr," --seq [file]\t\tInput sequences in fastq/fastq.gz format [file]. This option is used  \n\t\t\tfor single-end reads.\n");
   fprintf(stderr," --seq1 [file]\t\tInput sequences in fastq/fastq.gz format [file] (First file). \n\t\t\tUse this option to indicate the first file of \n\t\t\tpaired-end reads. \n");
   fprintf(stderr," --seq2 [file]\t\tInput sequences in fastq/fastq.gz format [file] (Second file). \n\t\t\tUse this option to indicate the second file of \n\t\t\tpaired-end reads.  \n");
-  fprintf(stderr," -o [file]\t\tOutput of the mapped sequences in SAM or BAM format. The default is \"output\" in SAM format.\n");
+  fprintf(stderr," -o [file]\t\tOutput of the mapped sequences in SAM or BAM format. The default is \"stdout\" (standard output) in SAM format.\n");
   fprintf(stderr, " --sam \t\t\tOutput mapping results in SAM format (default).\n");
   fprintf(stderr, " --bam \t\t\tOutput mapping results in BAM format.\n");
   fprintf(stderr, " --methy_out \t\tOutput the intermediate methylation result files, instead of SAM or BAM files.\n");
@@ -467,15 +435,7 @@ void Print_H()
   fprintf(stderr, " --pbat \t\tMapping the BS-seq from pbat protocol.\n");
   fprintf(stderr, " --unmapped_out \tReport unmapped reads.\n");
   fprintf(stderr, " --ambiguous_out \tRandom report one of hit of each ambiguous mapped read.\n");
-  fprintf(stderr, " --mapstats [file]\tOutput the statistical information of read alignment into file.\n");
-  fprintf(stderr, " --phred33 \t\tInput read qualities are encoded by Phred33 (default).\n");
-  fprintf(stderr, " --phred64 \t\tInput read qualities are encoded by Phred64.\n");
-  fprintf(stderr, " --mp_max [INT]\t\tMaximum mismatch penalty (default: 6).\n");
-  fprintf(stderr, " --mp_min [INT]\t\tMinimum mismatch penalty (default: 2).\n");
-  fprintf(stderr, " --np [INT]\t\tAmbiguous character (e.g., N) penalty (default: 1).\n");
-  fprintf(stderr, " --gap_open [INT]\tGap open penalty (default: 5).\n");
-  fprintf(stderr, " --gap_extension [INT]\tGap extension penalty (default: 3).\n");
-
+  fprintf(stderr, " --mapstats \t\tOutput the statistical information of read alignment into file named \"OUTPUT_FILE.mapstats\", \n\t\t\twhere \"OUTPUT_FILE\" is the name of output SAM or BAM file (defined by the option \"-o\").\n");
   fprintf(stderr,"\n\n");
 
   

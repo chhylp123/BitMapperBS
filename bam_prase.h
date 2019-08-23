@@ -30,7 +30,7 @@
 #include <htslib/thread_pool.h>
 #include <htslib/bgzf.h>
 #include <htslib/sam.h>
-
+#include "Schema.h"
 
 
 typedef struct
@@ -89,13 +89,16 @@ void write_alignment_directly(char* alignment, long long alignment_length, bam_o
 
 void close_bam_file_rename(char* old_name, char* new_name);
 
-void init_bam_header(char* tmp_sam_file_name, char* bam_file_name);
+void init_bam_header(char* bam_file_name, _rg_name_l  *_ih_refGenName, int refChromeCont, int argc, char *argv[]);
+void init_bam_file_from_sam(char* file_name, char* outputFileName,
+_rg_name_l  *_ih_refGenName, int refChromeCont, int argc, char *argv[]);
+
+
 void close_bam_file();
 void write_alignment(const char* alignment);
 void write_alignment_muti_thread(const char* alignment);
 void write_alignment_group(char* alignment, const long long length);
 void write_alignment_group_pre_allocate(char* alignment, const long long length, const long long number);
-void init_bam_file_from_sam(char* file_name, char* outputFileName);
 
 void convert_string_to_bam(char* alignment, long long alignment_length, bam_phrase* bam_groups);
 

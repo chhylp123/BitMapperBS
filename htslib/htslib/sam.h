@@ -289,6 +289,8 @@ typedef struct {
     int bam_write1(BGZF *fp, const bam1_t *b) HTS_RESULT_USED;
 	int chhy_bam_write1(BGZF *main_fp, BGZF *buff_fp, const bam1_t *b) HTS_RESULT_USED;
 	int chhy_bam_write1_pure(BGZF *main_fp, BGZF *buff_fp, const bam1_t *b, bgzf_buffer* j) HTS_RESULT_USED;
+    bam_hdr_t *chhy_sam_hdr_read(char** _ih_refGenName, uint64_t* _ih_refGenLength, int refChromeCont, 
+    int argc, char *argv[], char* versionN);
 
 
     bam1_t *bam_copy1(bam1_t *bdst, const bam1_t *bsrc);
