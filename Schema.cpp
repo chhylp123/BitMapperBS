@@ -18932,7 +18932,7 @@ int Map_Pair_Seq_end_to_end_fast(int thread_id)
 	///这里要改
 	bitmapper_bs_iter pre_unique_matched_read = (bitmapper_bs_iter)-1;
 	bitmapper_bs_iter pre_ambious_matched_read = (bitmapper_bs_iter)-1;
-	int output_mask;
+	int output_mask = 0;
 
 	//正向模式
 	i = 0;
@@ -20312,7 +20312,7 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 	///这里要改
 	bitmapper_bs_iter pre_unique_matched_read = (bitmapper_bs_iter)-1;
 	bitmapper_bs_iter pre_ambious_matched_read = (bitmapper_bs_iter)-1;
-	int output_mask;
+	int output_mask = 0;
 	unsigned int second_best_diff;
 
 	
@@ -21815,7 +21815,7 @@ void* Map_Pair_Seq_split_fast(void* arg)
 	///这里要改
 	bitmapper_bs_iter pre_unique_matched_read = (bitmapper_bs_iter)-1;
 	bitmapper_bs_iter pre_ambious_matched_read = (bitmapper_bs_iter)-1;
-	int output_mask;
+	int output_mask = 0;
 
 
 	//正向模式
@@ -22815,7 +22815,7 @@ void* Map_Pair_Seq_split(void* arg)
 	///这里要改
 	bitmapper_bs_iter pre_unique_matched_read = (bitmapper_bs_iter)-1;
 	bitmapper_bs_iter pre_ambious_matched_read = (bitmapper_bs_iter)-1;
-	int output_mask;
+	int output_mask = 0;
 	unsigned int second_best_diff;
 
 
