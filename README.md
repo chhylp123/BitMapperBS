@@ -109,7 +109,7 @@ single-end reads
 
 paired-end reads
 
-    ./bitmapperBS --search <genome file name> --seq1 <read1 file name> --seq2 <read2 file name> [options]
+    ./bitmapperBS --search <genome file name> --seq1 <read1 file name> --seq2 <read2 file name> --pe [options]
 
 
 output mapping results in BAM format
@@ -148,12 +148,19 @@ We recommend users to first remove the duplicates by Picard or samtools, and the
 | --search | NULL| String | NULL | Search in the specified genome. If the indexes of this genome are built without "--index_folder", please provide the path to the fasta file when aligning. Otherwise please provide the path to the index folder (set by "--index_folder" during indexing).|
 | --fast | NULL| NULL | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
 | --sensitive | NULL| String | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
+| --pe | NULL| NULL | NULL | Searching will be done in paired-end mode. |
 | --seq | NULL| String | NULL | Provide the name of single-end read file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
+<<<<<<< HEAD
 | -o | -o | String | stdout (Standard output) | Provide the name of output file (SAM or BAM format). |
 | --sam | NULL| NULL | NULL | Output mapping results in SAM format (default). |
 | --bam | NULL| NULL | NULL | Output mapping results in BAM format. |
+=======
+| -o | -o | String | output (SAM format) | Provide the name of output file (SAM or BAM format). |
+| --sam | NULL| String | NULL | Output mapping results in SAM format (default). |
+| --bam | NULL| String | NULL | Output mapping results in BAM format. |
+>>>>>>> parent of e8092b5... improve output
 | -e | -e | Double | 0.08 | Set the edit distance rate of read length, which is between 0 and 1. |
 | --min | NULL | Int | 0 | Minimum observed template length between a pair of end sequences. |
 | --max | NULL | Int | 500 | Maximum observed template length between a pair of end sequences. |
@@ -202,7 +209,7 @@ If map the reads from the *_2 reads file or the pbat protocol, the --pbat option
 
 to map reads to human genome (GRCH38) in paired-end mode using 6 CPU threads:
 
-	./bitmapperBS --search ../../ssd/human_genome.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq -t 6
+	./bitmapperBS --search ../../ssd/human_genome.fa --seq1 ../../ssd/read_1.fq --seq2 ../../ssd/read_1.fq --pe -t 6
 
 
 
@@ -223,6 +230,7 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 ### Changelog ###
 
+<<<<<<< HEAD
 (16) August 22, 2019: version 1.0.2.0 released. 
 
     >> Add support of BitMapperBS to output MAPQ like Bowtie2.
@@ -237,6 +245,8 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
     >> If `-o` is not specified, the alignment results would be printed to standard output.
     >> Fix a minor bug of the paired-end read name.
 
+=======
+>>>>>>> parent of e8092b5... improve output
 (14) June 28, 2019: version 1.0.1.5 released. 
 
     >> Fix a minor bug when mapping.

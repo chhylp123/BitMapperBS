@@ -21,7 +21,7 @@
 int				is_index = 0;
 int				is_search = 0;
 int             is_methy = 0;
-int				is_pairedEnd = 0;
+int				is_pairedEnd;
 int				cropSize = 0;
 int				minDistance_pair=0;
 int				maxDistance_pair=500;
@@ -29,8 +29,8 @@ int				over_all_seed_length = 30;
 unsigned int			THREAD_COUNT = 1;
 char				*Read_File1;
 char				*Read_File2;
-///char				*Mapped_File = "output";
-char				*Mapped_File = NULL;
+char				*Mapped_File = "output";
+///char				*Mapped_File = NULL;
 char				*Mapped_FilePath = "";
 char                *folder_path = NULL;
 char                *bmm_folder_path = NULL;
@@ -310,25 +310,19 @@ int CommandLine_process (int argc, char *argv[])
 	}
 
 
-
-	if (Read_File1 != NULL && Read_File2 != NULL)
-	{
-		is_pairedEnd = 1;
-	}
-	
-    if (!is_pairedEnd && Read_File2 != NULL)
+      if (!is_pairedEnd && Read_File2 != NULL)
 	{
 	  fprintf(stderr, "Please not indicate the read2 files for single-end mode!\n");
 	  return 0;
 	}
 
-    if (is_pairedEnd && (minDistance_pair <0 || maxDistance_pair < 0 || minDistance_pair > maxDistance_pair))
+      if (is_pairedEnd && (minDistance_pair <0 || maxDistance_pair < 0 || minDistance_pair > maxDistance_pair))
 	{
 	  fprintf(stderr, "Please set a valid range for paired-end mode.\n");
 	  return 0;
 	}
 
-    if (is_pairedEnd && Read_File1 == NULL)
+      if (is_pairedEnd && Read_File1 == NULL)
 	{
 	  fprintf(stderr, "Please indicate the read1 file for single-end mode.\n");
 	  return 0;
@@ -458,11 +452,11 @@ void Print_H()
   fprintf(stderr," --search [file/folder]\tSearch in the specified genome. If the indexes of this genome are built without \"--index_folder\", \n\t\t\tplease provide the path to the fasta file of genome (index files should be in the same folder). \n\t\t\tOtherwise please provide the path to the index folder (set by \"--index_folder\" during indexing).\n");
   fprintf(stderr," --fast \t\tSet bitmapperBS in fast mode (default). This option is only available in paired-end mode.\n");
   fprintf(stderr," --sensitive \t\tSet bitmapperBS in sensitive mode. This option is only available in paired-end mode.\n");
-  //fprintf(stderr," --pe \t\t\tSearch will be done in paired-end mode.\n");
+  fprintf(stderr," --pe \t\t\tSearch will be done in paired-end mode.\n");
   fprintf(stderr," --seq [file]\t\tInput sequences in fastq/fastq.gz format [file]. This option is used  \n\t\t\tfor single-end reads.\n");
   fprintf(stderr," --seq1 [file]\t\tInput sequences in fastq/fastq.gz format [file] (First file). \n\t\t\tUse this option to indicate the first file of \n\t\t\tpaired-end reads. \n");
   fprintf(stderr," --seq2 [file]\t\tInput sequences in fastq/fastq.gz format [file] (Second file). \n\t\t\tUse this option to indicate the second file of \n\t\t\tpaired-end reads.  \n");
-  fprintf(stderr," -o [file]\t\tOutput of the mapped sequences in SAM or BAM format. The default is \"stdout\" (standard output) in SAM format.\n");
+  fprintf(stderr," -o [file]\t\tOutput of the mapped sequences in SAM or BAM format. The default is \"output\" in SAM format.\n");
   fprintf(stderr, " --sam \t\t\tOutput mapping results in SAM format (default).\n");
   fprintf(stderr, " --bam \t\t\tOutput mapping results in BAM format.\n");
   fprintf(stderr, " --methy_out \t\tOutput the intermediate methylation result files, instead of SAM or BAM files.\n");

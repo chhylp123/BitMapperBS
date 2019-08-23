@@ -1140,7 +1140,8 @@ void OutPutSAM_Nounheader(_rg_name_l  *_ih_refGenName, int refChromeCont, int ar
 	int i = 0;
 	for (i = 0; i<refChromeCont; i++)
 	{
-		fprintf(_out_fp, "@SQ\tSN:%s\tLN:%llu\n", _ih_refGenName[i]._rg_chrome_name, _ih_refGenName[i]._rg_chrome_length);
+		fprintf(_out_fp, "@SQ\tSN:%s\tLN:%u\n", _ih_refGenName[i]._rg_chrome_name, _ih_refGenName[i]._rg_chrome_length);
+	
 	}
 
 	fprintf(_out_fp, "@PG\tID:BitMapperBS\tVN:%s\tCL:", versionN);
@@ -1220,7 +1221,7 @@ void multi_outputQ(SAM map, int thread_id)
 
 
 
-int Output_gene (char *fileName)
+int Output_gene ( char *fileName)
 {
 
 	if (fileName[0] == '\0')
