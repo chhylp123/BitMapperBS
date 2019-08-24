@@ -7,7 +7,7 @@ BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequenc
 Here are the implementations of "BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequencing". 
 BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads from directional protocol. 
 
-- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on August 10, 2019) Please do not use version 1.0.2.0, which has some problems. The current version is 1.0.2.1.`
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on August 24, 2019) Please do not use version 1.0.2.0, which has some problems. The current version is 1.0.2.1.`
 
 ### Build Requirements ###
 
