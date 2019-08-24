@@ -45,6 +45,8 @@ docker run -v /data:/data quay.io/comp-bio-aging/bit_mapper_bs:latest /opt/BitMa
 ```
 
 ### Installation ###
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `BitMapperBS can be easily installed via bioconda, please see https://bioconda.github.io/recipes/bitmapperbs/README.html`
+
 (1) Download the source code from Github
 
     git clone https://github.com/chhylp123/BitMapperBS.git
