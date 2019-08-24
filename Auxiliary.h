@@ -71,6 +71,19 @@ extern int unmapped_out;
 extern int ambiguous_out;
 extern int mapstats;
 
+
+extern int GapOpenPenalty;
+extern int GapExtensionPenalty;
+extern int MistMatchPenaltyMax;
+extern int MistMatchPenaltyMin;
+extern int N_Penalty;
+extern int Q_base;
+
+extern char *Mapstats_File;
+extern char *Mapstats_File_Path;
+
+
+
 double	Get_T(void);
 void	reverseComplement (char *seq, char *rcSeq , int length);
 ///void    reverse_pattern(char* pattern, char* rev_pattern, int length);

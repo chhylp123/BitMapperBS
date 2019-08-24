@@ -45,6 +45,11 @@ int main(int argc, char *argv[])
     {
 
 
+	  fprintf(stderr,"Read qualities are encoded by Phred+%d...\n", Q_base);
+	  fprintf(stderr,"GapOpenPenalty: %d, GapExtensionPenalty: %d, MistMatchPenaltyMax: %d\n", 
+	  GapOpenPenalty, GapExtensionPenalty, MistMatchPenaltyMax);
+	  fprintf(stderr,"MistMatchPenaltyMin: %d, N_Penalty: %d\n", 
+	  MistMatchPenaltyMin, N_Penalty);
 
 
       double totalLoadingTime = 0;
@@ -93,6 +98,8 @@ int main(int argc, char *argv[])
             mappingTime = 0;
             loadingTime = 0;
 
+			
+
             fprintf(stderr,"Start load hash table!\n");
 	
 			Load_Index(thread_e, &chhy_ih_refGenName, &refChromeCont, fileName[1]);
@@ -127,15 +134,12 @@ int main(int argc, char *argv[])
 				if (pbat == 0)
 				{
 					Map_Single_Seq(0);
-
 					///Map_Single_Seq_end_to_end_cover(0);
-
 				}
 				else
 				{
 					Map_Single_Seq_pbat(0);
 				}
-				
 			}
             else
             {
@@ -281,19 +285,10 @@ int main(int argc, char *argv[])
 
 	  if (mapstats == 1)
 	  {
-		  char mapstatsFileName[NAME_LENGTH];
-
-		  if (outputFileName[0] == '\0')
-		  {
-			  sprintf(mapstatsFileName, "stdout.mapstats");
-		  }
-		  else
-		  {
-			  sprintf(mapstatsFileName, "%s.mapstats", outputFileName);
-		  }
-		  
-		  
-		  FILE* mapstats_fp = fopen(mapstatsFileName, "w");
+		  sprintf(Mapstats_File_Path + strlen(Mapstats_File_Path), "%s", Mapstats_File);
+		  fprintf(stderr, "The statistical information will be written to %s ...\n", Mapstats_File_Path);
+		
+		  FILE* mapstats_fp = fopen(Mapstats_File_Path, "w");
 			 
 		  if (mapstats_fp != NULL)
 		  {
