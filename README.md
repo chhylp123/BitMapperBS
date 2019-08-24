@@ -7,6 +7,7 @@ BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequenc
 Here are the implementations of "BitMapperBS: a fast and accurate read aligner for whole-genome bisulfite sequencing". 
 BitMapperBS is an ultra-fast and memory-efficient aligner that is designed for WGBS reads from directional protocol. 
 
+- ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `(update on August 10, 2019) Please do not use version 1.0.2.0, which has some problems. The current version is 1.0.2.1.`
 
 ### Build Requirements ###
 
@@ -147,7 +148,7 @@ We recommend users to first remove the duplicates by Picard or samtools, and the
 | :------: | :---------------: | :-----:|:-----:| :-----|
 | --search | NULL| String | NULL | Search in the specified genome. If the indexes of this genome are built without "--index_folder", please provide the path to the fasta file when aligning. Otherwise please provide the path to the index folder (set by "--index_folder" during indexing).|
 | --fast | NULL| NULL | NULL | Set bitmapperBS in fast mode (default). Only available for paired-end mode.|
-| --sensitive | NULL| String | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
+| --sensitive | NULL| NULL | NULL | Set bitmapperBS in sensitive mode. Only available for paired-end mode.|
 | --seq | NULL| String | NULL | Provide the name of single-end read file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq1 | NULL| String | NULL | Provide the name of paired-end read_1 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
 | --seq2 | NULL| String | NULL | Provide the name of paired-end read_2 file (.fastq/.fq/.fastq.gz/.fq.gz format). |
@@ -225,6 +226,7 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 (16) August 24, 2019: version 1.0.2.1 released. 
 
+    >> Fix the bug in version 1.0.2.0.
     >> Add support of BitMapperBS to output MAPQ like Bowtie2.
     >> Recalculate alignment with large or complex gaps.
     >> For the '--mapstats' option, the output file name can be defined by users.
