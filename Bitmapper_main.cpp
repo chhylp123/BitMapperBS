@@ -339,13 +339,25 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "genome_cuts: %d\n", genome_cuts);
 		fprintf(stderr, "PE_distance: %d\n", maxDistance_pair);
 
-		init_output_methy(Read_File1, need_context);
+
+
+		char outputFileName[NAME_LENGTH];
+		if(Mapped_File)
+		{
+			sprintf(outputFileName, "%s%s",Mapped_FilePath , Mapped_File);
+		}
+		else
+		{
+			sprintf(outputFileName, "output");
+		}
+		///init_output_methy(Read_File1, need_context);
+		init_output_methy(outputFileName, need_context);
 
 		Prepare_methy(fileName[0], chhy_ih_refGenName, refChromeCont);
 
 		
 		
-
+		THREAD_COUNT = 1;
 		///int PE_distance = 500;
 		
 		if (!is_pairedEnd)

@@ -81,7 +81,7 @@ int8_t mat_diff[25] = {
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.2.1";
+char *versionN = "1.0.2.2";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
