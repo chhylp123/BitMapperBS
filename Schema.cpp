@@ -81,7 +81,7 @@ int8_t mat_diff[25] = {
 _rg_name_l  *_ih_refGenName;
 int refChromeCont;
 
-char *versionN = "1.0.2.2";
+char *versionN = "1.0.2.3";
 long long mappingCnt[MAX_Thread];
 unsigned int done;
 long long mappedSeqCnt[MAX_Thread];
@@ -16513,7 +16513,8 @@ int inline process_rest_seed_filter_debug(
 
 			if (match_length1 == 0)
 			{
-				total_match_length1 = total_match_length1 + match_step;
+				///total_match_length1 = total_match_length1 + match_step;
+				total_match_length1 = determine_seed_offset_unmatch(current_read->length, total_match_length1, current_read->seq, match_step);
 			}
 			else
 			{
@@ -17459,7 +17460,8 @@ int inline process_rest_seed_filter_muti_thread(
 
 			if (match_length1 == 0)
 			{
-				total_match_length1 = total_match_length1 + match_step;
+				///total_match_length1 = total_match_length1 + match_step;
+				total_match_length1 = determine_seed_offset_unmatch((*current_read).length, total_match_length1, (*current_read).seq, match_step);
 			}
 			else
 			{
@@ -17760,7 +17762,8 @@ int inline process_rest_seed_debug(
 
 			if (match_length1 == 0)
 			{
-				total_match_length1 = total_match_length1 + match_step;
+				///total_match_length1 = total_match_length1 + match_step;
+				total_match_length1 = determine_seed_offset_unmatch(current_read->length, total_match_length1, current_read->seq, match_step);
 			}
 			else
 			{
@@ -18038,7 +18041,8 @@ int inline process_rest_seed_muti_thread(
 
 			if (match_length1 == 0)
 			{
-				total_match_length1 = total_match_length1 + match_step;
+				///total_match_length1 = total_match_length1 + match_step;
+				total_match_length1 = determine_seed_offset_unmatch((*current_read).length, total_match_length1, (*current_read).seq, match_step);
 			}
 			else
 			{
@@ -18334,7 +18338,8 @@ inline void get_candidates(
 
 		if (match_length == 0)
 		{
-			total_match_length = total_match_length + match_step;
+			///total_match_length = total_match_length + match_step;
+			total_match_length = determine_seed_offset_unmatch(current_read->length, total_match_length, current_read->seq, match_step);
 		}
 		else
 		{
@@ -18478,7 +18483,8 @@ read1_end:
 
 				if (match_length == 0)
 				{
-					total_match_length = total_match_length + match_step;
+					///total_match_length = total_match_length + match_step;
+					total_match_length = determine_seed_offset_unmatch(current_read->length, total_match_length, current_read->seq, match_step);
 				}
 				else
 				{
@@ -19711,7 +19717,11 @@ inline void get_candidates_muti_thread(
 
 		if (match_length == 0)
 		{
-			total_match_length = total_match_length + match_step;
+			///total_match_length = total_match_length + match_step;
+			total_match_length = determine_seed_offset_unmatch(current_read->length, total_match_length, current_read->seq, match_step);
+
+
+
 		}
 		else
 		{
@@ -19855,7 +19865,8 @@ read1_end:
 
 				if (match_length == 0)
 				{
-					total_match_length = total_match_length + match_step;
+					///total_match_length = total_match_length + match_step;
+					total_match_length = determine_seed_offset_unmatch(current_read->length, total_match_length, current_read->seq, match_step);
 				}
 				else
 				{
@@ -20632,7 +20643,8 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 
 			if (match_length1 == 0)
 			{
-				total_match_length1 = total_match_length1 + match_step;
+				///total_match_length1 = total_match_length1 + match_step;
+				total_match_length1 = determine_seed_offset_unmatch(current_read1.length, total_match_length1, current_read1.seq, match_step);
 			}
 			else
 			{
@@ -20836,7 +20848,8 @@ int Map_Pair_Seq_end_to_end(int thread_id)
 
 			if (match_length2 == 0)
 			{
-				total_match_length2 = total_match_length2 + match_step;
+				///total_match_length2 = total_match_length2 + match_step;
+				total_match_length2 = determine_seed_offset_unmatch(current_read2.length, total_match_length2, current_read2.seq, match_step);
 			}
 			else
 			{
@@ -23141,7 +23154,8 @@ void* Map_Pair_Seq_split(void* arg)
 
 				if (match_length1 == 0)
 				{
-					total_match_length1 = total_match_length1 + match_step;
+					///total_match_length1 = total_match_length1 + match_step;
+					total_match_length1 = determine_seed_offset_unmatch(read_batch1[i].length, total_match_length1, read_batch1[i].seq, match_step);
 				}
 				else
 				{
@@ -23328,7 +23342,8 @@ void* Map_Pair_Seq_split(void* arg)
 
 				if (match_length2 == 0)
 				{
-					total_match_length2 = total_match_length2 + match_step;
+					///total_match_length2 = total_match_length2 + match_step;
+					total_match_length2 = determine_seed_offset_unmatch(read_batch2[i].length, total_match_length2, read_batch2[i].seq, match_step);
 				}
 				else
 				{
@@ -24697,7 +24712,8 @@ int Map_Single_Seq_end_to_end(int thread_id)
 
 			if (match_length == 0)
 			{
-				total_match_length = total_match_length + match_step;
+				total_match_length = determine_seed_offset_unmatch(current_read.length, total_match_length, current_read.seq, match_step);
+				///total_match_length = total_match_length + match_step;
 			}
 			else
 			{
@@ -24855,7 +24871,8 @@ int Map_Single_Seq_end_to_end(int thread_id)
 		
 				if (match_length == 0)
 				{
-					total_match_length = total_match_length + match_step;
+					total_match_length = determine_seed_offset_unmatch(current_read.length, total_match_length, current_read.seq, match_step);
+					///total_match_length = total_match_length + match_step;
 				}
 				else
 				{
@@ -25777,7 +25794,8 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 
 			if (match_length == 0)
 			{
-				total_match_length = total_match_length + match_step;
+				///total_match_length = total_match_length + match_step;
+				total_match_length = determine_seed_offset_unmatch(current_read.length, total_match_length, current_read.seq, match_step);
 			}
 			else
 			{
@@ -25984,7 +26002,8 @@ int Map_Single_Seq_end_to_end_pbat(int thread_id)
 
 				if (match_length == 0)
 				{
-					total_match_length = total_match_length + match_step;
+					///total_match_length = total_match_length + match_step;
+					total_match_length = determine_seed_offset_unmatch(current_read.length, total_match_length, current_read.seq, match_step);
 				}
 				else
 				{
@@ -27288,7 +27307,8 @@ void* Map_Single_Seq_split(void* arg)
 
 				if (match_length == 0)
 				{
-					total_match_length = total_match_length + match_step;
+					///total_match_length = total_match_length + match_step;
+					total_match_length = determine_seed_offset_unmatch(read_batch[i].length, total_match_length, read_batch[i].seq, match_step);
 				}
 				else
 				{
@@ -27480,7 +27500,8 @@ void* Map_Single_Seq_split(void* arg)
 
 					if (match_length == 0)
 					{
-						total_match_length = total_match_length + match_step;
+						///total_match_length = total_match_length + match_step;
+						total_match_length = determine_seed_offset_unmatch(read_batch[i].length, total_match_length, read_batch[i].seq, match_step);
 					}
 					else
 					{
@@ -28424,7 +28445,8 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 				if (match_length == 0)
 				{
-					total_match_length = total_match_length + match_step;
+					///total_match_length = total_match_length + match_step;
+					total_match_length = determine_seed_offset_unmatch(read_batch[i].length, total_match_length, read_batch[i].seq, match_step);
 				}
 				else
 				{
@@ -28614,7 +28636,8 @@ void* Map_Single_Seq_split_pbat(void* arg)
 
 					if (match_length == 0)
 					{
-						total_match_length = total_match_length + match_step;
+						///total_match_length = total_match_length + match_step;
+						total_match_length = determine_seed_offset_unmatch(read_batch[i].length, total_match_length, read_batch[i].seq, match_step);
 					}
 					else
 					{

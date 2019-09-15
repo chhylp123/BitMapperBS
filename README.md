@@ -226,6 +226,10 @@ The output file of BitMapperBS must be first sorted into a coordinate-sorted BAM
 
 ### Changelog ###
 
+(17) September 15, 2019: version 1.0.2.3 released.
+
+    >> Improve the alignment rate slightly.
+
 (16) September 9, 2019: version 1.0.2.2 released. 
 
     >> Revise the output option of methylation extraction.

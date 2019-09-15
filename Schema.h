@@ -1503,6 +1503,33 @@ inline void C_to_T(char *Seq, char *bsSeq, int length, int* C_site)
 	bsSeq[length] = '\0';
 }
 
+inline int determine_seed_offset_unmatch(int readLen, int pre_seedOffset, char* read, int match_step)
+{
+	///match_step = match_step / 2;
+
+	///if we don't have enough length to start a new seed, terminate seeding directly
+	if(readLen - pre_seedOffset < 18 || readLen - pre_seedOffset < match_step)
+	{
+		return readLen;
+	}
+
+
+	int return_offset = pre_seedOffset + match_step;
+
+	int i = 0;
+	for (i = 0; i < match_step; i++, pre_seedOffset++)
+	{
+		if(read[pre_seedOffset] == 'N')
+		{
+			///fprintf(stderr, "readLen: %d, pre_seedOffset: %d, match_step:%d\n", readLen, pre_seedOffset, match_step);
+			return pre_seedOffset + 1;		
+		}
+	}
+
+	return return_offset;
+	
+}
+
 
 inline void C_to_T_forward(char *Seq, char *bsSeq, int length, int* C_site)
 {
